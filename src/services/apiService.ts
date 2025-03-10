@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { Business } from '@/types/business';
 import { v4 as uuidv4 } from 'uuid';
@@ -67,6 +68,7 @@ export const scanBusinessesInArea = async (location: string, source: string = 'y
         website: business.website,
         score,
         last_checked: new Date().toISOString(),
+        source: business.source || source // Store source information
       };
       
       console.log(`Adding new business: ${business.name}`);
@@ -111,6 +113,7 @@ const processMockBusinesses = (mockBusinesses: any[], location: string): Busines
       score,
       last_checked: now,
       lastChecked: now,
+      source: business.source || 'mock-data', // Always set source for mock businesses
       issues: {
         speedIssues: score > 50,
         outdatedCMS: Math.random() > 0.5,

@@ -34,4 +34,7 @@ export interface Business {
     notMobileFriendly: boolean;
     badFonts: boolean;
   };
+  
+  // Source information
+  source?: string;
 }
