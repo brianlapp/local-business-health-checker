@@ -1,16 +1,15 @@
-
 import { supabase } from '@/lib/supabase';
 import { Business } from '@/types/business';
 import { v4 as uuidv4 } from 'uuid';
 
-// Function to scan businesses in a geographic area
-export const scanBusinessesInArea = async (location: string, radius: number): Promise<Business[]> => {
+// Function to scan businesses in a geographic area using web scraping
+export const scanBusinessesInArea = async (location: string, source: string = 'yellowpages'): Promise<Business[]> => {
   try {
-    console.log(`Scanning businesses in ${location} with radius ${radius}km`);
+    console.log(`Scanning businesses in ${location} using ${source} scraper`);
     
-    // Call the edge function to search for businesses
-    const { data, error } = await supabase.functions.invoke('google-maps-search', {
-      body: { location, radius },
+    // Call the edge function to scrape for businesses
+    const { data, error } = await supabase.functions.invoke('web-scraper', {
+      body: { location, source },
     });
     
     if (error) {
@@ -18,17 +17,11 @@ export const scanBusinessesInArea = async (location: string, radius: number): Pr
       throw new Error(`Edge Function Error: ${error.message || 'Failed to search for businesses'}`);
     }
     
-    console.log('Google Maps search response:', data);
+    console.log('Web scraper response:', data);
     
-    // Check if the response contains a billing issue flag
-    if (data.billing_issue) {
-      console.error('Google Cloud billing issue detected:', data.error_message);
-      throw new Error('Google Cloud Billing Issue: Your Google Cloud account has payment problems that need to be resolved.');
-    }
-    
-    // Check if the response contains an error from the Google Maps API
+    // Check if the response contains an error
     if (data.error) {
-      console.error('Google Maps API error:', data.error);
+      console.error('Web scraper error:', data.error);
       throw new Error(data.message || data.error);
     }
     

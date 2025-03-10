@@ -4,7 +4,7 @@
 ## **🚀 Day 1: Supabase Setup & Business Data**
 ✅ Set up **Supabase DB**
 ✅ Manually collect **10-20 business websites**
-✅ Verify **Google Maps API for scraping**
+✅ Verify **Web Scraping Approach for Business Discovery**
 
 ## **🚀 Day 2: Website Scanning APIs**
 ✅ Integrate **GTmetrix API** (Performance)
@@ -22,6 +22,7 @@
 ✅ Create **personalized email template generator**
 ✅ Add "**Review Website**" functionality
 ✅ Improve **business data collection**
+✅ Replace **Google Maps API with web scraping** to avoid billing issues
 
 ## **🚀 Day 5: Automation & Testing**
 🔲 Fully automate **business scraping**
@@ -30,8 +31,8 @@
 🔲 Add **comprehensive error handling**
 
 ## **Future Development (V2)**
+🔲 Implement **additional web scraping sources** (Chamber of Commerce, Yelp, etc.)
 🔲 Implement **automated outreach system**
 🔲 Build **follow-up scheduling system**
 🔲 Create **outreach tracking in Supabase**
 🔲 Add **outreach analytics**
-

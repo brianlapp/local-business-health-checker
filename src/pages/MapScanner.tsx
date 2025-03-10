@@ -4,21 +4,20 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, MapPin, Loader2, AlertCircle, Info, ExternalLink, DollarSign, CreditCard } from 'lucide-react';
+import { Search, MapPin, Loader2, AlertCircle, Info } from 'lucide-react';
 import { scanBusinessesInArea } from '@/services/apiService';
 import { Business } from '@/types/business';
 import { toast } from 'sonner';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const MapScanner = () => {
   const [location, setLocation] = useState('');
-  const [radius, setRadius] = useState(5);
   const [isScanning, setIsScanning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [scannedBusinesses, setScannedBusinesses] = useState<Business[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [apiTip, setApiTip] = useState<string | null>(null);
-  const [errorDetails, setErrorDetails] = useState<string | null>(null);
-  const [isBillingIssue, setIsBillingIssue] = useState(false);
+  const [source, setSource] = useState('yellowpages');
   const navigate = useNavigate();
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,8 +32,6 @@ const MapScanner = () => {
     setScannedBusinesses([]);
     setError(null);
     setApiTip(null);
-    setErrorDetails(null);
-    setIsBillingIssue(false);
     
     try {
       // Start the progress animation
@@ -49,13 +46,13 @@ const MapScanner = () => {
       }, 500);
       
       toast.info(`Scanning for businesses in ${location}...`);
-      const businesses = await scanBusinessesInArea(location, radius);
+      const businesses = await scanBusinessesInArea(location, source);
       
       clearInterval(progressInterval);
       setProgress(100);
       
       if (businesses.length === 0) {
-        setError(`No businesses found in ${location}. Try a different location or increase the radius.`);
+        setError(`No businesses found in ${location}. Try a different location or data source.`);
         toast.info('No businesses found in this area. Try a different search.');
         setApiTip('Try using a more specific location or a different area. Make sure to include the city and country.');
       } else {
@@ -66,33 +63,11 @@ const MapScanner = () => {
       console.error('Scan error:', error);
       setProgress(100);
       
-      // Check for Google Cloud billing issues
-      if (error.message && error.message.includes('Billing Issue')) {
-        setError('Google Cloud Billing Issue Detected');
-        setIsBillingIssue(true);
-        setApiTip('Your Google Cloud account has payment problems that need to be resolved. Please check your billing status in Google Cloud Console.');
-        setErrorDetails('The error message from Google indicates there are payment issues with your Google Cloud account. This is preventing the Places API from working properly. You need to resolve the payment issues in your Google Cloud billing dashboard.');
-        toast.error('Google Cloud billing issue detected');
-      }
-      // Check for Google Maps API authorization errors
-      else if (error.message && (
-          error.message.includes('API key') || 
-          error.message.includes('authorization') || 
-          error.message.includes('REQUEST_DENIED') ||
-          error.message.includes('OVER_QUERY_LIMIT') ||
-          error.message.includes('not authorized')
-      )) {
-        setError('Google Maps API Authorization Error');
-        setApiTip('There might be an issue with the Google Maps API key or its configuration. This could be related to billing problems on your Google Cloud account.');
-        setErrorDetails('If you recently changed your payment method, it may take some time for the changes to propagate through Google\'s systems. Please check your Google Cloud Console billing section.');
-        toast.error('Google Maps API authorization error');
-      } else if (error.message && error.message.includes('Edge Function')) {
-        setError('Edge Function Error');
-        setApiTip('There was an issue with the edge function. This is likely a temporary issue. Please try again or check if your Supabase instance is running correctly.');
-        toast.error('Edge function error, please try again');
-      } else {
-        setError(error.message || 'Failed to scan area, please try again');
-        toast.error('Failed to scan area: ' + (error.message || 'Unknown error'));
+      setError(error.message || 'Failed to scan area, please try again');
+      toast.error('Failed to scan area: ' + (error.message || 'Unknown error'));
+      
+      if (error.message && error.message.includes('Edge Function')) {
+        setApiTip('There was an issue with the web scraper. This could be a temporary issue with the website we\'re scraping or with our edge function. Please try again later.');
       }
     } finally {
       setIsScanning(false);
@@ -102,6 +77,11 @@ const MapScanner = () => {
   const handleViewAll = () => {
     navigate('/');
   };
+  
+  const dataSources = [
+    { value: 'yellowpages', label: 'Yellow Pages' },
+    // Add more sources as they get implemented
+  ];
   
   return (
     <div className="container py-8">
@@ -140,21 +120,28 @@ const MapScanner = () => {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium" htmlFor="radius">
-                  Radius (kilometres)
+                <label className="text-sm font-medium" htmlFor="source">
+                  Data Source
                 </label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="range"
-                    min="1"
-                    max="50"
-                    value={radius}
-                    onChange={(e) => setRadius(parseInt(e.target.value))}
-                    className="flex-1 accent-primary"
-                    disabled={isScanning}
-                  />
-                  <span className="text-sm font-medium w-12 text-center">{radius}</span>
-                </div>
+                <Select
+                  value={source}
+                  onValueChange={setSource}
+                  disabled={isScanning}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select data source" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {dataSources.map((source) => (
+                      <SelectItem key={source.value} value={source.value}>
+                        {source.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Choose where to scrape business data from
+                </p>
               </div>
               
               <Button 
@@ -198,44 +185,13 @@ const MapScanner = () => {
           </CardHeader>
           <CardContent>
             {error && (
-              <div className={`${isBillingIssue ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400' : 'bg-destructive/10 text-destructive'} p-4 rounded-md mb-4 flex items-start`}>
-                {isBillingIssue ? (
-                  <CreditCard className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-                ) : (
-                  <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-                )}
+              <div className="bg-destructive/10 text-destructive p-4 rounded-md mb-4 flex items-start">
+                <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium">{error}</p>
                   {apiTip && (
                     <div className="mt-2 text-sm whitespace-pre-line">
                       <p>{apiTip}</p>
-                    </div>
-                  )}
-                  {errorDetails && (
-                    <div className="mt-2 text-sm whitespace-pre-line border-t border-destructive/20 pt-2">
-                      <p>{errorDetails}</p>
-                      
-                      <div className="mt-3 flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0">
-                        <a 
-                          href="https://console.cloud.google.com/billing" 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center py-2 px-3 rounded-md bg-orange-200 text-orange-800 dark:bg-orange-800 dark:text-orange-100 hover:opacity-90 text-sm font-medium"
-                        >
-                          <DollarSign className="h-4 w-4 mr-1" />
-                          Check Google Cloud Billing
-                        </a>
-                        
-                        <a 
-                          href="https://console.cloud.google.com/apis/credentials" 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center py-2 px-3 rounded-md bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-100 hover:opacity-90 text-sm font-medium"
-                        >
-                          <ExternalLink className="h-4 w-4 mr-1" />
-                          Check API Key Settings
-                        </a>
-                      </div>
                     </div>
                   )}
                 </div>

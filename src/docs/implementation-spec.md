@@ -13,14 +13,15 @@ The Local Business Website Scanner (Shit Score™ Generator) is a tool to automa
 - Rate limiting and usage tracking for GTmetrix API
 - Performance metrics collection and display
 - Manual email template generation
+- Web scraping implementation for business discovery
 
 ## Implementation Plan
 
-### Phase 1: API Key Management & Configuration
-1. **Google Maps API Integration**
-   - Purpose: Discover local businesses and their websites
-   - Storage: Store API key in Supabase secrets
-   - Implementation: Create edge function for secure API calls
+### Phase 1: Web Scraping Implementation [COMPLETED]
+1. **YellowPages Scraping**
+   - Purpose: Discover local businesses and their websites without API costs
+   - Implementation: Create edge function for web scraping
+   - Storage: Store scraped businesses in Supabase
 
 2. **GTmetrix API Integration**
    - Purpose: Analyze website performance metrics
@@ -32,10 +33,10 @@ The Local Business Website Scanner (Shit Score™ Generator) is a tool to automa
    - Storage: Store API key in Supabase secrets
    - Implementation: Create edge function for tech analysis
 
-### Phase 2: Business Discovery Implementation
-1. **Google Maps API Integration**
+### Phase 2: Business Discovery Implementation [COMPLETED]
+1. **Web Scraper Integration**
    - Create UI for geographic area scanning
-   - Implement pagination for results
+   - Implement source selection for different directories
    - Store discovered businesses in Supabase
 
 2. **Manual Business Addition**
@@ -97,7 +98,12 @@ The Local Business Website Scanner (Shit Score™ Generator) is a tool to automa
    ⏳ Add error handling and retry logic
 
 ### Future Development (V2)
-1. **Automated Outreach System**
+1. **Additional Web Scraping Sources**
+   - Implement Chamber of Commerce scraping
+   - Add Yelp Business Directory scraping
+   - Create local business directory scraping
+
+2. **Automated Outreach System**
    - Build follow-up scheduling system
    - Implement tracking of sent/replied emails
    - Create outreach analytics dashboard
@@ -109,10 +115,10 @@ The Local Business Website Scanner (Shit Score™ Generator) is a tool to automa
 - Create tables for scan history and scheduled scans
 - Implement relationship between businesses and technology data
 
-### API Integration Architecture
-- All API calls will be made through Supabase edge functions
-- API keys will be stored as Supabase secrets
+### Web Scraping Architecture
+- Edge functions for scraping different business directories
 - Rate limiting and error handling implementation
+- Configurable scraping sources
 
 ### Frontend Architecture
 - Component-based UI with shadcn/ui components
@@ -128,12 +134,12 @@ The Local Business Website Scanner (Shit Score™ Generator) is a tool to automa
 
 | Phase | Description | Estimated Time |
 |-------|-------------|----------------|
-| 1 | API Key Management & Configuration | 1 day |
-| 2 | Business Discovery Implementation | 2 days |
+| 1 | Web Scraping Implementation | 1 day |
+| 2 | Business Discovery Implementation | 1 day |
 | 3 | Website Analysis Engine | 3 days |
 | 4 | Comprehensive Scoring System | 1 day |
 | 5 | Manual Outreach Support | 1 day |
-| 6 | Automated Scanning & Batch Processing | 2 days |
+| 6 | Automated Scanning & Batch Processing | 3 days |
 
 Total estimated development time: 10 days
 
