@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { Business, sampleBusinesses } from './SampleBusinessData';
+import { Business } from '@/types/business';
 import BusinessCard from './BusinessCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,16 +13,41 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getBusinesses } from '@/services/businessService';
+import { useToast } from '@/hooks/use-toast';
 
 interface DashboardProps {
   className?: string;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ className }) => {
-  const [businesses, setBusinesses] = useState<Business[]>(sampleBusinesses);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [sortBy, setSortBy] = useState<'score' | 'name' | 'date'>('score');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchBusinesses = async () => {
+      setLoading(true);
+      const data = await getBusinesses();
+      setBusinesses(data);
+      setLoading(false);
+    };
+
+    fetchBusinesses();
+  }, []);
+
+  const handleRefresh = async () => {
+    setLoading(true);
+    const data = await getBusinesses();
+    setBusinesses(data);
+    setLoading(false);
+    toast({
+      description: "Business data refreshed",
+    });
+  };
 
   const sortedBusinesses = [...businesses].sort((a, b) => {
     if (sortBy === 'score') {
@@ -58,9 +83,9 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
             <Map className="mr-2 h-4 w-4" />
             Scan Area
           </Button>
-          <Button variant="outline">
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh
+          <Button variant="outline" onClick={handleRefresh} disabled={loading}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            {loading ? 'Loading...' : 'Refresh'}
           </Button>
         </div>
       </div>
@@ -81,7 +106,9 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
-              {Math.round(businesses.reduce((acc, cur) => acc + cur.score, 0) / businesses.length)}
+              {businesses.length > 0 
+                ? Math.round(businesses.reduce((acc, cur) => acc + cur.score, 0) / businesses.length) 
+                : 0}
             </div>
           </CardContent>
         </Card>
@@ -142,19 +169,30 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
         </Button>
       </div>
       
-      <div className={cn(
-        viewMode === 'grid' 
-          ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6' 
-          : 'space-y-4'
-      )}>
-        {sortedBusinesses.map((business) => (
-          <BusinessCard 
-            key={business.id} 
-            business={business}
-            className="animate-slide-up"
-          />
-        ))}
-      </div>
+      {loading ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      ) : businesses.length === 0 ? (
+        <div className="text-center py-12">
+          <h3 className="text-lg font-medium">No businesses found</h3>
+          <p className="text-muted-foreground mt-2">Try scanning a new area or adding businesses manually</p>
+        </div>
+      ) : (
+        <div className={cn(
+          viewMode === 'grid' 
+            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6' 
+            : 'space-y-4'
+        )}>
+          {sortedBusinesses.map((business) => (
+            <BusinessCard 
+              key={business.id} 
+              business={business}
+              className="animate-slide-up"
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

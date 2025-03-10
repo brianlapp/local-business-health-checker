@@ -2,7 +2,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { AlertTriangle, CheckCircle, X, Clock, Zap, Smartphone, Lock, Type } from 'lucide-react';
-import { Business } from './SampleBusinessData';
+import { Business } from '@/types/business';
 
 interface ScoreDisplayProps {
   score: number;
@@ -40,7 +40,7 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, business, cla
         <div className="ml-4">
           <p className="text-sm text-muted-foreground">Shit Score™</p>
           <h3 className="text-xl font-semibold">{scoreText}</h3>
-          <p className="text-sm text-muted-foreground">Last checked: {business.lastChecked || 'N/A'}</p>
+          <p className="text-sm text-muted-foreground">Last checked: {business.lastChecked ? new Date(business.lastChecked).toLocaleDateString() : 'N/A'}</p>
         </div>
       </div>
       
