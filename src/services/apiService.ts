@@ -15,7 +15,7 @@ export const scanBusinessesInArea = async (location: string, radius: number): Pr
     
     if (error) {
       console.error('Edge function error:', error);
-      throw new Error(error.message || 'Failed to search for businesses');
+      throw new Error(`Edge Function Error: ${error.message || 'Failed to search for businesses'}`);
     }
     
     console.log('Google Maps search response:', data);

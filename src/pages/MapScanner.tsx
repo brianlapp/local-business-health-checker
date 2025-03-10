@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, MapPin, Loader2, AlertCircle, Info } from 'lucide-react';
+import { Search, MapPin, Loader2, AlertCircle, Info, ExternalLink } from 'lucide-react';
 import { scanBusinessesInArea } from '@/services/apiService';
 import { Business } from '@/types/business';
 import { toast } from 'sonner';
@@ -17,6 +17,7 @@ const MapScanner = () => {
   const [scannedBusinesses, setScannedBusinesses] = useState<Business[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [apiTip, setApiTip] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const navigate = useNavigate();
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,6 +32,7 @@ const MapScanner = () => {
     setScannedBusinesses([]);
     setError(null);
     setApiTip(null);
+    setErrorDetails(null);
     
     try {
       // Start the progress animation
@@ -67,10 +69,12 @@ const MapScanner = () => {
           error.message.includes('API key') || 
           error.message.includes('authorization') || 
           error.message.includes('REQUEST_DENIED') ||
-          error.message.includes('OVER_QUERY_LIMIT')
+          error.message.includes('OVER_QUERY_LIMIT') ||
+          error.message.includes('not authorized')
       )) {
         setError('Google Maps API Authorization Error');
-        setApiTip('There might be an issue with the Google Maps API key. It may need to be activated in the Google Cloud Console, or it may have billing issues.');
+        setApiTip('There might be an issue with the Google Maps API key. This could be related to billing problems on your Google Cloud account.');
+        setErrorDetails('If you recently changed your payment method, it may take some time for the changes to propagate through Google\'s systems. Please check your Google Cloud Console billing section.');
         toast.error('Google Maps API authorization error');
       } else if (error.message && error.message.includes('Edge Function')) {
         setError('Edge Function Error');
@@ -191,6 +195,21 @@ const MapScanner = () => {
                   {apiTip && (
                     <div className="mt-2 text-sm whitespace-pre-line">
                       <p>{apiTip}</p>
+                    </div>
+                  )}
+                  {errorDetails && (
+                    <div className="mt-2 text-sm whitespace-pre-line border-t border-destructive/20 pt-2">
+                      <p>{errorDetails}</p>
+                      {error.includes('Google Maps API') && (
+                        <a 
+                          href="https://console.cloud.google.com/billing" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center mt-2 text-destructive hover:underline"
+                        >
+                          Check Google Cloud Billing <ExternalLink className="h-3 w-3 ml-1" />
+                        </a>
+                      )}
                     </div>
                   )}
                 </div>
