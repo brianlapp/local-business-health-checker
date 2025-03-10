@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 
 const MapScanner = () => {
   const [location, setLocation] = useState('');
-  const [radius, setRadius] = useState(1);
+  const [radius, setRadius] = useState(5);
   const [isScanning, setIsScanning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [scannedBusinesses, setScannedBusinesses] = useState<Business[]>([]);
@@ -26,6 +26,7 @@ const MapScanner = () => {
     
     setIsScanning(true);
     setProgress(0);
+    setScannedBusinesses([]);
     
     try {
       // Start the progress animation
@@ -100,19 +101,19 @@ const MapScanner = () => {
               
               <div className="space-y-2">
                 <label className="text-sm font-medium" htmlFor="radius">
-                  Radius (miles)
+                  Radius (kilometers)
                 </label>
                 <div className="flex items-center gap-3">
                   <input
                     type="range"
                     min="1"
-                    max="5"
+                    max="50"
                     value={radius}
                     onChange={(e) => setRadius(parseInt(e.target.value))}
                     className="flex-1 accent-primary"
                     disabled={isScanning}
                   />
-                  <span className="text-sm font-medium w-8 text-center">{radius}</span>
+                  <span className="text-sm font-medium w-12 text-center">{radius}</span>
                 </div>
               </div>
               

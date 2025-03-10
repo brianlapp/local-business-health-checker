@@ -15,25 +15,36 @@ serve(async (req) => {
   }
 
   try {
-    const { query } = await req.json();
+    const { location, radius } = await req.json();
     
-    if (!query) {
-      throw new Error('Query parameter is required');
+    if (!location) {
+      throw new Error('Location parameter is required');
     }
 
-    console.log(`Searching for businesses matching: ${query}`);
+    console.log(`Searching for businesses matching: ${location} within ${radius}km radius`);
+    
+    // Construct a search query including both the location and business types
+    const searchQuery = `businesses in ${location}`;
     
     const url = new URL('https://maps.googleapis.com/maps/api/place/textsearch/json');
-    url.searchParams.append('query', query);
+    url.searchParams.append('query', searchQuery);
     url.searchParams.append('key', GOOGLE_MAPS_API_KEY!);
-    url.searchParams.append('fields', 'name,formatted_address,place_id,website');
+    url.searchParams.append('radius', (radius * 1000).toString()); // Convert km to meters for Google API
     
     const response = await fetch(url.toString());
     const data = await response.json();
     
     console.log(`Found ${data.results?.length || 0} businesses`);
     
-    return new Response(JSON.stringify(data), {
+    // Process the results to extract businesses with their details
+    const businesses = data.results?.map(place => ({
+      name: place.name,
+      formatted_address: place.formatted_address,
+      place_id: place.place_id,
+      website: place.website || null
+    })) || [];
+    
+    return new Response(JSON.stringify({ businesses }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
