@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 
@@ -20,6 +19,15 @@ serve(async (req) => {
 
   try {
     const { location, source = 'yellowpages' }: ScrapingRequest = await req.json();
+    
+    // Log the exact request details
+    console.log({
+      message: 'Starting business scrape request',
+      location,
+      source,
+      timestamp: new Date().toISOString()
+    });
+
     console.log(`Scraping businesses in: "${location}" from source: ${source}`);
 
     // Choose the correct scraper based on the source
@@ -56,11 +64,21 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('Error in web scraper:', error);
+    console.error('Full error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
     
     return new Response(JSON.stringify({ 
       error: error.message || 'An unexpected error occurred',
       message: 'There was a problem processing your request',
       businesses: [],
+      debug: {
+        errorType: error.name,
+        timestamp: new Date().toISOString()
+      }
     }), {
       status: 200, // Return 200 to prevent edge function error
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -70,16 +88,25 @@ serve(async (req) => {
 
 async function scrapeYellowPages(location: string): Promise<any[]> {
   try {
-    // Format location for YellowPages URL structure
-    // Convert to format like "New York, NY" or just use as-is
-    const formattedLocation = encodeURIComponent(location.trim());
+    // Log the raw location before formatting
+    console.log('Raw location input:', location);
     
-    // Updated URL format - use "business" (singular) as search term
+    // Format location - try to extract city and state/province
+    const locationParts = location.split(',').map(part => part.trim());
+    const city = locationParts[0];
+    const region = locationParts[1] || '';
+    
+    console.log('Parsed location parts:', {
+      city,
+      region,
+      fullLocation: location
+    });
+
+    const formattedLocation = encodeURIComponent(`${city}${region ? `, ${region}` : ''}`);
     const url = `https://www.yellowpages.com/search?search_terms=business&geo_location_terms=${formattedLocation}`;
     
-    console.log(`Scraping URL: ${url}`);
-    
-    // Enhanced browser emulation with more realistic headers
+    console.log('Attempting to fetch URL:', url);
+
     const response = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -97,15 +124,21 @@ async function scrapeYellowPages(location: string): Promise<any[]> {
       }
     });
     
+    // Log detailed response info
+    console.log('YellowPages response:', {
+      status: response.status,
+      statusText: response.statusText,
+      headers: Object.fromEntries(response.headers.entries()),
+      url: response.url
+    });
+
     if (!response.ok) {
-      console.error(`YellowPages response status: ${response.status} ${response.statusText}`);
       throw new Error(`Failed to fetch YellowPages: ${response.status} ${response.statusText}`);
     }
-    
+
     const html = await response.text();
-    
-    // Log the first 500 characters of the response to debug
-    console.log(`YellowPages response preview: ${html.substring(0, 500)}...`);
+    console.log('Response HTML length:', html.length);
+    console.log('First 200 chars of response:', html.substring(0, 200));
     
     const dom = new DOMParser().parseFromString(html, 'text/html');
     
@@ -183,7 +216,12 @@ async function scrapeYellowPages(location: string): Promise<any[]> {
     
     return businesses;
   } catch (error) {
-    console.error('Error scraping YellowPages:', error);
+    console.error('Detailed YellowPages scraping error:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
     throw error;
   }
 }
