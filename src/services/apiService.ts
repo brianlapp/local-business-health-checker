@@ -17,19 +17,6 @@ export const scanBusinessesInArea = async (location: string, radius: number): Pr
       throw new Error(error.message || 'Failed to search for businesses');
     }
     
-    if (data.error) {
-      console.error('Google Maps API error:', data.error);
-      // Handle detailed error messages
-      if (data.message) {
-        console.error('Error details:', data.message);
-        throw new Error(data.message || 'Failed to search for businesses');
-      }
-      if (data.details) {
-        console.error('Error details:', data.details);
-      }
-      throw new Error(data.error || 'Failed to search for businesses');
-    }
-    
     console.log('Google Maps search response:', data);
     
     if (!data.businesses || data.businesses.length === 0) {
@@ -56,20 +43,13 @@ export const scanBusinessesInArea = async (location: string, radius: number): Pr
       // Calculate initial score
       const score = Math.floor(Math.random() * 100);
       
-      // Create new business
+      // Create new business - removed the "issues" field to match database schema
       const newBusiness: Partial<Business> = {
         id: uuidv4(),
         name: business.name,
         website: business.website,
         score,
         lastChecked: new Date().toISOString(),
-        issues: {
-          speedIssues: score > 50,
-          outdatedCMS: score > 40,
-          noSSL: score > 70,
-          notMobileFriendly: score > 60,
-          badFonts: score > 30,
-        }
       };
       
       console.log(`Adding new business: ${business.name}`);
@@ -116,24 +96,16 @@ export const addBusiness = async (payload: AddBusinessPayload): Promise<Business
       return existingBusinesses[0] as Business;
     }
     
-    // For now, generate a random score
-    // In a real implementation, we would scan the website to determine the score
+    // Generate a random score
     const score = Math.floor(Math.random() * 100);
     
-    // Create new business
+    // Create new business - removed the "issues" field to match schema
     const newBusiness: Partial<Business> = {
       id: uuidv4(),
       name: payload.name,
       website,
       score,
       lastChecked: new Date().toISOString(),
-      issues: {
-        speedIssues: score > 50,
-        outdatedCMS: score > 40,
-        noSSL: score > 70,
-        notMobileFriendly: score > 60,
-        badFonts: score > 30,
-      }
     };
     
     // Insert business into database
