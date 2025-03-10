@@ -15,4 +15,23 @@ export interface Business {
   gtmetrix_report_url?: string;
   last_lighthouse_scan?: string;
   last_gtmetrix_scan?: string;
+  
+  // Frontend property aliases (camelCase versions)
+  speedScore?: number;
+  lastChecked?: string;
+  lighthouseScore?: number;
+  gtmetrixScore?: number;
+  lighthouseReportUrl?: string;
+  gtmetrixReportUrl?: string;
+  lastLighthouseScan?: string;
+  lastGtmetrixScan?: string;
+  
+  // Business issue tracking
+  issues?: {
+    speedIssues: boolean;
+    outdatedCMS: boolean;
+    noSSL: boolean;
+    notMobileFriendly: boolean;
+    badFonts: boolean;
+  };
 }

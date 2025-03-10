@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { Business } from '@/types/business';
 import { toast } from 'sonner';
@@ -13,19 +12,15 @@ export async function getBusinesses(): Promise<Business[]> {
     if (error) throw error;
     
     return data.map(business => ({
-      id: business.id,
-      name: business.name,
-      website: business.website,
-      score: business.score || 0,
-      cms: business.cms || undefined,
-      speedScore: business.lighthouse_score || business.speed_score || undefined,
-      lastChecked: business.last_checked || undefined,
-      lighthouseScore: business.lighthouse_score || undefined,
-      gtmetrixScore: business.gtmetrix_score || undefined,
-      lighthouseReportUrl: business.lighthouse_report_url || undefined,
-      gtmetrixReportUrl: business.gtmetrix_report_url || undefined,
-      lastLighthouseScan: business.last_lighthouse_scan || undefined,
-      lastGtmetrixScan: business.last_gtmetrix_scan || undefined,
+      ...business,
+      lastChecked: business.last_checked,
+      speedScore: business.speed_score,
+      lighthouseScore: business.lighthouse_score,
+      gtmetrixScore: business.gtmetrix_score,
+      lighthouseReportUrl: business.lighthouse_report_url,
+      gtmetrixReportUrl: business.gtmetrix_report_url,
+      lastLighthouseScan: business.last_lighthouse_scan,
+      lastGtmetrixScan: business.last_gtmetrix_scan,
       issues: generateIssues(business),
     }));
   } catch (error) {
@@ -44,8 +39,8 @@ export async function addBusiness(business: Omit<Business, 'id' | 'issues'>): Pr
         website: business.website,
         score: business.score,
         cms: business.cms,
-        lighthouse_score: business.lighthouseScore,
-        last_checked: business.lastChecked,
+        lighthouse_score: business.lighthouse_score || business.lighthouseScore,
+        last_checked: business.last_checked || business.lastChecked,
       })
       .select()
       .single();
@@ -54,19 +49,15 @@ export async function addBusiness(business: Omit<Business, 'id' | 'issues'>): Pr
     
     toast.success('Business added successfully');
     return {
-      id: data.id,
-      name: data.name,
-      website: data.website,
-      score: data.score || 0,
-      cms: data.cms || undefined,
-      speedScore: data.lighthouse_score || data.speed_score || undefined,
-      lastChecked: data.last_checked || undefined,
-      lighthouseScore: data.lighthouse_score || undefined,
-      gtmetrixScore: data.gtmetrix_score || undefined,
-      lighthouseReportUrl: data.lighthouse_report_url || undefined,
-      gtmetrixReportUrl: data.gtmetrix_report_url || undefined,
-      lastLighthouseScan: data.last_lighthouse_scan || undefined,
-      lastGtmetrixScan: data.last_gtmetrix_scan || undefined,
+      ...data,
+      lastChecked: data.last_checked,
+      speedScore: data.speed_score,
+      lighthouseScore: data.lighthouse_score,
+      gtmetrixScore: data.gtmetrix_score,
+      lighthouseReportUrl: data.lighthouse_report_url,
+      gtmetrixReportUrl: data.gtmetrix_report_url,
+      lastLighthouseScan: data.last_lighthouse_scan,
+      lastGtmetrixScan: data.last_gtmetrix_scan,
       issues: generateIssues(data),
     };
   } catch (error) {
@@ -83,32 +74,32 @@ export async function updateBusiness(id: string, updates: Partial<Omit<Business,
       website: updates.website,
       score: updates.score,
       cms: updates.cms,
-      last_checked: updates.lastChecked,
+      last_checked: updates.last_checked || updates.lastChecked,
     };
     
     // Map the new properties to the database column names
-    if (updates.lighthouseScore !== undefined) {
-      updateData.lighthouse_score = updates.lighthouseScore;
+    if (updates.lighthouse_score !== undefined || updates.lighthouseScore !== undefined) {
+      updateData.lighthouse_score = updates.lighthouse_score || updates.lighthouseScore;
     }
     
-    if (updates.gtmetrixScore !== undefined) {
-      updateData.gtmetrix_score = updates.gtmetrixScore;
+    if (updates.gtmetrix_score !== undefined || updates.gtmetrixScore !== undefined) {
+      updateData.gtmetrix_score = updates.gtmetrix_score || updates.gtmetrixScore;
     }
     
-    if (updates.lighthouseReportUrl !== undefined) {
-      updateData.lighthouse_report_url = updates.lighthouseReportUrl;
+    if (updates.lighthouse_report_url !== undefined || updates.lighthouseReportUrl !== undefined) {
+      updateData.lighthouse_report_url = updates.lighthouse_report_url || updates.lighthouseReportUrl;
     }
     
-    if (updates.gtmetrixReportUrl !== undefined) {
-      updateData.gtmetrix_report_url = updates.gtmetrixReportUrl;
+    if (updates.gtmetrix_report_url !== undefined || updates.gtmetrixReportUrl !== undefined) {
+      updateData.gtmetrix_report_url = updates.gtmetrix_report_url || updates.gtmetrixReportUrl;
     }
     
-    if (updates.lastLighthouseScan !== undefined) {
-      updateData.last_lighthouse_scan = updates.lastLighthouseScan;
+    if (updates.last_lighthouse_scan !== undefined || updates.lastLighthouseScan !== undefined) {
+      updateData.last_lighthouse_scan = updates.last_lighthouse_scan || updates.lastLighthouseScan;
     }
     
-    if (updates.lastGtmetrixScan !== undefined) {
-      updateData.last_gtmetrix_scan = updates.lastGtmetrixScan;
+    if (updates.last_gtmetrix_scan !== undefined || updates.lastGtmetrixScan !== undefined) {
+      updateData.last_gtmetrix_scan = updates.last_gtmetrix_scan || updates.lastGtmetrixScan;
     }
     
     const { error } = await supabase

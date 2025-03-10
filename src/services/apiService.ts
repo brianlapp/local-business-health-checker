@@ -63,7 +63,12 @@ export const scanBusinessesInArea = async (location: string, radius: number): Pr
       if (insertError) {
         console.error(`Error inserting business ${business.name}:`, insertError);
       } else {
-        businesses.push(newBusiness as Business);
+        // Add frontend property aliases
+        businesses.push({
+          ...newBusiness,
+          lastChecked: newBusiness.last_checked,
+          issues: generateIssues(newBusiness as Business)
+        } as Business);
       }
     }
     
@@ -94,7 +99,19 @@ export const addBusiness = async (payload: AddBusinessPayload): Promise<Business
       .limit(1);
       
     if (existingBusinesses && existingBusinesses.length > 0) {
-      return existingBusinesses[0] as Business;
+      const business = existingBusinesses[0] as Business;
+      return {
+        ...business,
+        lastChecked: business.last_checked,
+        speedScore: business.speed_score,
+        lighthouseScore: business.lighthouse_score,
+        gtmetrixScore: business.gtmetrix_score,
+        lighthouseReportUrl: business.lighthouse_report_url,
+        gtmetrixReportUrl: business.gtmetrix_report_url,
+        lastLighthouseScan: business.last_lighthouse_scan,
+        lastGtmetrixScan: business.last_gtmetrix_scan,
+        issues: generateIssues(business)
+      };
     }
     
     // Generate a random score
@@ -116,7 +133,11 @@ export const addBusiness = async (payload: AddBusinessPayload): Promise<Business
       
     if (insertError) throw new Error(insertError.message);
     
-    return newBusiness as Business;
+    return {
+      ...newBusiness as Business,
+      lastChecked: newBusiness.last_checked,
+      issues: generateIssues(newBusiness as Business)
+    };
   } catch (error) {
     console.error('Error adding business:', error);
     throw error;
@@ -134,9 +155,51 @@ export const getBusinesses = async (): Promise<Business[]> => {
       return [];
     }
 
-    return data as Business[];
+    // Map database results to include frontend properties
+    return data.map(business => ({
+      ...business,
+      lastChecked: business.last_checked,
+      speedScore: business.speed_score,
+      lighthouseScore: business.lighthouse_score,
+      gtmetrixScore: business.gtmetrix_score,
+      lighthouseReportUrl: business.lighthouse_report_url,
+      gtmetrixReportUrl: business.gtmetrix_report_url,
+      lastLighthouseScan: business.last_lighthouse_scan,
+      lastGtmetrixScan: business.last_gtmetrix_scan,
+      issues: generateIssues(business)
+    }));
   } catch (error) {
     console.error('Error fetching businesses:', error);
     return [];
   }
 };
+
+// Helper function to generate issues for a business
+function generateIssues(business: Business) {
+  // Use lighthouse_score as primary, fallback to speed_score, or default to 0
+  const speedScore = business.lighthouse_score || business.speed_score || 0;
+  
+  return {
+    speedIssues: speedScore < 50,
+    outdatedCMS: isCMSOutdated(business.cms),
+    noSSL: !isWebsiteSecure(business.website),
+    notMobileFriendly: Math.random() > 0.5, // Example placeholder
+    badFonts: Math.random() > 0.7, // Example placeholder
+  };
+}
+
+function isCMSOutdated(cms: string | null | undefined): boolean {
+  if (!cms) return false;
+  
+  const outdatedCMSList = [
+    'WordPress 5.4', 'WordPress 5.5', 'WordPress 5.6',
+    'Joomla 3.8', 'Joomla 3.9',
+    'Drupal 7', 'Drupal 8'
+  ];
+  
+  return outdatedCMSList.some(outdatedCMS => cms.includes(outdatedCMS));
+}
+
+function isWebsiteSecure(website: string): boolean {
+  return website.startsWith('https://') || !website.startsWith('http://');
+}
