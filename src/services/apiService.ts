@@ -19,7 +19,7 @@ export const scanBusinessesInArea = async (location: string, radius: number): Pr
     
     if (data.error) {
       console.error('Google Maps API error:', data.error);
-      // New handling for detailed error messages
+      // Handle detailed error messages
       if (data.message) {
         console.error('Error details:', data.message);
         throw new Error(data.message || 'Failed to search for businesses');
@@ -41,15 +41,11 @@ export const scanBusinessesInArea = async (location: string, radius: number): Pr
     const businesses: Business[] = [];
     
     for (const business of data.businesses) {
-      // For now, treat all businesses as having a website
-      // This is a temporary workaround since direct website info isn't in the initial results
-      const website = business.website || `example-${business.place_id}.com`;
-      
       // Check if business already exists
       const { data: existingBusinesses } = await supabase
         .from('businesses')
         .select('id')
-        .eq('website', website)
+        .eq('website', business.website)
         .limit(1);
         
       if (existingBusinesses && existingBusinesses.length > 0) {
@@ -64,7 +60,7 @@ export const scanBusinessesInArea = async (location: string, radius: number): Pr
       const newBusiness: Partial<Business> = {
         id: uuidv4(),
         name: business.name,
-        website,
+        website: business.website,
         score,
         lastChecked: new Date().toISOString(),
         issues: {
