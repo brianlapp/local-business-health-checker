@@ -1,11 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Business } from '@/types/business';
 import BusinessCard from './BusinessCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Filter, RefreshCw, ArrowUpDown, Map, Grid, List } from 'lucide-react';
+import { Filter, RefreshCw, ArrowUpDown, Map, Grid, List, Plus } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -79,9 +80,13 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
         </div>
         
         <div className="flex items-center space-x-3">
-          <Button className="hidden sm:flex">
+          <Button as={Link} to="/map-scanner">
             <Map className="mr-2 h-4 w-4" />
             Scan Area
+          </Button>
+          <Button as={Link} to="/add-business" variant="outline">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Business
           </Button>
           <Button variant="outline" onClick={handleRefresh} disabled={loading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />

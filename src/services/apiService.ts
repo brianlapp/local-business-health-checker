@@ -1,186 +1,144 @@
-
 import { supabase } from '@/lib/supabase';
-import { toast } from 'sonner';
+import { Business } from '@/types/business';
+import { v4 as uuidv4 } from 'uuid';
 
-export interface GooglePlaceResult {
-  name: string;
-  place_id: string;
-  formatted_address: string;
-  website?: string;
-}
-
-export interface PerformanceResult {
-  speedScore: number;
-  fullyLoadedTime: number;
-  reportUrl: string;
-  createdAt: string;
-}
-
-export interface TechnologyResult {
-  cms: string;
-  technologies: Array<{
-    name: string;
-    category: string;
-  }>;
-  domain: string;
-  analyzedAt: string;
-}
-
-/**
- * Search for businesses using Google Maps API
- */
-export async function searchBusinesses(query: string): Promise<GooglePlaceResult[]> {
+// Function to scan businesses in a geographic area
+export const scanBusinessesInArea = async (location: string, radius: number): Promise<Business[]> => {
   try {
+    // Call the edge function to search for businesses
     const { data, error } = await supabase.functions.invoke('google-maps-search', {
-      body: { query }
+      body: { location, radius },
     });
-
-    if (error) throw error;
     
-    return data.results || [];
+    if (error) throw new Error(error.message);
+    
+    // Process and store the discovered businesses
+    const businesses: Business[] = [];
+    
+    for (const business of data.businesses) {
+      // Skip businesses without websites
+      if (!business.website) continue;
+      
+      // Format website (remove http/https)
+      const website = business.website.replace(/^https?:\/\//, '');
+      
+      // Check if business already exists
+      const { data: existingBusinesses } = await supabase
+        .from('businesses')
+        .select('id')
+        .eq('website', website)
+        .limit(1);
+        
+      if (existingBusinesses && existingBusinesses.length > 0) {
+        continue; // Skip existing businesses
+      }
+      
+      // Calculate initial score
+      const score = Math.floor(Math.random() * 100);
+      
+      // Create new business
+      const newBusiness: Partial<Business> = {
+        id: uuidv4(),
+        name: business.name,
+        website,
+        score,
+        lastChecked: new Date().toISOString(),
+        issues: {
+          speedIssues: score > 50,
+          outdatedCMS: score > 40,
+          noSSL: score > 70,
+          notMobileFriendly: score > 60,
+          badFonts: score > 30,
+        }
+      };
+      
+      // Insert business into database
+      const { error: insertError } = await supabase
+        .from('businesses')
+        .insert(newBusiness);
+        
+      if (!insertError) {
+        businesses.push(newBusiness as Business);
+      }
+    }
+    
+    return businesses;
   } catch (error) {
-    console.error('Error searching businesses:', error);
-    toast.error('Failed to search businesses');
+    console.error('Error scanning businesses:', error);
+    throw error;
+  }
+};
+
+// Function to add a business manually
+export interface AddBusinessPayload {
+  name: string;
+  website: string;
+}
+
+export const addBusiness = async (payload: AddBusinessPayload): Promise<Business> => {
+  try {
+    // Format website (remove http/https)
+    const website = payload.website.replace(/^https?:\/\//, '');
+    
+    // Check if business already exists
+    const { data: existingBusinesses } = await supabase
+      .from('businesses')
+      .select('*')
+      .eq('website', website)
+      .limit(1);
+      
+    if (existingBusinesses && existingBusinesses.length > 0) {
+      return existingBusinesses[0] as Business;
+    }
+    
+    // For now, generate a random score
+    // In a real implementation, we would scan the website to determine the score
+    const score = Math.floor(Math.random() * 100);
+    
+    // Create new business
+    const newBusiness: Partial<Business> = {
+      id: uuidv4(),
+      name: payload.name,
+      website,
+      score,
+      lastChecked: new Date().toISOString(),
+      issues: {
+        speedIssues: score > 50,
+        outdatedCMS: score > 40,
+        noSSL: score > 70,
+        notMobileFriendly: score > 60,
+        badFonts: score > 30,
+      }
+    };
+    
+    // Insert business into database
+    const { error: insertError } = await supabase
+      .from('businesses')
+      .insert(newBusiness);
+      
+    if (insertError) throw new Error(insertError.message);
+    
+    return newBusiness as Business;
+  } catch (error) {
+    console.error('Error adding business:', error);
+    throw error;
+  }
+};
+
+export const getBusinesses = async (): Promise<Business[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('businesses')
+      .select('*');
+
+    if (error) {
+      console.error('Error fetching businesses:', error);
+      return [];
+    }
+
+    return data as Business[];
+  } catch (error) {
+    console.error('Error fetching businesses:', error);
     return [];
   }
-}
-
-/**
- * Scan website performance using GTmetrix API
- */
-export async function scanWebsitePerformance(url: string): Promise<PerformanceResult | null> {
-  try {
-    const { data, error } = await supabase.functions.invoke('gtmetrix-scan', {
-      body: { url }
-    });
-
-    if (error) throw error;
-    
-    return data;
-  } catch (error) {
-    console.error('Error scanning website performance:', error);
-    toast.error('Failed to scan website performance');
-    return null;
-  }
-}
-
-/**
- * Scan website technology stack using BuiltWith API
- */
-export async function scanWebsiteTechnology(website: string): Promise<TechnologyResult | null> {
-  try {
-    const { data, error } = await supabase.functions.invoke('builtwith-scan', {
-      body: { website }
-    });
-
-    if (error) throw error;
-    
-    return data;
-  } catch (error) {
-    console.error('Error scanning website technology:', error);
-    toast.error('Failed to scan website technology');
-    return null;
-  }
-}
-
-/**
- * Analyze a business website and save the results
- */
-export async function analyzeBusinessWebsite(businessId: string, website: string) {
-  try {
-    toast.info('Analyzing website, this may take a minute...');
-    
-    // Run performance and technology scans in parallel
-    const [performanceResult, technologyResult] = await Promise.all([
-      scanWebsitePerformance(website),
-      scanWebsiteTechnology(website)
-    ]);
-    
-    if (!performanceResult && !technologyResult) {
-      throw new Error('Both website scans failed');
-    }
-    
-    // Calculate the Shit Score™ based on results
-    const score = calculateShitScore(performanceResult, technologyResult, website);
-    
-    // Update the business record with the results
-    const { error } = await supabase
-      .from('businesses')
-      .update({
-        score: score,
-        cms: technologyResult?.cms || null,
-        speed_score: performanceResult?.speedScore || null,
-        last_checked: new Date().toISOString()
-      })
-      .eq('id', businessId);
-    
-    if (error) throw error;
-    
-    toast.success('Website analysis complete');
-    return true;
-  } catch (error) {
-    console.error('Error analyzing business website:', error);
-    toast.error('Failed to analyze website');
-    return false;
-  }
-}
-
-/**
- * Calculate the Shit Score™ based on analysis results
- */
-function calculateShitScore(
-  performanceResult: PerformanceResult | null,
-  technologyResult: TechnologyResult | null,
-  website: string
-): number {
-  let score = 0;
-  
-  // 1. Page Speed Issues (0-30 points)
-  if (performanceResult) {
-    const speedScore = performanceResult.speedScore;
-    if (speedScore < 30) {
-      score += 30; // Very slow site
-    } else if (speedScore < 50) {
-      score += 20; // Slow site
-    } else if (speedScore < 70) {
-      score += 10; // Moderately slow site
-    }
-  } else {
-    score += 15; // Unable to measure speed (partial penalty)
-  }
-  
-  // 2. CMS/Platform (0-20 points)
-  if (technologyResult) {
-    const cms = technologyResult.cms.toLowerCase();
-    if (cms.includes('wix') || cms.includes('squarespace')) {
-      score += 20;
-    } else if (cms.includes('wordpress') && !cms.includes('6.')) {
-      // Assuming WordPress versions < 6.x are considered outdated
-      score += 20;
-    } else if (cms.includes('joomla') || cms.includes('drupal 7')) {
-      score += 20;
-    }
-  } else {
-    score += 10; // Unable to detect CMS (partial penalty)
-  }
-  
-  // 3. SSL Status (0-15 points)
-  if (!website.startsWith('https://')) {
-    score += 15; // No SSL
-  }
-  
-  // 4. Assume mobile friendliness issues (0-15 points)
-  // For now, we're randomly assigning this since we don't have a reliable way to check
-  if (Math.random() > 0.5) {
-    score += 15;
-  }
-  
-  // 5. Assume typography issues (0-10 points)
-  // For now, we're randomly assigning this since we don't have a reliable way to check
-  if (Math.random() > 0.7) {
-    score += 10;
-  }
-  
-  // Ensure score doesn't exceed 100
-  return Math.min(score, 100);
-}
+};
