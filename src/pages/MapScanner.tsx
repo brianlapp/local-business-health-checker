@@ -27,6 +27,20 @@ const MapScanner = () => {
     return locationStr.replace(/\s+/g, ' ').trim().replace(/\s*,\s*/g, ', ');
   };
   
+  // Function to validate Canadian location format
+  const validateCanadianLocation = (location: string): boolean => {
+    const locationParts = location.split(',').map(part => part.trim());
+    
+    // Check if the country part exists and is Canada
+    if (locationParts.length === 3) {
+      const country = locationParts[2].toLowerCase();
+      return country === 'canada' || country === 'ca';
+    }
+    
+    // If only two parts (city, province), we'll assume it's Canada
+    return locationParts.length === 2;
+  };
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!location) {
@@ -34,16 +48,25 @@ const MapScanner = () => {
       return;
     }
     
-    // Check for proper location format
-    const locationParts = location.split(',').map(part => part.trim());
-    if (locationParts.length < 2) {
-      toast.warning('Location format should be "City, State" or "City, State, Country"');
-      setApiTip('For best results, use the format "City, State" or "City, State, Country" (e.g. "New York, NY" or "Toronto, Ontario, Canada")');
-      // Continue anyway, as the scraper will try its best with the input
+    // Format the location before validation and sending to API
+    const formattedLocation = formatLocation(location);
+    const locationParts = formattedLocation.split(',').map(part => part.trim());
+    
+    // Check for proper Canadian location format
+    if (!validateCanadianLocation(formattedLocation)) {
+      toast.warning('Please enter a valid Canadian location');
+      setApiTip('For best results, use the format "City, Province" or "City, Province, Canada" (e.g. "Toronto, Ontario" or "Vancouver, BC, Canada")');
+      // Continue anyway if it has at least city and province
+      if (locationParts.length < 2) {
+        return; // Stop if missing province
+      }
     }
     
-    // Format the location before sending to API
-    const formattedLocation = formatLocation(location);
+    // Ensure "Canada" is added if not present
+    let finalLocation = formattedLocation;
+    if (locationParts.length === 2) {
+      finalLocation = `${formattedLocation}, Canada`;
+    }
     
     setIsScanning(true);
     setProgress(0);
@@ -64,8 +87,8 @@ const MapScanner = () => {
         });
       }, 500);
       
-      toast.info(`Scanning for businesses in ${formattedLocation}...`);
-      const businesses = await scanBusinessesInArea(formattedLocation, source);
+      toast.info(`Scanning for businesses in ${finalLocation}...`);
+      const businesses = await scanBusinessesInArea(finalLocation, source);
       
       clearInterval(progressInterval);
       setProgress(100);
@@ -75,17 +98,17 @@ const MapScanner = () => {
       setUsingMockData(mockDataCheck);
       
       if (businesses.length === 0) {
-        setError(`No businesses found in ${formattedLocation}. Try a different location or data source.`);
+        setError(`No businesses found in ${finalLocation}. Try a different location or data source.`);
         toast.info('No businesses found in this area. Try a different search.');
-        setApiTip('Try using a more specific location or a different area. Make sure to include the city and state/province in the format "City, State" or "City, State, Country".');
+        setApiTip('Try using a more specific location or a different area. Make sure to include the city and province in the format "City, Province" or "City, Province, Canada".');
       } else {
         setScannedBusinesses(businesses);
         
         if (mockDataCheck) {
-          toast.success(`Found ${businesses.length} sample businesses for ${formattedLocation}`);
+          toast.success(`Found ${businesses.length} sample businesses for ${finalLocation}`);
           setApiTip('We\'re showing sample data because our scraper couldn\'t access the real business directory. For production use, you would need to integrate with a business data API like Google Places or Yelp.');
         } else {
-          toast.success(`Found ${businesses.length} businesses in ${formattedLocation}`);
+          toast.success(`Found ${businesses.length} businesses in ${finalLocation}`);
         }
       }
     } catch (error: any) {
@@ -117,8 +140,8 @@ const MapScanner = () => {
     <div className="container py-8">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h2 className="text-3xl font-bold">Area Scanner</h2>
-          <p className="text-muted-foreground">Find businesses in a specific area</p>
+          <h2 className="text-3xl font-bold">Canadian Business Scanner</h2>
+          <p className="text-muted-foreground">Find businesses in Canadian cities</p>
         </div>
         <Button variant="outline" onClick={handleViewAll}>
           View All Businesses
@@ -134,13 +157,13 @@ const MapScanner = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium" htmlFor="location">
-                  Location
+                  Canadian Location
                 </label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="location"
-                    placeholder="City, State/Province, Country"
+                    placeholder="City, Province, Canada"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     className="pl-10"
@@ -148,8 +171,8 @@ const MapScanner = () => {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Use format: "City, State/Province" or "City, State/Province, Country"<br />
-                  Examples: "New York, NY" or "Toronto, Ontario, Canada"
+                  Use format: "City, Province" or "City, Province, Canada"<br />
+                  Examples: "Toronto, Ontario" or "Vancouver, BC, Canada"
                 </p>
               </div>
               
@@ -174,7 +197,7 @@ const MapScanner = () => {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Choose where to scrape business data from
+                  Choose where to scrape Canadian business data from
                 </p>
               </div>
               
@@ -254,8 +277,8 @@ const MapScanner = () => {
                 <MapPin className="h-12 w-12 mx-auto text-muted-foreground opacity-20" />
                 <p className="mt-2 text-muted-foreground">
                   {isScanning 
-                    ? 'Scanning for businesses...' 
-                    : 'No businesses scanned yet. Enter a location and start scanning.'}
+                    ? 'Scanning for Canadian businesses...' 
+                    : 'No businesses scanned yet. Enter a Canadian location and start scanning.'}
                 </p>
               </div>
             ) : (

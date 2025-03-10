@@ -8,7 +8,7 @@ RED="\033[0;31m"
 NC="\033[0m" # No Color
 
 echo -e "${YELLOW}Starting local business scraper test for Carleton Place, Ontario, Canada...${NC}"
-echo -e "${YELLOW}Using format: City, State/Province, Country${NC}"
+echo -e "${YELLOW}Using format: City, Province, Country${NC}"
 
 # Check if Supabase CLI is installed
 if ! command -v supabase &> /dev/null; then
