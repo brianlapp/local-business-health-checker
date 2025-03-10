@@ -20,6 +20,12 @@ export const scanBusinessesInArea = async (location: string, radius: number): Pr
     
     console.log('Google Maps search response:', data);
     
+    // Check if the response contains a billing issue flag
+    if (data.billing_issue) {
+      console.error('Google Cloud billing issue detected:', data.error_message);
+      throw new Error('Google Cloud Billing Issue: Your Google Cloud account has payment problems that need to be resolved.');
+    }
+    
     // Check if the response contains an error from the Google Maps API
     if (data.error) {
       console.error('Google Maps API error:', data.error);

@@ -76,14 +76,26 @@ serve(async (req) => {
       console.log(`Google Maps API response status: ${searchData.status}`);
       console.log(`Response details: ${JSON.stringify(searchData, null, 2).substring(0, 500)}...`);
       
-      // Handle API errors
+      // Handle API errors - specifically watch for billing-related issues
       if (searchData.status === 'REQUEST_DENIED') {
         console.error(`Authorization error: ${searchData.error_message || 'This API project is not authorized to use this API.'}`);
         
+        // Check for specific billing-related messages
+        const errorMessage = searchData.error_message || '';
+        const isBillingIssue = errorMessage.includes('billing') || 
+                              errorMessage.includes('payment') || 
+                              errorMessage.includes('not authorized') ||
+                              errorMessage.includes('API project') ||
+                              errorMessage.toLowerCase().includes('enabled');
+        
         return new Response(JSON.stringify({ 
           error: 'Google Maps API authorization error',
-          message: searchData.error_message || 'API key may have billing issues. Please check your Google Cloud Console billing settings.',
-          details: 'If you recently changed payment methods, it may take some time to propagate.',
+          message: isBillingIssue 
+            ? 'Your Google Cloud account has a billing issue. Please check your payment method and billing status in Google Cloud Console.'
+            : 'API key may have other authorization issues. Please check your Google Cloud Console.',
+          details: 'We detected this is likely a billing/payment issue based on the error message from Google. You need to resolve payment issues in your Google Cloud Console.',
+          billing_issue: isBillingIssue,
+          error_message: searchData.error_message,
           businesses: []
         }), {
           status: 200, // Return 200 to prevent edge function error
@@ -162,7 +174,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ 
         error: 'Google Maps API fetch error',
         message: fetchError.message || 'Failed to connect to Google Maps API',
-        details: 'This could be due to network issues or invalid API key format',
+        details: 'This could be due to network issues, invalid API key format, or billing issues with your Google Cloud account',
         businesses: []
       }), {
         status: 200, // Return 200 to prevent edge function error

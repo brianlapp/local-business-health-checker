@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, MapPin, Loader2, AlertCircle, Info, ExternalLink } from 'lucide-react';
+import { Search, MapPin, Loader2, AlertCircle, Info, ExternalLink, DollarSign, CreditCard } from 'lucide-react';
 import { scanBusinessesInArea } from '@/services/apiService';
 import { Business } from '@/types/business';
 import { toast } from 'sonner';
@@ -18,6 +18,7 @@ const MapScanner = () => {
   const [error, setError] = useState<string | null>(null);
   const [apiTip, setApiTip] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
+  const [isBillingIssue, setIsBillingIssue] = useState(false);
   const navigate = useNavigate();
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,6 +34,7 @@ const MapScanner = () => {
     setError(null);
     setApiTip(null);
     setErrorDetails(null);
+    setIsBillingIssue(false);
     
     try {
       // Start the progress animation
@@ -64,8 +66,16 @@ const MapScanner = () => {
       console.error('Scan error:', error);
       setProgress(100);
       
+      // Check for Google Cloud billing issues
+      if (error.message && error.message.includes('Billing Issue')) {
+        setError('Google Cloud Billing Issue Detected');
+        setIsBillingIssue(true);
+        setApiTip('Your Google Cloud account has payment problems that need to be resolved. Please check your billing status in Google Cloud Console.');
+        setErrorDetails('The error message from Google indicates there are payment issues with your Google Cloud account. This is preventing the Places API from working properly. You need to resolve the payment issues in your Google Cloud billing dashboard.');
+        toast.error('Google Cloud billing issue detected');
+      }
       // Check for Google Maps API authorization errors
-      if (error.message && (
+      else if (error.message && (
           error.message.includes('API key') || 
           error.message.includes('authorization') || 
           error.message.includes('REQUEST_DENIED') ||
@@ -73,7 +83,7 @@ const MapScanner = () => {
           error.message.includes('not authorized')
       )) {
         setError('Google Maps API Authorization Error');
-        setApiTip('There might be an issue with the Google Maps API key. This could be related to billing problems on your Google Cloud account.');
+        setApiTip('There might be an issue with the Google Maps API key or its configuration. This could be related to billing problems on your Google Cloud account.');
         setErrorDetails('If you recently changed your payment method, it may take some time for the changes to propagate through Google\'s systems. Please check your Google Cloud Console billing section.');
         toast.error('Google Maps API authorization error');
       } else if (error.message && error.message.includes('Edge Function')) {
@@ -188,8 +198,12 @@ const MapScanner = () => {
           </CardHeader>
           <CardContent>
             {error && (
-              <div className="bg-destructive/10 text-destructive p-4 rounded-md mb-4 flex items-start">
-                <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+              <div className={`${isBillingIssue ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400' : 'bg-destructive/10 text-destructive'} p-4 rounded-md mb-4 flex items-start`}>
+                {isBillingIssue ? (
+                  <CreditCard className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+                ) : (
+                  <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+                )}
                 <div>
                   <p className="font-medium">{error}</p>
                   {apiTip && (
@@ -200,16 +214,28 @@ const MapScanner = () => {
                   {errorDetails && (
                     <div className="mt-2 text-sm whitespace-pre-line border-t border-destructive/20 pt-2">
                       <p>{errorDetails}</p>
-                      {error.includes('Google Maps API') && (
+                      
+                      <div className="mt-3 flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0">
                         <a 
                           href="https://console.cloud.google.com/billing" 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="inline-flex items-center mt-2 text-destructive hover:underline"
+                          className="inline-flex items-center justify-center py-2 px-3 rounded-md bg-orange-200 text-orange-800 dark:bg-orange-800 dark:text-orange-100 hover:opacity-90 text-sm font-medium"
                         >
-                          Check Google Cloud Billing <ExternalLink className="h-3 w-3 ml-1" />
+                          <DollarSign className="h-4 w-4 mr-1" />
+                          Check Google Cloud Billing
                         </a>
-                      )}
+                        
+                        <a 
+                          href="https://console.cloud.google.com/apis/credentials" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center py-2 px-3 rounded-md bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-100 hover:opacity-90 text-sm font-medium"
+                        >
+                          <ExternalLink className="h-4 w-4 mr-1" />
+                          Check API Key Settings
+                        </a>
+                      </div>
                     </div>
                   )}
                 </div>
