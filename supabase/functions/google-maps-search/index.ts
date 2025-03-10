@@ -51,6 +51,19 @@ serve(async (req) => {
     console.log(`Places API Request URL: ${searchUrl.toString().replace(GOOGLE_MAPS_API_KEY, 'REDACTED')}`);
     
     const searchResponse = await fetch(searchUrl.toString());
+    
+    // Check if the response is ok before getting JSON
+    if (!searchResponse.ok) {
+      console.error(`Failed to fetch data: ${searchResponse.status} ${searchResponse.statusText}`);
+      return new Response(JSON.stringify({
+        error: `Google API request failed with status: ${searchResponse.status}`,
+        message: 'Failed to connect to Google Maps API'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
     const searchData = await searchResponse.json();
     
     console.log(`Google Maps API response status: ${searchData.status}`);
@@ -63,7 +76,7 @@ serve(async (req) => {
         error: 'Google Maps API authorization error',
         message: searchData.error_message || 'API key may have issues with authorization or billing',
       }), {
-        status: 401,
+        status: 200, // Return 200 to prevent edge function error, even though there's an API error
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -74,8 +87,9 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         error: `Google Maps API error: ${searchData.status}`,
         message: searchData.error_message || 'Failed to search for businesses',
+        businesses: [],
       }), {
-        status: 500,
+        status: 200, // Return 200 to prevent edge function error
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -95,6 +109,12 @@ serve(async (req) => {
           
           try {
             const detailsResponse = await fetch(detailsUrl.toString());
+            
+            if (!detailsResponse.ok) {
+              console.error(`Failed to fetch details: ${detailsResponse.status}`);
+              continue;
+            }
+            
             const detailsData = await detailsResponse.json();
             
             if (detailsData.status === 'OK' && detailsData.result) {
@@ -119,20 +139,24 @@ serve(async (req) => {
     
     console.log(`Found ${businesses.length} businesses with websites`);
     
+    // Always return a 200 status code
     return new Response(JSON.stringify({ 
       businesses,
       status: 'OK',
     }), {
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
     
   } catch (error) {
     console.error('Error in Google Maps search:', error);
     
+    // Return a 200 status to prevent edge function error
     return new Response(JSON.stringify({ 
       error: error.message || 'An unexpected error occurred',
+      businesses: [],
     }), {
-      status: 500,
+      status: 200, 
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

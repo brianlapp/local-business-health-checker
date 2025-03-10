@@ -66,11 +66,16 @@ const MapScanner = () => {
       if (error.message && (
           error.message.includes('API key') || 
           error.message.includes('authorization') || 
-          error.message.includes('REQUEST_DENIED')
+          error.message.includes('REQUEST_DENIED') ||
+          error.message.includes('OVER_QUERY_LIMIT')
       )) {
         setError('Google Maps API Authorization Error');
         setApiTip('There might be an issue with the Google Maps API key. It may need to be activated in the Google Cloud Console, or it may have billing issues.');
         toast.error('Google Maps API authorization error');
+      } else if (error.message && error.message.includes('Edge Function')) {
+        setError('Edge Function Error');
+        setApiTip('There was an issue with the edge function. This is likely a temporary issue. Please try again or check if your Supabase instance is running correctly.');
+        toast.error('Edge function error, please try again');
       } else {
         setError(error.message || 'Failed to scan area, please try again');
         toast.error('Failed to scan area: ' + (error.message || 'Unknown error'));
