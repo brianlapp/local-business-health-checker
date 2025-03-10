@@ -65,7 +65,21 @@ serve(async (req) => {
     
     console.log(`Google Maps API response status: ${data.status}`);
     
-    // Check for API errors
+    // Special handling for authorization errors
+    if (data.status === 'REQUEST_DENIED' && data.error_message?.includes('not authorized')) {
+      console.error(`Authorization error: ${data.error_message}`);
+      return new Response(JSON.stringify({ 
+        error: 'Google Maps API authorization error',
+        message: 'The provided API key is not authorized to use the Places API. Please make sure you have enabled the "Places API" (not just Maps JavaScript API) in your Google Cloud Console and are using an API key with Places API access.',
+        status: data.status,
+        businesses: [] 
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    // Check for other API errors
     if (data.error_message) {
       console.error(`Google Maps API error: ${data.error_message}`);
       return new Response(JSON.stringify({ 

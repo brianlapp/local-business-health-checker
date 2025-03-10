@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, MapPin, Loader2, AlertCircle } from 'lucide-react';
+import { Search, MapPin, Loader2, AlertCircle, Info } from 'lucide-react';
 import { scanBusinessesInArea } from '@/services/apiService';
 import { Business } from '@/types/business';
 import { toast } from 'sonner';
@@ -16,6 +16,7 @@ const MapScanner = () => {
   const [progress, setProgress] = useState(0);
   const [scannedBusinesses, setScannedBusinesses] = useState<Business[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [apiTip, setApiTip] = useState<string | null>(null);
   const navigate = useNavigate();
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -29,6 +30,7 @@ const MapScanner = () => {
     setProgress(0);
     setScannedBusinesses([]);
     setError(null);
+    setApiTip(null);
     
     try {
       // Start the progress animation
@@ -57,8 +59,17 @@ const MapScanner = () => {
       }
     } catch (error: any) {
       console.error('Scan error:', error);
-      setError(error.message || 'Failed to scan area, please try again');
-      toast.error('Failed to scan area: ' + (error.message || 'Unknown error'));
+      setProgress(100);
+      
+      // Check for Google Maps API authorization errors
+      if (error.message && error.message.includes('API key is not authorized')) {
+        setError('Google Maps API Authorization Error');
+        setApiTip('Your Google Maps API key needs to have the "Places API" enabled. Please go to the Google Cloud Console, select your project, navigate to "APIs & Services" > "Library", search for "Places API", and enable it for your project.');
+        toast.error('Google Maps API authorization error');
+      } else {
+        setError(error.message || 'Failed to scan area, please try again');
+        toast.error('Failed to scan area: ' + (error.message || 'Unknown error'));
+      }
     } finally {
       setIsScanning(false);
     }
@@ -163,9 +174,23 @@ const MapScanner = () => {
           </CardHeader>
           <CardContent>
             {error && (
-              <div className="bg-destructive/10 text-destructive p-4 rounded-md mb-4 flex items-center">
-                <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
-                <p>{error}</p>
+              <div className="bg-destructive/10 text-destructive p-4 rounded-md mb-4 flex items-start">
+                <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium">{error}</p>
+                  {apiTip && (
+                    <div className="mt-2 text-sm">
+                      <p>{apiTip}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {apiTip && !error && (
+              <div className="bg-blue-50 text-blue-800 p-4 rounded-md mb-4 flex items-start dark:bg-blue-900/20 dark:text-blue-400">
+                <Info className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+                <p className="text-sm">{apiTip}</p>
               </div>
             )}
             

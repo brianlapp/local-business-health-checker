@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { Business } from '@/types/business';
 import { v4 as uuidv4 } from 'uuid';
@@ -19,6 +20,10 @@ export const scanBusinessesInArea = async (location: string, radius: number): Pr
     
     if (data.error) {
       console.error('Google Maps API error:', data.error);
+      if (data.message) {
+        console.error('Error details:', data.message);
+        throw new Error(data.message || 'Failed to search for businesses');
+      }
       if (data.details) {
         console.error('Error details:', data.details);
       }
