@@ -21,12 +21,29 @@ const MapScanner = () => {
   const [usingMockData, setUsingMockData] = useState(false);
   const navigate = useNavigate();
   
+  // Function to format location string
+  const formatLocation = (locationStr: string): string => {
+    // Remove extra spaces, normalize commas
+    return locationStr.replace(/\s+/g, ' ').trim().replace(/\s*,\s*/g, ', ');
+  };
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!location) {
       toast.error('Please enter a location to scan');
       return;
     }
+    
+    // Check for proper location format
+    const locationParts = location.split(',').map(part => part.trim());
+    if (locationParts.length < 2) {
+      toast.warning('Location format should be "City, State" or "City, State, Country"');
+      setApiTip('For best results, use the format "City, State" or "City, State, Country" (e.g. "New York, NY" or "Toronto, Ontario, Canada")');
+      // Continue anyway, as the scraper will try its best with the input
+    }
+    
+    // Format the location before sending to API
+    const formattedLocation = formatLocation(location);
     
     setIsScanning(true);
     setProgress(0);
@@ -47,30 +64,28 @@ const MapScanner = () => {
         });
       }, 500);
       
-      toast.info(`Scanning for businesses in ${location}...`);
-      const businesses = await scanBusinessesInArea(location, source);
+      toast.info(`Scanning for businesses in ${formattedLocation}...`);
+      const businesses = await scanBusinessesInArea(formattedLocation, source);
       
       clearInterval(progressInterval);
       setProgress(100);
       
       // Check if we're using mock data based on the response metadata
-      // Since we removed the source property from the database schema,
-      // we need to rely on the API response metadata instead
       const mockDataCheck = businesses.length > 0 && businesses.every(b => b.id && b.id.startsWith('mock-'));
       setUsingMockData(mockDataCheck);
       
       if (businesses.length === 0) {
-        setError(`No businesses found in ${location}. Try a different location or data source.`);
+        setError(`No businesses found in ${formattedLocation}. Try a different location or data source.`);
         toast.info('No businesses found in this area. Try a different search.');
-        setApiTip('Try using a more specific location or a different area. Make sure to include the city and country.');
+        setApiTip('Try using a more specific location or a different area. Make sure to include the city and state/province in the format "City, State" or "City, State, Country".');
       } else {
         setScannedBusinesses(businesses);
         
         if (mockDataCheck) {
-          toast.success(`Found ${businesses.length} sample businesses for ${location}`);
+          toast.success(`Found ${businesses.length} sample businesses for ${formattedLocation}`);
           setApiTip('We\'re showing sample data because our scraper couldn\'t access the real business directory. For production use, you would need to integrate with a business data API like Google Places or Yelp.');
         } else {
-          toast.success(`Found ${businesses.length} businesses in ${location}`);
+          toast.success(`Found ${businesses.length} businesses in ${formattedLocation}`);
         }
       }
     } catch (error: any) {
@@ -125,13 +140,17 @@ const MapScanner = () => {
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="location"
-                    placeholder="City, Address or Zip Code"
+                    placeholder="City, State/Province, Country"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     className="pl-10"
                     disabled={isScanning}
                   />
                 </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Use format: "City, State/Province" or "City, State/Province, Country"<br />
+                  Examples: "New York, NY" or "Toronto, Ontario, Canada"
+                </p>
               </div>
               
               <div className="space-y-2">
