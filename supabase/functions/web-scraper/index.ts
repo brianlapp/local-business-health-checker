@@ -70,12 +70,16 @@ serve(async (req) => {
 
 async function scrapeYellowPages(location: string): Promise<any[]> {
   try {
+    // Format location for YellowPages URL structure
+    // Convert to format like "New York, NY" or just use as-is
     const formattedLocation = encodeURIComponent(location.trim());
-    const url = `https://www.yellowpages.com/search?search_terms=businesses&geo_location_terms=${formattedLocation}`;
+    
+    // Updated URL format - use "business" (singular) as search term
+    const url = `https://www.yellowpages.com/search?search_terms=business&geo_location_terms=${formattedLocation}`;
     
     console.log(`Scraping URL: ${url}`);
     
-    // Enhanced browser emulation
+    // Enhanced browser emulation with more realistic headers
     const response = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -94,10 +98,15 @@ async function scrapeYellowPages(location: string): Promise<any[]> {
     });
     
     if (!response.ok) {
+      console.error(`YellowPages response status: ${response.status} ${response.statusText}`);
       throw new Error(`Failed to fetch YellowPages: ${response.status} ${response.statusText}`);
     }
     
     const html = await response.text();
+    
+    // Log the first 500 characters of the response to debug
+    console.log(`YellowPages response preview: ${html.substring(0, 500)}...`);
+    
     const dom = new DOMParser().parseFromString(html, 'text/html');
     
     if (!dom) {
@@ -107,21 +116,32 @@ async function scrapeYellowPages(location: string): Promise<any[]> {
     const businesses = [];
     const businessElements = dom.querySelectorAll('.result');
     
+    console.log(`Found ${businessElements.length} business elements`);
+    
     for (let i = 0; i < businessElements.length; i++) {
       const element = businessElements[i];
       
       // Extract business name
       const nameElement = element.querySelector('.business-name');
-      if (!nameElement) continue;
+      if (!nameElement) {
+        console.log(`No business name found for element ${i}`);
+        continue;
+      }
       const name = nameElement.textContent.trim();
       
       // Extract website URL if available
       const websiteElement = element.querySelector('a.track-visit-website');
-      if (!websiteElement) continue; // Skip businesses without websites
+      if (!websiteElement) {
+        console.log(`No website found for business: ${name}`);
+        continue; // Skip businesses without websites
+      }
       
       // Yellow Pages uses a redirect URL, so we need to extract the actual URL
       const redirectUrl = websiteElement.getAttribute('href');
-      if (!redirectUrl) continue;
+      if (!redirectUrl) {
+        console.log(`No redirect URL found for business: ${name}`);
+        continue;
+      }
       
       // Get actual website by following redirect (or at least try to extract from redirect URL)
       let website = '';
@@ -172,7 +192,11 @@ async function scrapeYellowPages(location: string): Promise<any[]> {
 async function scrapeLocalStack(location: string): Promise<any[]> {
   try {
     const formattedLocation = encodeURIComponent(location.trim());
-    const url = `https://localstack.com/browse-businesses/${formattedLocation}`;
+    // Try to format location to "city-state" format
+    const locationParts = location.split(/,|\s+/);
+    const cityState = locationParts.slice(0, 2).join('-').toLowerCase();
+    
+    const url = `https://localstack.com/browse-businesses/${cityState || formattedLocation}`;
     
     console.log(`Scraping alternate source URL: ${url}`);
     
