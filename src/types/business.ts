@@ -8,7 +8,7 @@ export interface Business {
   speedScore?: number;
   lastChecked?: string;
   
-  // New fields for the dual scanning system
+  // Dual scanning system fields
   lighthouseScore?: number;
   gtmetrixScore?: number;
   lighthouseReportUrl?: string;
