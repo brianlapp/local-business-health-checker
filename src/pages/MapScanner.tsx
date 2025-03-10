@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -62,9 +61,9 @@ const MapScanner = () => {
       setProgress(100);
       
       // Check for Google Maps API authorization errors
-      if (error.message && error.message.includes('API key is not authorized')) {
+      if (error.message && error.message.includes('API key may have issues')) {
         setError('Google Maps API Authorization Error');
-        setApiTip('Your Google Maps API key needs to have the "Places API" enabled. Please go to the Google Cloud Console, select your project, navigate to "APIs & Services" > "Library", search for "Places API", and enable it for your project.');
+        setApiTip(error.message);
         toast.error('Google Maps API authorization error');
       } else {
         setError(error.message || 'Failed to scan area, please try again');
@@ -179,7 +178,7 @@ const MapScanner = () => {
                 <div>
                   <p className="font-medium">{error}</p>
                   {apiTip && (
-                    <div className="mt-2 text-sm">
+                    <div className="mt-2 text-sm whitespace-pre-line">
                       <p>{apiTip}</p>
                     </div>
                   )}
@@ -190,7 +189,7 @@ const MapScanner = () => {
             {apiTip && !error && (
               <div className="bg-blue-50 text-blue-800 p-4 rounded-md mb-4 flex items-start dark:bg-blue-900/20 dark:text-blue-400">
                 <Info className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-                <p className="text-sm">{apiTip}</p>
+                <p className="text-sm whitespace-pre-line">{apiTip}</p>
               </div>
             )}
             
