@@ -18,6 +18,11 @@ export const scanBusinessesInArea = async (location: string, radius: number): Pr
       throw new Error(error.message || 'Failed to search for businesses');
     }
     
+    if (data.error) {
+      console.error('Google Maps API error:', data.error);
+      throw new Error(data.error || 'Failed to search for businesses');
+    }
+    
     console.log('Google Maps search response:', data);
     
     if (!data.businesses || data.businesses.length === 0) {

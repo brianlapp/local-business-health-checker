@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -55,10 +55,10 @@ const MapScanner = () => {
         setScannedBusinesses(businesses);
         toast.success(`Found ${businesses.length} businesses in ${location}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Scan error:', error);
       setError(error.message || 'Failed to scan area, please try again');
-      toast.error('Failed to scan area, please try again');
+      toast.error('Failed to scan area: ' + (error.message || 'Unknown error'));
     } finally {
       setIsScanning(false);
     }
@@ -106,7 +106,7 @@ const MapScanner = () => {
               
               <div className="space-y-2">
                 <label className="text-sm font-medium" htmlFor="radius">
-                  Radius (kilometers)
+                  Radius (kilometres)
                 </label>
                 <div className="flex items-center gap-3">
                   <input
