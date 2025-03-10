@@ -22,12 +22,23 @@ export const scanBusinessesInArea = async (location: string, source: string = 'y
     // Check if the response contains an error
     if (data.error) {
       console.error('Web scraper error:', data.error);
+      
+      // If we got mock data despite an error, use it
+      if (data.mockData && data.businesses && data.businesses.length > 0) {
+        return processMockBusinesses(data.businesses, location);
+      }
+      
       throw new Error(data.message || data.error);
     }
     
     if (!data.businesses || data.businesses.length === 0) {
       console.log('No businesses found in the area');
       return [];
+    }
+    
+    // Check if we're using mock data
+    if (data.mockData) {
+      return processMockBusinesses(data.businesses, location);
     }
     
     // Process and store the discovered businesses
@@ -83,6 +94,34 @@ export const scanBusinessesInArea = async (location: string, source: string = 'y
     console.error('Error scanning businesses:', error);
     throw error;
   }
+};
+
+// Process mock businesses without saving them to database (demo mode)
+const processMockBusinesses = (mockBusinesses: any[], location: string): Business[] => {
+  console.log(`Processing ${mockBusinesses.length} mock businesses for ${location}`);
+  
+  return mockBusinesses.map(business => {
+    const score = Math.floor(Math.random() * 100);
+    const now = new Date().toISOString();
+    
+    const mockBusiness: Business = {
+      id: uuidv4(),
+      name: business.name,
+      website: business.website,
+      score,
+      last_checked: now,
+      lastChecked: now,
+      issues: {
+        speedIssues: score > 50,
+        outdatedCMS: Math.random() > 0.5,
+        noSSL: !business.website.includes('https'),
+        notMobileFriendly: Math.random() > 0.6,
+        badFonts: Math.random() > 0.7
+      }
+    };
+    
+    return mockBusiness;
+  });
 };
 
 // Function to add a business manually

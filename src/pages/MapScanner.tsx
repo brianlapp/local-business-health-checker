@@ -18,6 +18,7 @@ const MapScanner = () => {
   const [error, setError] = useState<string | null>(null);
   const [apiTip, setApiTip] = useState<string | null>(null);
   const [source, setSource] = useState('yellowpages');
+  const [usingMockData, setUsingMockData] = useState(false);
   const navigate = useNavigate();
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,6 +33,7 @@ const MapScanner = () => {
     setScannedBusinesses([]);
     setError(null);
     setApiTip(null);
+    setUsingMockData(false);
     
     try {
       // Start the progress animation
@@ -51,13 +53,23 @@ const MapScanner = () => {
       clearInterval(progressInterval);
       setProgress(100);
       
+      // Check if businesses have the mock data source flag
+      const mockDataCheck = businesses.some(b => b.source === 'mock-data');
+      setUsingMockData(mockDataCheck);
+      
       if (businesses.length === 0) {
         setError(`No businesses found in ${location}. Try a different location or data source.`);
         toast.info('No businesses found in this area. Try a different search.');
         setApiTip('Try using a more specific location or a different area. Make sure to include the city and country.');
       } else {
         setScannedBusinesses(businesses);
-        toast.success(`Found ${businesses.length} businesses in ${location}`);
+        
+        if (mockDataCheck) {
+          toast.success(`Found ${businesses.length} sample businesses for ${location}`);
+          setApiTip('We\'re showing sample data because our scraper couldn\'t access the real business directory. For production use, you would need to integrate with a business data API like Google Places or Yelp.');
+        } else {
+          toast.success(`Found ${businesses.length} businesses in ${location}`);
+        }
       }
     } catch (error: any) {
       console.error('Scan error:', error);
@@ -67,7 +79,7 @@ const MapScanner = () => {
       toast.error('Failed to scan area: ' + (error.message || 'Unknown error'));
       
       if (error.message && error.message.includes('Edge Function')) {
-        setApiTip('There was an issue with the web scraper. This could be a temporary issue with the website we\'re scraping or with our edge function. Please try again later.');
+        setApiTip('There was an issue with the web scraper. This could be a temporary issue with the website we\'re scraping or with our edge function. Please try again later or try a different data source.');
       }
     } finally {
       setIsScanning(false);
@@ -185,6 +197,16 @@ const MapScanner = () => {
             <CardTitle>Scan Results</CardTitle>
           </CardHeader>
           <CardContent>
+            {usingMockData && !error && (
+              <div className="bg-amber-50 text-amber-800 p-4 rounded-md mb-4 flex items-start dark:bg-amber-900/20 dark:text-amber-400">
+                <Info className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium">Demo Mode Active</p>
+                  <p className="text-sm">You're viewing sample business data. In a production environment, you'd connect to a business data API.</p>
+                </div>
+              </div>
+            )}
+            
             {error && (
               <div className="bg-destructive/10 text-destructive p-4 rounded-md mb-4 flex items-start">
                 <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
