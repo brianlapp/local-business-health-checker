@@ -53,8 +53,10 @@ const MapScanner = () => {
       clearInterval(progressInterval);
       setProgress(100);
       
-      // Check if businesses have the mock data source flag
-      const mockDataCheck = businesses.some(b => b.source === 'mock-data');
+      // Check if we're using mock data based on the response metadata
+      // Since we removed the source property from the database schema,
+      // we need to rely on the API response metadata instead
+      const mockDataCheck = businesses.length > 0 && businesses.every(b => b.id && b.id.startsWith('mock-'));
       setUsingMockData(mockDataCheck);
       
       if (businesses.length === 0) {

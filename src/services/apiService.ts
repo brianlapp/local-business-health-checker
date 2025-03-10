@@ -67,8 +67,8 @@ export const scanBusinessesInArea = async (location: string, source: string = 'y
         name: business.name,
         website: business.website,
         score,
-        last_checked: new Date().toISOString(),
-        source: business.source || source // Store source information
+        last_checked: new Date().toISOString(), // Added comma here
+        // Removed source property as it doesn't exist in the database schema
       };
       
       console.log(`Adding new business: ${business.name}`);
@@ -107,13 +107,13 @@ const processMockBusinesses = (mockBusinesses: any[], location: string): Busines
     const now = new Date().toISOString();
     
     const mockBusiness: Business = {
-      id: uuidv4(),
+      id: `mock-${uuidv4()}`, // Add 'mock-' prefix to ID to identify mock data
       name: business.name,
       website: business.website,
       score,
       last_checked: now,
       lastChecked: now,
-      source: business.source || 'mock-data', // Always set source for mock businesses
+      // Removed source property as it doesn't exist in the database schema
       issues: {
         speedIssues: score > 50,
         outdatedCMS: Math.random() > 0.5,

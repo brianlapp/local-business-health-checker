@@ -16,7 +16,7 @@ interface ScrapingRequest {
 interface BusinessData {
   name: string;
   website: string;
-  source: string;
+  source?: string; // Making source optional since it's not in the database schema
   phone?: string; // Optional phone number
 }
 

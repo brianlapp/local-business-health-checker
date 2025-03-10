@@ -35,6 +35,7 @@ export interface Business {
     badFonts: boolean;
   };
   
-  // Source information
+  // Source information (not stored in database)
+  // This is used only for UI display purposes
   source?: string;
 }
