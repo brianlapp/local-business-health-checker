@@ -6,14 +6,17 @@ import { Business } from '@/types/business';
 import ScoreDisplay from './ScoreDisplay';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { getBusinesses } from '@/services/businessService';
 
 interface BusinessCardProps {
   business: Business;
   className?: string;
+  onUpdate?: (updatedBusinesses: Business[]) => void;
 }
 
-const BusinessCard: React.FC<BusinessCardProps> = ({ business, className }) => {
+const BusinessCard: React.FC<BusinessCardProps> = ({ business, className, onUpdate }) => {
   const [expanded, setExpanded] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const handleEmailGeneration = () => {
     const emailSubject = `Improve Your Website Performance - ${business.score} Issues Found`;
@@ -50,6 +53,20 @@ your@email.com
 
   const handleReviewWebsite = () => {
     window.open(`https://${business.website}`, '_blank');
+  };
+  
+  const handleScanComplete = async () => {
+    try {
+      setIsRefreshing(true);
+      const updatedBusinesses = await getBusinesses();
+      if (onUpdate) {
+        onUpdate(updatedBusinesses);
+      }
+    } catch (error) {
+      console.error('Error refreshing businesses:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
   };
   
   return (
@@ -111,7 +128,11 @@ your@email.com
       {expanded && (
         <div className="px-5 pb-5 animate-slide-up">
           <div className="pt-4 border-t">
-            <ScoreDisplay score={business.score} business={business} />
+            <ScoreDisplay 
+              score={business.score} 
+              business={business} 
+              onScanComplete={handleScanComplete}
+            />
             
             <div className="mt-6 flex justify-end space-x-3">
               <Button variant="outline" onClick={handleReviewWebsite}>

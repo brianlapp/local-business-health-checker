@@ -72,7 +72,8 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
       <DashboardList 
         businesses={sortedBusinesses} 
         loading={loading} 
-        viewMode={viewMode} 
+        viewMode={viewMode}
+        onBusinessUpdate={setBusinesses}
       />
     </div>
   );

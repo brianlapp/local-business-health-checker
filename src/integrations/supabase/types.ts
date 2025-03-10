@@ -12,8 +12,14 @@ export type Database = {
       businesses: {
         Row: {
           cms: string | null
+          gtmetrix_report_url: string | null
+          gtmetrix_score: number | null
           id: string
           last_checked: string | null
+          last_gtmetrix_scan: string | null
+          last_lighthouse_scan: string | null
+          lighthouse_report_url: string | null
+          lighthouse_score: number | null
           name: string
           score: number | null
           speed_score: number | null
@@ -21,8 +27,14 @@ export type Database = {
         }
         Insert: {
           cms?: string | null
+          gtmetrix_report_url?: string | null
+          gtmetrix_score?: number | null
           id?: string
           last_checked?: string | null
+          last_gtmetrix_scan?: string | null
+          last_lighthouse_scan?: string | null
+          lighthouse_report_url?: string | null
+          lighthouse_score?: number | null
           name: string
           score?: number | null
           speed_score?: number | null
@@ -30,12 +42,42 @@ export type Database = {
         }
         Update: {
           cms?: string | null
+          gtmetrix_report_url?: string | null
+          gtmetrix_score?: number | null
           id?: string
           last_checked?: string | null
+          last_gtmetrix_scan?: string | null
+          last_lighthouse_scan?: string | null
+          lighthouse_report_url?: string | null
+          lighthouse_score?: number | null
           name?: string
           score?: number | null
           speed_score?: number | null
           website?: string
+        }
+        Relationships: []
+      }
+      gtmetrix_usage: {
+        Row: {
+          id: string
+          last_updated: string
+          month: string
+          scans_limit: number
+          scans_used: number
+        }
+        Insert: {
+          id?: string
+          last_updated?: string
+          month: string
+          scans_limit?: number
+          scans_used?: number
+        }
+        Update: {
+          id?: string
+          last_updated?: string
+          month?: string
+          scans_limit?: number
+          scans_used?: number
         }
         Relationships: []
       }

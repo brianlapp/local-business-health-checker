@@ -8,12 +8,14 @@ interface DashboardListProps {
   businesses: Business[];
   loading: boolean;
   viewMode: 'grid' | 'list';
+  onBusinessUpdate?: (businesses: Business[]) => void;
 }
 
 const DashboardList: React.FC<DashboardListProps> = ({ 
   businesses, 
   loading, 
-  viewMode 
+  viewMode,
+  onBusinessUpdate 
 }) => {
   if (loading) {
     return (
@@ -43,6 +45,7 @@ const DashboardList: React.FC<DashboardListProps> = ({
           key={business.id} 
           business={business}
           className="animate-slide-up"
+          onUpdate={onBusinessUpdate}
         />
       ))}
     </div>
