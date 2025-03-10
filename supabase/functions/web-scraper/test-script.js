@@ -1,3 +1,4 @@
+
 // Simple test script to simulate a request to our web scraper
 
 // Mock request object

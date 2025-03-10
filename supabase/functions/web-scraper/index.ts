@@ -1,3 +1,4 @@
+
 // @deno-types="https://deno.land/std@0.168.0/http/server.d.ts"
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 // @deno-types="https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.d.ts"
@@ -16,8 +17,8 @@ interface ScrapingRequest {
 interface BusinessData {
   name: string;
   website: string;
-  source?: string; // Making source optional since it's not in the database schema
-  phone?: string; // Optional phone number
+  source?: string;
+  phone?: string;
 }
 
 // Pool of user agents to rotate through to avoid detection
