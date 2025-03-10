@@ -62,13 +62,13 @@ export const scanBusinessesInArea = async (location: string, source: string = 'y
       const score = Math.floor(Math.random() * 100);
       
       // Create new business with database schema column names
+      // Remove source property as it doesn't exist in the database schema
       const newBusiness: Partial<Business> = {
         id: uuidv4(),
         name: business.name,
         website: business.website,
         score,
-        last_checked: new Date().toISOString(), // Added comma here
-        // Removed source property as it doesn't exist in the database schema
+        last_checked: new Date().toISOString(),
       };
       
       console.log(`Adding new business: ${business.name}`);
@@ -81,11 +81,12 @@ export const scanBusinessesInArea = async (location: string, source: string = 'y
       if (insertError) {
         console.error(`Error inserting business ${business.name}:`, insertError);
       } else {
-        // Add frontend property aliases
+        // Add frontend property aliases and source for display only (not stored in DB)
         businesses.push({
           ...newBusiness,
           lastChecked: newBusiness.last_checked,
-          issues: generateIssues(newBusiness as Business)
+          issues: generateIssues(newBusiness as Business),
+          source: source // Set source for UI display purposes
         } as Business);
       }
     }
@@ -113,7 +114,7 @@ const processMockBusinesses = (mockBusinesses: any[], location: string): Busines
       score,
       last_checked: now,
       lastChecked: now,
-      // Removed source property as it doesn't exist in the database schema
+      source: 'mock-data', // Set source for UI display purposes
       issues: {
         speedIssues: score > 50,
         outdatedCMS: Math.random() > 0.5,
@@ -157,7 +158,8 @@ export const addBusiness = async (payload: AddBusinessPayload): Promise<Business
         gtmetrixReportUrl: business.gtmetrix_report_url,
         lastLighthouseScan: business.last_lighthouse_scan,
         lastGtmetrixScan: business.last_gtmetrix_scan,
-        issues: generateIssues(business)
+        issues: generateIssues(business),
+        source: 'manual' // Set source for UI display purposes
       };
     }
     
@@ -183,7 +185,8 @@ export const addBusiness = async (payload: AddBusinessPayload): Promise<Business
     return {
       ...newBusiness as Business,
       lastChecked: newBusiness.last_checked,
-      issues: generateIssues(newBusiness as Business)
+      issues: generateIssues(newBusiness as Business),
+      source: 'manual' // Set source for UI display purposes
     };
   } catch (error) {
     console.error('Error adding business:', error);

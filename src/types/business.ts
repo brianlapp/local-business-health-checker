@@ -36,6 +36,6 @@ export interface Business {
   };
   
   // Source information (not stored in database)
-  // This is used only for UI display purposes
+  // This will be used for UI display purposes only
   source?: string;
 }
