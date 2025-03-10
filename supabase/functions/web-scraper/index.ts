@@ -444,18 +444,59 @@ async function scrapeYellowPages(location: string): Promise<BusinessData[]> {
     const locationParts = cleanLocation.split(',').map(part => part.trim());
     const cityName = locationParts[0] || '';
     const stateOrProvince = locationParts[1] || '';
+    const country = locationParts[2] || '';
+    
+    console.log(`Parsed location: City=${cityName}, State/Province=${stateOrProvince}, Country=${country}`);
     
     // Create multiple location formats for better matching
-    const formattedLocations = [
-      encodeURIComponent(cleanLocation),
-      encodeURIComponent(cityName),
-      encodeURIComponent(`${cityName} ${stateOrProvince}`),
-      encodeURIComponent(cleanLocation.toLowerCase().replace(/[,\s]+/g, '-'))
-    ];
+    const formattedLocations: string[] = [];
+    
+    // Check if this is a Canadian location
+    const isCanadian = 
+      stateOrProvince.toLowerCase().includes('ontario') || 
+      stateOrProvince.toLowerCase().includes('quebec') || 
+      stateOrProvince.toLowerCase().includes('british columbia') || 
+      stateOrProvince.toLowerCase().includes('alberta') || 
+      stateOrProvince.toLowerCase().includes('manitoba') || 
+      stateOrProvince.toLowerCase().includes('saskatchewan') || 
+      stateOrProvince.toLowerCase().includes('nova scotia') || 
+      stateOrProvince.toLowerCase().includes('new brunswick') || 
+      stateOrProvince.toLowerCase().includes('newfoundland') || 
+      stateOrProvince.toLowerCase().includes('prince edward') || 
+      country.toLowerCase().includes('canada');
+    
+    console.log(`Is Canadian location: ${isCanadian}`);
     
     // Generate multiple URL patterns to try
     let urlFormats: string[] = [];
     
+    if (isCanadian) {
+      // Canadian location formats
+      formattedLocations.push(
+        encodeURIComponent(`${cityName}, ${stateOrProvince}, Canada`),
+        encodeURIComponent(`${cityName} ${stateOrProvince} Canada`),
+        encodeURIComponent(cityName),
+        encodeURIComponent(`${cityName} ${stateOrProvince}`)
+      );
+      
+      // Add Canadian YellowPages URLs
+      urlFormats = urlFormats.concat([
+        `https://www.yellowpages.ca/search/si/1/${encodeURIComponent('businesses')}/${encodeURIComponent(cityName + ' ' + stateOrProvince)}`,
+        `https://www.yellowpages.ca/search/si/1/${encodeURIComponent('local businesses')}/${encodeURIComponent(cityName + ' ' + stateOrProvince)}`,
+        `https://www.yellowpages.ca/search/si/1/${encodeURIComponent('businesses')}/${encodeURIComponent(cityName)}`,
+        `https://www.yellowpages.ca/search/si/1/${encodeURIComponent('restaurants')}/${encodeURIComponent(cityName)}`
+      ]);
+    } else {
+      // Standard US formats
+      formattedLocations.push(
+        encodeURIComponent(cleanLocation),
+        encodeURIComponent(cityName),
+        encodeURIComponent(`${cityName} ${stateOrProvince}`),
+        encodeURIComponent(cleanLocation.toLowerCase().replace(/[,\s]+/g, '-'))
+      );
+    }
+    
+    // Add standard URL formats for all locations
     formattedLocations.forEach(loc => {
       urlFormats = urlFormats.concat([
         `https://www.yellowpages.com/search?search_terms=businesses&geo_location_terms=${loc}`,
@@ -505,16 +546,26 @@ async function scrapeYellowPages(location: string): Promise<BusinessData[]> {
             console.log(`Successful response from URL: ${url}`);
             console.log('Response HTML length:', html.length);
             
+            // Check if the response contains the requested location
+            const locationMatches = 
+              html.toLowerCase().includes(cityName.toLowerCase()) &&
+              (stateOrProvince === '' || html.toLowerCase().includes(stateOrProvince.toLowerCase()));
+            
+            if (!locationMatches) {
+              console.log('Response does not contain the requested location, trying next URL...');
+              continue; // Skip this response and try the next URL
+            }
+            
             // Verify we got actual content with multiple checks
             if (html.includes('business-name') || 
                 html.includes('class="result"') || 
                 html.includes('organic') ||
                 html.includes('<div class="listing"')) {
-              console.log('Found business data in response');
+              console.log('Found business data in response for the correct location');
               break; // Found a working URL with data
             } else {
               console.log('Page does not contain business results, trying next format...');
-              break; // Move to next URL if this one doesn't have business data
+              continue; // Try next URL if this one doesn't have business data
             }
           } else {
             console.log(`Failed with status ${tempResponse.status} for URL: ${url}`);
