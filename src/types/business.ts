@@ -5,22 +5,14 @@ export interface Business {
   website: string;
   score: number;
   cms?: string;
-  speedScore?: number;
-  lastChecked?: string;
+  speed_score?: number;
+  last_checked?: string;
   
   // Dual scanning system fields
-  lighthouseScore?: number;
-  gtmetrixScore?: number;
-  lighthouseReportUrl?: string;
-  gtmetrixReportUrl?: string;
-  lastLighthouseScan?: string;
-  lastGtmetrixScan?: string;
-  
-  issues?: {
-    speedIssues: boolean;
-    outdatedCMS: boolean;
-    noSSL: boolean;
-    notMobileFriendly: boolean;
-    badFonts: boolean;
-  };
+  lighthouse_score?: number;
+  gtmetrix_score?: number;
+  lighthouse_report_url?: string;
+  gtmetrix_report_url?: string;
+  last_lighthouse_scan?: string;
+  last_gtmetrix_scan?: string;
 }

@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { Business } from '@/types/business';
 import { v4 as uuidv4 } from 'uuid';
@@ -43,13 +44,13 @@ export const scanBusinessesInArea = async (location: string, radius: number): Pr
       // Calculate initial score
       const score = Math.floor(Math.random() * 100);
       
-      // Create new business - removed the "issues" field to match database schema
+      // Create new business with database schema column names
       const newBusiness: Partial<Business> = {
         id: uuidv4(),
         name: business.name,
         website: business.website,
         score,
-        lastChecked: new Date().toISOString(),
+        last_checked: new Date().toISOString(),
       };
       
       console.log(`Adding new business: ${business.name}`);
@@ -99,13 +100,13 @@ export const addBusiness = async (payload: AddBusinessPayload): Promise<Business
     // Generate a random score
     const score = Math.floor(Math.random() * 100);
     
-    // Create new business - removed the "issues" field to match schema
+    // Create new business with correct column names
     const newBusiness: Partial<Business> = {
       id: uuidv4(),
       name: payload.name,
       website,
       score,
-      lastChecked: new Date().toISOString(),
+      last_checked: new Date().toISOString(),
     };
     
     // Insert business into database

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -52,6 +53,7 @@ const MapScanner = () => {
       if (businesses.length === 0) {
         setError(`No businesses found in ${location}. Try a different location or increase the radius.`);
         toast.info('No businesses found in this area. Try a different search.');
+        setApiTip('Try using a more specific location or a different area. Make sure to include the city and country.');
       } else {
         setScannedBusinesses(businesses);
         toast.success(`Found ${businesses.length} businesses in ${location}`);
@@ -61,9 +63,13 @@ const MapScanner = () => {
       setProgress(100);
       
       // Check for Google Maps API authorization errors
-      if (error.message && error.message.includes('API key may have issues')) {
+      if (error.message && (
+          error.message.includes('API key') || 
+          error.message.includes('authorization') || 
+          error.message.includes('REQUEST_DENIED')
+      )) {
         setError('Google Maps API Authorization Error');
-        setApiTip(error.message);
+        setApiTip('There might be an issue with the Google Maps API key. It may need to be activated in the Google Cloud Console, or it may have billing issues.');
         toast.error('Google Maps API authorization error');
       } else {
         setError(error.message || 'Failed to scan area, please try again');

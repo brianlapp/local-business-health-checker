@@ -17,16 +17,12 @@ serve(async (req) => {
   try {
     // Log environment details for debugging
     console.log(`Function invoked. API key exists: ${Boolean(GOOGLE_MAPS_API_KEY)}`);
-    if (GOOGLE_MAPS_API_KEY) {
-      console.log(`API key first 5 chars: ${GOOGLE_MAPS_API_KEY.substring(0, 5)}...`);
-    }
-
+    
     // Validate API key
     if (!GOOGLE_MAPS_API_KEY) {
       console.error('Google Maps API key is not set');
       return new Response(JSON.stringify({ 
         error: 'Google Maps API key is not configured',
-        businesses: generateMockBusinesses('Unknown Location', 5) 
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -36,53 +32,96 @@ serve(async (req) => {
     const { location, radius } = await req.json();
     
     if (!location) {
-      throw new Error('Location parameter is required');
+      return new Response(JSON.stringify({
+        error: 'Location parameter is required',
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     console.log(`Searching for businesses in: "${location}" within ${radius}km radius`);
     
-    // Always generate mock businesses regardless of API success
-    // This ensures the frontend always gets data to work with
-    const mockBusinesses = generateMockBusinesses(location, 10);
+    // Use the Places API for better business search
+    const searchUrl = new URL('https://maps.googleapis.com/maps/api/place/textsearch/json');
+    searchUrl.searchParams.append('query', `businesses in ${location}`);
+    searchUrl.searchParams.append('radius', (radius * 1000).toString()); // Convert km to meters
+    searchUrl.searchParams.append('key', GOOGLE_MAPS_API_KEY);
     
-    try {
-      // Try to use the Geocoding API if available
-      const geocodeUrl = new URL('https://maps.googleapis.com/maps/api/geocode/json');
-      geocodeUrl.searchParams.append('address', location);
-      geocodeUrl.searchParams.append('key', GOOGLE_MAPS_API_KEY);
+    console.log(`Places API Request URL: ${searchUrl.toString().replace(GOOGLE_MAPS_API_KEY, 'REDACTED')}`);
+    
+    const searchResponse = await fetch(searchUrl.toString());
+    const searchData = await searchResponse.json();
+    
+    console.log(`Google Maps API response status: ${searchData.status}`);
+    
+    // Handle API errors
+    if (searchData.status === 'REQUEST_DENIED') {
+      console.error(`Authorization error: ${searchData.error_message || 'This API project is not authorized to use this API.'}`);
       
-      console.log(`Geocode Request URL: ${geocodeUrl.toString().replace(GOOGLE_MAPS_API_KEY, 'REDACTED')}`);
-      
-      const geocodeResponse = await fetch(geocodeUrl.toString());
-      const geocodeData = await geocodeResponse.json();
-      
-      console.log(`Google Maps API response status: ${geocodeData.status}`);
-      
-      // If there's an API error, log it but still return mock data
-      if (geocodeData.status === 'REQUEST_DENIED') {
-        console.error(`Authorization error: ${geocodeData.error_message || 'This API project is not authorized to use this API.'}`);
-        
-        return new Response(JSON.stringify({ 
-          businesses: mockBusinesses,
-          status: 'OK',
-          note: 'Using mock data due to API authorization issues'
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      
-      if (geocodeData.error_message) {
-        console.error(`Google Geocoding API error: ${geocodeData.error_message}`);
-      }
-    } catch (apiError) {
-      console.error('Error calling Google Geocoding API:', apiError);
+      return new Response(JSON.stringify({ 
+        error: 'Google Maps API authorization error',
+        message: searchData.error_message || 'API key may have issues with authorization or billing',
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
     
-    // Return mock businesses in all cases to ensure frontend doesn't fail
+    if (searchData.status !== 'OK') {
+      console.error(`Google Places API error: ${searchData.error_message || searchData.status}`);
+      
+      return new Response(JSON.stringify({
+        error: `Google Maps API error: ${searchData.status}`,
+        message: searchData.error_message || 'Failed to search for businesses',
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    // Process the results to get business data
+    const businesses = [];
+    
+    for (const place of searchData.results) {
+      // If the place has a name, consider it a business
+      if (place.name) {
+        // Places API doesn't always return website URLs directly, get details for websites
+        if (place.place_id) {
+          const detailsUrl = new URL('https://maps.googleapis.com/maps/api/place/details/json');
+          detailsUrl.searchParams.append('place_id', place.place_id);
+          detailsUrl.searchParams.append('fields', 'name,website,formatted_address');
+          detailsUrl.searchParams.append('key', GOOGLE_MAPS_API_KEY);
+          
+          try {
+            const detailsResponse = await fetch(detailsUrl.toString());
+            const detailsData = await detailsResponse.json();
+            
+            if (detailsData.status === 'OK' && detailsData.result) {
+              const { name, website, formatted_address } = detailsData.result;
+              
+              // Only add businesses with websites
+              if (website) {
+                businesses.push({
+                  name,
+                  website: website.replace(/^https?:\/\//, ''),
+                  formatted_address,
+                  place_id: place.place_id
+                });
+              }
+            }
+          } catch (detailsError) {
+            console.error(`Error fetching details for ${place.name}:`, detailsError);
+          }
+        }
+      }
+    }
+    
+    console.log(`Found ${businesses.length} businesses with websites`);
+    
     return new Response(JSON.stringify({ 
-      businesses: mockBusinesses, 
+      businesses,
       status: 'OK',
-      note: 'Using mock data' 
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -90,35 +129,11 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in Google Maps search:', error);
     
-    // Even on error, return some mock data
     return new Response(JSON.stringify({ 
-      error: error.message || 'An unexpected error occurred', 
-      businesses: generateMockBusinesses('Error Location', 3) 
+      error: error.message || 'An unexpected error occurred',
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
-
-// Generate mock business data
-function generateMockBusinesses(location: string, count: number) {
-  const businessTypes = [
-    'Restaurant', 'Cafe', 'Bakery', 'Grocery Store', 'Retail Shop', 
-    'Hair Salon', 'Gym', 'Bookstore', 'Pharmacy', 'Hardware Store',
-    'Flower Shop', 'Pet Store', 'Auto Repair', 'Clothing Store', 'Electronics Store'
-  ];
-  
-  return Array.from({ length: count }, (_, i) => {
-    const type = businessTypes[Math.floor(Math.random() * businessTypes.length)];
-    const name = `${location} ${type} ${i + 1}`;
-    const website = `example-${i}.com`;
-    
-    return {
-      name,
-      formatted_address: `${Math.floor(Math.random() * 1000) + 1} Main St, ${location}`,
-      place_id: `mock-place-id-${i}`,
-      website
-    };
-  });
-}
