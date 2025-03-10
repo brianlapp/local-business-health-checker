@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, MapPin, Loader2 } from 'lucide-react';
+import { Search, MapPin, Loader2, AlertCircle } from 'lucide-react';
 import { scanBusinessesInArea } from '@/services/apiService';
 import { Business } from '@/types/business';
 import { toast } from 'sonner';
@@ -15,6 +15,7 @@ const MapScanner = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [scannedBusinesses, setScannedBusinesses] = useState<Business[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,6 +28,7 @@ const MapScanner = () => {
     setIsScanning(true);
     setProgress(0);
     setScannedBusinesses([]);
+    setError(null);
     
     try {
       // Start the progress animation
@@ -40,20 +42,23 @@ const MapScanner = () => {
         });
       }, 500);
       
+      toast.info(`Scanning for businesses in ${location}...`);
       const businesses = await scanBusinessesInArea(location, radius);
       
       clearInterval(progressInterval);
       setProgress(100);
       
       if (businesses.length === 0) {
-        toast.info('No businesses found in this area');
+        setError(`No businesses found in ${location}. Try a different location or increase the radius.`);
+        toast.info('No businesses found in this area. Try a different search.');
       } else {
         setScannedBusinesses(businesses);
         toast.success(`Found ${businesses.length} businesses in ${location}`);
       }
     } catch (error) {
+      console.error('Scan error:', error);
+      setError(error.message || 'Failed to scan area, please try again');
       toast.error('Failed to scan area, please try again');
-      console.error(error);
     } finally {
       setIsScanning(false);
     }
@@ -157,6 +162,13 @@ const MapScanner = () => {
             <CardTitle>Scan Results</CardTitle>
           </CardHeader>
           <CardContent>
+            {error && (
+              <div className="bg-destructive/10 text-destructive p-4 rounded-md mb-4 flex items-center">
+                <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
+                <p>{error}</p>
+              </div>
+            )}
+            
             {scannedBusinesses.length === 0 ? (
               <div className="text-center py-8">
                 <MapPin className="h-12 w-12 mx-auto text-muted-foreground opacity-20" />
