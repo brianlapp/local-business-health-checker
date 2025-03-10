@@ -34,16 +34,33 @@ serve(async (req) => {
     }
 
     console.log(`Searching for businesses in: "${location}" within ${radius}km radius`);
+    console.log(`Using Google Maps API key: ${GOOGLE_MAPS_API_KEY.substring(0, 5)}...`);
     
-    // Simplified query - directly use location for better results
+    // Use the Places API text search endpoint
     const url = new URL('https://maps.googleapis.com/maps/api/place/textsearch/json');
-    url.searchParams.append('query', location);
+    url.searchParams.append('query', `businesses in ${location}`);
     url.searchParams.append('key', GOOGLE_MAPS_API_KEY);
     url.searchParams.append('radius', (radius * 1000).toString()); // Convert km to meters
     
-    console.log(`Sending request to Google Maps API...`);
+    console.log(`Request URL: ${url.toString().replace(GOOGLE_MAPS_API_KEY, 'REDACTED')}`);
     
     const response = await fetch(url.toString());
+    const status = response.status;
+    console.log(`Google Maps API response status code: ${status}`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Google Maps API error response: ${errorText}`);
+      return new Response(JSON.stringify({ 
+        error: `Google Maps API returned error status: ${status}`,
+        details: errorText,
+        businesses: [] 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
     const data = await response.json();
     
     console.log(`Google Maps API response status: ${data.status}`);
@@ -53,6 +70,7 @@ serve(async (req) => {
       console.error(`Google Maps API error: ${data.error_message}`);
       return new Response(JSON.stringify({ 
         error: data.error_message || 'Error from Google Maps API',
+        status: data.status,
         businesses: [] 
       }), {
         status: 500,
@@ -70,7 +88,7 @@ serve(async (req) => {
     
     console.log(`Returning ${businesses.length} businesses`);
     
-    return new Response(JSON.stringify({ businesses }), {
+    return new Response(JSON.stringify({ businesses, status: data.status }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {

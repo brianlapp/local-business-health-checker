@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { Business } from '@/types/business';
 import { v4 as uuidv4 } from 'uuid';
@@ -20,6 +19,9 @@ export const scanBusinessesInArea = async (location: string, radius: number): Pr
     
     if (data.error) {
       console.error('Google Maps API error:', data.error);
+      if (data.details) {
+        console.error('Error details:', data.details);
+      }
       throw new Error(data.error || 'Failed to search for businesses');
     }
     
@@ -34,14 +36,9 @@ export const scanBusinessesInArea = async (location: string, radius: number): Pr
     const businesses: Business[] = [];
     
     for (const business of data.businesses) {
-      // Skip businesses without websites
-      if (!business.website) {
-        console.log(`Skipping business without website: ${business.name}`);
-        continue;
-      }
-      
-      // Format website (remove http/https)
-      const website = business.website.replace(/^https?:\/\//, '');
+      // For now, treat all businesses as having a website
+      // This is a temporary workaround since direct website info isn't in the initial results
+      const website = business.website || `example-${business.place_id}.com`;
       
       // Check if business already exists
       const { data: existingBusinesses } = await supabase
