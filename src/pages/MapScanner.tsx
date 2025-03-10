@@ -80,6 +80,7 @@ const MapScanner = () => {
   
   const dataSources = [
     { value: 'yellowpages', label: 'Yellow Pages' },
+    { value: 'localstack', label: 'LocalStack' },
     // Add more sources as they get implemented
   ];
   
