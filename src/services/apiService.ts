@@ -24,7 +24,8 @@ export const scanBusinessesInArea = async (location: string, source: string = 'g
         // Use Google Maps API
         const result = await scanWithGoogleMaps(location);
         
-        if (result.error) {
+        // Only consider it an error if no businesses were found AND there's an error message
+        if (result.error && (!result.businesses || result.businesses.length === 0)) {
           toast.error(`Error: ${result.message || result.error}`, {
             id: toastId
           });
@@ -90,8 +91,8 @@ export const scanBusinessesInArea = async (location: string, source: string = 'g
           source,
           timestamp: new Date().toISOString(),
           test_mode: testMode,
-          error: errorInfo,
-          message: apiMessage,
+          error: businesses.length > 0 ? null : errorInfo, // Don't return error if we have businesses
+          message: businesses.length > 0 ? null : apiMessage, // Don't return message if we have businesses
           troubleshooting,
           debugInfo: debugInfo
         };
@@ -160,27 +161,27 @@ async function scanWithGoogleMaps(location: string, radius: number = 10): Promis
     
     console.log('Google Maps response:', data);
     
-    // Check for API errors
-    if (data.error) {
-      console.error('Google Maps API error:', data.error);
+    // Check if we actually have businesses regardless of error status
+    if (data.businesses && data.businesses.length > 0) {
+      // Process the businesses and convert them to our format
+      const processedBusinesses = await processScrapedBusinesses(data.businesses, 'google-maps', location);
+      
       return {
-        businesses: [],
-        error: data.error,
-        message: data.message || 'Google Maps API returned an error',
-        troubleshooting: data.troubleshooting,
-        test_mode: data.test_mode || true,
-        count: 0,
+        businesses: processedBusinesses,
+        test_mode: data.test_mode || false,
+        count: processedBusinesses.length,
         location,
         source: 'google-maps',
         timestamp: new Date().toISOString()
       };
     }
     
+    // Only consider it an error if no businesses were found
     if (!data.businesses || data.businesses.length === 0) {
       return {
         businesses: [],
-        error: 'No businesses found',
-        message: 'No businesses with websites were found in this location.',
+        error: data.error || 'No businesses found',
+        message: data.message || 'No businesses with websites were found in this location.',
         test_mode: data.test_mode || false,
         count: 0,
         location,

@@ -135,7 +135,7 @@ const MapScanner = () => {
           console.log('Debug info received and stored:', response.debugInfo);
         }
         
-        // Set error if present AND no businesses were found
+        // Only set error if present AND no businesses were found
         if ('error' in response && response.error && businesses.length === 0) {
           setError(response.error);
           hasError = true;
@@ -317,7 +317,7 @@ const MapScanner = () => {
             <CardTitle>Scan Results</CardTitle>
           </CardHeader>
           <CardContent>
-            {error && source === 'google' && (
+            {error && source === 'google' && scannedBusinesses.length === 0 && (
               <Alert variant="destructive" className="mb-4">
                 <AlertCircleIcon className="h-4 w-4" />
                 <AlertTitle>Google Maps API Error</AlertTitle>
@@ -356,7 +356,7 @@ const MapScanner = () => {
               </div>
             )}
             
-            {error && source !== 'google' && (
+            {error && source !== 'google' && scannedBusinesses.length === 0 && (
               <div className="bg-destructive/10 text-destructive p-4 rounded-md mb-4 flex items-start">
                 <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
                 <div>
