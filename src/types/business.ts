@@ -1,3 +1,4 @@
+
 export interface Business {
   id: string;
   name: string;
@@ -6,8 +7,8 @@ export interface Business {
   speedScore?: number;
   lighthouseScore?: number;
   gtmetrixScore?: number;
-  last_checked: string;
-  lastChecked: string;
+  last_checked: string; // Database column name
+  lastChecked: string;  // Frontend property name
   cms?: string | null;
   issues: {
     speedIssues: boolean;
@@ -21,6 +22,15 @@ export interface Business {
   lastLighthouseScan?: string | null;
   lastGtmetrixScan?: string | null;
   source?: string;
+  
+  // Adding database column names as optional properties to fix type issues
+  speed_score?: number;
+  lighthouse_score?: number;
+  gtmetrix_score?: number;
+  lighthouse_report_url?: string | null;
+  gtmetrix_report_url?: string | null;
+  last_lighthouse_scan?: string | null;
+  last_gtmetrix_scan?: string | null;
 }
 
 export interface ScanDebugInfo {

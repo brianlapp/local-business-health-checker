@@ -39,7 +39,7 @@ export async function addBusiness(business: Omit<Business, 'id' | 'issues'>): Pr
         website: business.website,
         score: business.score,
         cms: business.cms,
-        lighthouse_score: business.lighthouse_score || business.lighthouseScore,
+        lighthouse_score: business.lighthouseScore,
         last_checked: business.last_checked || business.lastChecked,
       })
       .select()
@@ -78,28 +78,28 @@ export async function updateBusiness(id: string, updates: Partial<Omit<Business,
     };
     
     // Map the new properties to the database column names
-    if (updates.lighthouse_score !== undefined || updates.lighthouseScore !== undefined) {
-      updateData.lighthouse_score = updates.lighthouse_score || updates.lighthouseScore;
+    if (updates.lighthouseScore !== undefined) {
+      updateData.lighthouse_score = updates.lighthouseScore;
     }
     
-    if (updates.gtmetrix_score !== undefined || updates.gtmetrixScore !== undefined) {
-      updateData.gtmetrix_score = updates.gtmetrix_score || updates.gtmetrixScore;
+    if (updates.gtmetrixScore !== undefined) {
+      updateData.gtmetrix_score = updates.gtmetrixScore;
     }
     
-    if (updates.lighthouse_report_url !== undefined || updates.lighthouseReportUrl !== undefined) {
-      updateData.lighthouse_report_url = updates.lighthouse_report_url || updates.lighthouseReportUrl;
+    if (updates.lighthouseReportUrl !== undefined) {
+      updateData.lighthouse_report_url = updates.lighthouseReportUrl;
     }
     
-    if (updates.gtmetrix_report_url !== undefined || updates.gtmetrixReportUrl !== undefined) {
-      updateData.gtmetrix_report_url = updates.gtmetrix_report_url || updates.gtmetrixReportUrl;
+    if (updates.gtmetrixReportUrl !== undefined) {
+      updateData.gtmetrix_report_url = updates.gtmetrixReportUrl;
     }
     
-    if (updates.last_lighthouse_scan !== undefined || updates.lastLighthouseScan !== undefined) {
-      updateData.last_lighthouse_scan = updates.last_lighthouse_scan || updates.lastLighthouseScan;
+    if (updates.lastLighthouseScan !== undefined) {
+      updateData.last_lighthouse_scan = updates.lastLighthouseScan;
     }
     
-    if (updates.last_gtmetrix_scan !== undefined || updates.lastGtmetrixScan !== undefined) {
-      updateData.last_gtmetrix_scan = updates.last_gtmetrix_scan || updates.lastGtmetrixScan;
+    if (updates.lastGtmetrixScan !== undefined) {
+      updateData.last_gtmetrix_scan = updates.lastGtmetrixScan;
     }
     
     const { error } = await supabase

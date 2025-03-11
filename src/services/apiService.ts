@@ -105,9 +105,13 @@ export const scanBusinessesInArea = async (location: string, source: string = 'g
         id: toastId
       });
       
-      // Return mock data as a fallback
+      // Return mock data as a fallback with proper BusinessScanResponse type
       return {
         businesses: await getMockBusinessData(location, 'error-fallback'),
+        count: (await getMockBusinessData(location, 'error-fallback')).length,
+        location,
+        source: 'error-fallback',
+        timestamp: new Date().toISOString(),
         test_mode: true,
         error: fetchError.message || 'Failed to search for businesses',
         message: 'Using sample data due to an error with the business search API'
@@ -484,8 +488,8 @@ export const getBusinesses = async (): Promise<Business[]> => {
 
 // Helper function to generate issues for a business
 function generateIssues(business: Business) {
-  // Use lighthouse_score as primary, fallback to speed_score, or default to 0
-  const speedScore = business.lighthouse_score || business.speed_score || 0;
+  // Use lighthouseScore as primary, fallback to speedScore, or default to 0
+  const speedScore = business.lighthouseScore || business.speedScore || 0;
   
   return {
     speedIssues: speedScore < 50,
