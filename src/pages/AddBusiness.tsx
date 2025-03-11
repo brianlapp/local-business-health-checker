@@ -34,9 +34,13 @@ const AddBusiness = () => {
     setIsSubmitting(true);
     
     try {
+      const now = new Date().toISOString();
       await addBusiness({
         name,
         website: websiteUrl.replace(/^https?:\/\//, ''),
+        score: 50, // Default score
+        last_checked: now,
+        lastChecked: now,
       });
       
       toast.success('Business added successfully');

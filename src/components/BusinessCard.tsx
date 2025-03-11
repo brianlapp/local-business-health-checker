@@ -1,14 +1,12 @@
 
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Business } from '@/types/business';
-import ScoreDisplay from './ScoreDisplay';
-import { Button } from '@/components/ui/button';
 import { getBusinesses } from '@/services/businessService';
 import BusinessHeader from './business/BusinessHeader';
 import ScoreBadge from './business/ScoreBadge';
-import CardActions from './business/CardActions';
+import ExpandableContent from './business/ExpandableContent';
+import ToggleExpandButton from './business/ToggleExpandButton';
 
 interface BusinessCardProps {
   business: Business;
@@ -36,6 +34,11 @@ const BusinessCard: React.FC<BusinessCardProps> = ({ business, className, onUpda
   
   const toggleExpanded = () => setExpanded(!expanded);
   
+  const handleToggleButtonClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleExpanded();
+  };
+  
   return (
     <div 
       className={cn(
@@ -53,36 +56,14 @@ const BusinessCard: React.FC<BusinessCardProps> = ({ business, className, onUpda
         
         <div className="flex items-center">
           <ScoreBadge score={business.score} />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="ml-2"
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleExpanded();
-            }}
-          >
-            {expanded ? 
-              <ChevronUp className="h-4 w-4" /> : 
-              <ChevronDown className="h-4 w-4" />
-            }
-          </Button>
+          <ToggleExpandButton 
+            expanded={expanded} 
+            onClick={handleToggleButtonClick}
+          />
         </div>
       </div>
       
-      {expanded && (
-        <div className="px-5 pb-5 animate-slide-up">
-          <div className="pt-4 border-t">
-            <ScoreDisplay 
-              score={business.score} 
-              business={business} 
-              onScanComplete={handleScanComplete}
-            />
-            
-            <CardActions business={business} />
-          </div>
-        </div>
-      )}
+      {expanded && <ExpandableContent business={business} onScanComplete={handleScanComplete} />}
     </div>
   );
 };
