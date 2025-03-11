@@ -47,7 +47,7 @@ export const scanBusinessesInArea = async (
           
           // If Google Maps API fails, try using localstack (which gives mock data)
           console.log('Falling back to localstack due to Google Maps API error');
-          businesses = await generateMockBusinessData(location, 'fallback');
+          businesses = generateMockBusinessData(location, 'fallback');
         } else {
           businesses = result.businesses;
           testMode = result.test_mode || false;
