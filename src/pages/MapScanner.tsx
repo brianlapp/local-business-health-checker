@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -111,6 +110,7 @@ const MapScanner = () => {
       // Check if we're using mock data based on the response metadata
       let businesses: Business[] = [];
       let testMode = false;
+      let hasError = false;
       
       // Check if response is a business array or a BusinessScanResponse
       if (Array.isArray(response)) {
@@ -134,30 +134,31 @@ const MapScanner = () => {
           console.log('Debug info received and stored:', response.debugInfo);
         }
         
-        // Set error if present
-        if ('error' in response && response.error) {
+        // Set error if present AND no businesses were found
+        if ('error' in response && response.error && businesses.length === 0) {
           setError(response.error);
+          hasError = true;
           if ('message' in response && response.message) {
             setApiTip(response.message);
           }
         }
       }
       
-      const mockDataCheck = testMode || (businesses.length > 0 && businesses.every(b => b.id && b.id.startsWith('mock-')));
-      setUsingMockData(mockDataCheck);
+      // More precise mock data detection - only set if explicitly marked as test_mode
+      // OR if all business IDs start with 'mock-'
+      const isMockData = testMode || 
+        (businesses.length > 0 && businesses.every(b => b.id && b.id.startsWith('mock-')));
       
-      if (businesses.length === 0) {
-        if (!error) {
-          setError(`No businesses found in ${finalLocation}. Try a different location or data source.`);
-        }
+      setUsingMockData(isMockData);
+      
+      if (businesses.length === 0 && !hasError) {
+        setError(`No businesses found in ${finalLocation}. Try a different location or data source.`);
         toast.info('No businesses found in this area. Try a different search.');
-        if (!apiTip) {
-          setApiTip('Try using a more specific location or a different area. Make sure to include the city and province in the format "City, Province" or "City, Province, Canada".');
-        }
-      } else {
+        setApiTip('Try using a more specific location or a different area. Make sure to include the city and province in the format "City, Province" or "City, Province, Canada".');
+      } else if (businesses.length > 0) {
         setScannedBusinesses(businesses);
         
-        if (mockDataCheck) {
+        if (isMockData) {
           toast.success(`Found ${businesses.length} sample businesses for ${finalLocation}`);
           if (!apiTip) {
             setApiTip('We\'re showing sample data because the API couldn\'t access real business data for this location.');
@@ -370,91 +371,90 @@ const MapScanner = () => {
             
             {apiTip && !error && !usingMockData && (
               <div className="bg-blue-50 text-blue-800 p-4 rounded-md mb-4 flex items-start dark:bg-blue-900/20 dark:text-blue-400">
-                <Info className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-                <p className="text-sm whitespace-pre-line">{apiTip}</p>
+              <Info className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+              <p className="text-sm whitespace-pre-line">{apiTip}</p>
+            </div>
+          )}
+          
+          {debugInfo && debugInfo.logs && debugInfo.logs.length > 0 && (
+            <div className="bg-gray-50 text-gray-800 p-4 rounded-md mb-4 dark:bg-gray-900/20 dark:text-gray-400 overflow-hidden">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-medium flex items-center">
+                  <Bug className="h-4 w-4 mr-2" />
+                  Debug Information
+                </h3>
+                <span className="text-xs bg-gray-200 px-2 py-1 rounded dark:bg-gray-800">
+                  {debugInfo.logs.length} log entries
+                </span>
               </div>
-            )}
-            
-            {debugInfo && debugInfo.logs && debugInfo.logs.length > 0 && (
-              <div className="bg-gray-50 text-gray-800 p-4 rounded-md mb-4 dark:bg-gray-900/20 dark:text-gray-400 overflow-hidden">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-medium flex items-center">
-                    <Bug className="h-4 w-4 mr-2" />
-                    Debug Information
-                  </h3>
-                  <span className="text-xs bg-gray-200 px-2 py-1 rounded dark:bg-gray-800">
-                    {debugInfo.logs.length} log entries
-                  </span>
-                </div>
-                <div className="text-xs font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded max-h-60 overflow-y-auto">
-                  {debugInfo.logs.map((log, i) => (
-                    <div key={i} className="py-1">
-                      {log}
-                    </div>
-                  ))}
-                </div>
-                
-                {debugInfo.htmlSamples && debugInfo.htmlSamples.length > 0 && (
-                  <div className="mt-4">
-                    <h4 className="text-sm font-medium mb-2">HTML Samples ({debugInfo.htmlSamples.length})</h4>
-                    <div className="space-y-2">
-                      {debugInfo.htmlSamples.map((sample, i) => (
-                        <div key={i} className="bg-gray-100 dark:bg-gray-800 p-2 rounded text-xs">
-                          <div className="flex justify-between mb-1">
-                            <span className="font-semibold">{sample.url}</span>
-                            <span>{sample.length} bytes</span>
-                          </div>
-                          <pre className="whitespace-pre-wrap overflow-x-auto max-h-20">
-                            {sample.sample}
-                          </pre>
+              <div className="text-xs font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded max-h-60 overflow-y-auto">
+                {debugInfo.logs.map((log, i) => (
+                  <div key={i} className="py-1">
+                    {log}
+                  </div>
+                ))}
+              </div>
+              
+              {debugInfo.htmlSamples && debugInfo.htmlSamples.length > 0 && (
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium mb-2">HTML Samples ({debugInfo.htmlSamples.length})</h4>
+                  <div className="space-y-2">
+                    {debugInfo.htmlSamples.map((sample, i) => (
+                      <div key={i} className="bg-gray-100 dark:bg-gray-800 p-2 rounded text-xs">
+                        <div className="flex justify-between mb-1">
+                          <span className="font-semibold">{sample.url}</span>
+                          <span>{sample.length} bytes</span>
                         </div>
-                      ))}
+                        <pre className="whitespace-pre-wrap overflow-x-auto max-h-20">
+                          {sample.sample}
+                        </pre>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {scannedBusinesses.length === 0 ? (
+            <div className="text-center py-8">
+              <MapPin className="h-12 w-12 mx-auto text-muted-foreground opacity-20" />
+              <p className="mt-2 text-muted-foreground">
+                {isScanning 
+                  ? 'Scanning for Canadian businesses...' 
+                  : 'No businesses scanned yet. Enter a Canadian location and start scanning.'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="text-sm text-muted-foreground mb-2">
+                Found {scannedBusinesses.length} businesses in {location}
+              </div>
+              <div className="space-y-2">
+                {scannedBusinesses.map((business) => (
+                  <div 
+                    key={business.id} 
+                    className="flex justify-between items-center p-3 bg-secondary/50 rounded-lg hover:bg-secondary transition-colors"
+                  >
+                    <div>
+                      <div className="font-medium">{business.name}</div>
+                      <div className="text-sm text-muted-foreground">{business.website}</div>
+                    </div>
+                    <div className={`text-sm font-bold px-2 py-1 rounded ${
+                      business.score >= 80 ? 'bg-red-100 text-red-600' : 
+                      business.score >= 60 ? 'bg-orange-100 text-orange-600' : 
+                      business.score >= 40 ? 'bg-yellow-100 text-yellow-600' : 
+                      'bg-green-100 text-green-600'
+                    }`}>
+                      {business.score}
                     </div>
                   </div>
-                )}
+                ))}
               </div>
-            )}
-            
-            {scannedBusinesses.length === 0 ? (
-              <div className="text-center py-8">
-                <MapPin className="h-12 w-12 mx-auto text-muted-foreground opacity-20" />
-                <p className="mt-2 text-muted-foreground">
-                  {isScanning 
-                    ? 'Scanning for Canadian businesses...' 
-                    : 'No businesses scanned yet. Enter a Canadian location and start scanning.'}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="text-sm text-muted-foreground mb-2">
-                  Found {scannedBusinesses.length} businesses in {location}
-                </div>
-                <div className="space-y-2">
-                  {scannedBusinesses.map((business) => (
-                    <div 
-                      key={business.id} 
-                      className="flex justify-between items-center p-3 bg-secondary/50 rounded-lg hover:bg-secondary transition-colors"
-                    >
-                      <div>
-                        <div className="font-medium">{business.name}</div>
-                        <div className="text-sm text-muted-foreground">{business.website}</div>
-                      </div>
-                      <div className={`text-sm font-bold px-2 py-1 rounded ${
-                        business.score >= 80 ? 'bg-red-100 text-red-600' : 
-                        business.score >= 60 ? 'bg-orange-100 text-orange-600' : 
-                        business.score >= 40 ? 'bg-yellow-100 text-yellow-600' : 
-                        'bg-green-100 text-green-600'
-                      }`}>
-                        {business.score}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

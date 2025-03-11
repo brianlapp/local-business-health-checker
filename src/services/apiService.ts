@@ -130,7 +130,11 @@ async function scanWithGoogleMaps(location: string, radius: number = 10): Promis
   error?: string, 
   message?: string,
   troubleshooting?: string,
-  test_mode?: boolean
+  test_mode?: boolean,
+  count?: number,
+  location?: string,
+  source?: string,
+  timestamp?: string
 }> {
   try {
     console.log(`Scanning with Google Maps API: ${location}, radius: ${radius}km`);
@@ -146,7 +150,11 @@ async function scanWithGoogleMaps(location: string, radius: number = 10): Promis
         businesses: [], 
         error: error.message || 'Failed to connect to Google Maps API',
         message: 'There was an issue connecting to the Google Maps API. Please try again later.',
-        test_mode: true
+        test_mode: true,
+        count: 0,
+        location,
+        source: 'google-maps',
+        timestamp: new Date().toISOString()
       };
     }
     
@@ -160,7 +168,11 @@ async function scanWithGoogleMaps(location: string, radius: number = 10): Promis
         error: data.error,
         message: data.message || 'Google Maps API returned an error',
         troubleshooting: data.troubleshooting,
-        test_mode: data.test_mode || true
+        test_mode: data.test_mode || true,
+        count: 0,
+        location,
+        source: 'google-maps',
+        timestamp: new Date().toISOString()
       };
     }
     
@@ -169,7 +181,11 @@ async function scanWithGoogleMaps(location: string, radius: number = 10): Promis
         businesses: [],
         error: 'No businesses found',
         message: 'No businesses with websites were found in this location.',
-        test_mode: data.test_mode || false
+        test_mode: data.test_mode || false,
+        count: 0,
+        location,
+        source: 'google-maps',
+        timestamp: new Date().toISOString()
       };
     }
     
@@ -178,7 +194,11 @@ async function scanWithGoogleMaps(location: string, radius: number = 10): Promis
     
     return {
       businesses: processedBusinesses,
-      test_mode: data.test_mode || false
+      test_mode: data.test_mode || false,
+      count: processedBusinesses.length,
+      location,
+      source: 'google-maps',
+      timestamp: new Date().toISOString()
     };
   } catch (error: any) {
     console.error('Error in Google Maps scan:', error);
@@ -186,7 +206,11 @@ async function scanWithGoogleMaps(location: string, radius: number = 10): Promis
       businesses: [],
       error: error.message || 'An unexpected error occurred',
       message: 'Failed to search for businesses using Google Maps.',
-      test_mode: true
+      test_mode: true,
+      count: 0,
+      location,
+      source: 'google-maps',
+      timestamp: new Date().toISOString()
     };
   }
 }
