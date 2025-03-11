@@ -42,11 +42,39 @@ export interface Business {
 
 // Debug information interface for the scan results
 export interface ScanDebugInfo {
-  logs?: string[];
+  logs: string[];
   htmlSamples?: {url: string, length: number, sample: string}[];
+  timestamp?: string;
+  stats?: {
+    total?: number;
+    unique?: number;
+    sources?: {
+      yellowpages?: {
+        count?: number;
+        success?: boolean;
+        duration?: string;
+        error?: string;
+      };
+      localstack?: {
+        count?: number;
+        success?: boolean;
+        duration?: string;
+        error?: string;
+      };
+      mock?: {
+        count?: number;
+        used?: boolean;
+      };
+    };
+  };
 }
 
 // Extended response that can include debug information
-export interface BusinessScanResponse extends Business[] {
+export interface BusinessScanResponse {
+  businesses: Business[];
+  count?: number;
+  location?: string;
+  source?: string;
+  timestamp?: string;
   debugInfo?: ScanDebugInfo;
 }

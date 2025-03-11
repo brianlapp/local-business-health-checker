@@ -1,56 +1,142 @@
 import { supabase } from '@/lib/supabase';
 import { Business, BusinessScanResponse, ScanDebugInfo } from '@/types/business';
 import { v4 as uuidv4 } from 'uuid';
+import { toast } from 'sonner';
 
 // Function to scan businesses in a geographic area using web scraping
-export const scanBusinessesInArea = async (location: string, source: string = 'yellowpages', debugMode: boolean = false): Promise<BusinessScanResponse> => {
+export const scanBusinessesInArea = async (location: string, source: string = 'yellowpages', debugMode: boolean = false): Promise<Business[]> => {
   try {
-    console.log(`Scanning businesses in ${location} using ${source} scraper`);
+    console.log(`Scanning businesses in ${location} using ${source} scraper with debug mode: ${debugMode ? 'ON' : 'OFF'}`);
     
-    // Call the edge function to scrape for businesses
-    const { data, error } = await supabase.functions.invoke('web-scraper', {
-      body: { location, source, debug: debugMode },
-    });
+    // Show toast to user
+    const toastId = toast.loading(`Scanning for businesses in ${location}...`);
     
-    if (error) {
-      console.error('Edge function error:', error);
-      throw new Error(`Edge Function Error: ${error.message || 'Failed to search for businesses'}`);
-    }
+    // Call the edge function to scrape for businesses with a timeout
+    const timeoutMs = 35000; // 35 seconds timeout (edge functions have 60s max)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     
-    console.log('Web scraper response:', data);
-    
-    // Check if the response contains an error
-    if (data.error) {
-      console.error('Web scraper error:', data.error);
+    try {
+      // Call the edge function with debug mode parameter
+      const { data, error } = await supabase.functions.invoke('web-scraper', {
+        body: { location, source, debug: debugMode },
+        signal: controller.signal,
+      });
       
-      // If we got mock data despite an error, use it
-      if (data.mockData && data.businesses && data.businesses.length > 0) {
-        return processMockBusinesses(data.businesses, location);
+      clearTimeout(timeoutId);
+      
+      if (error) {
+        console.error('Edge function error:', error);
+        toast.error(`Error searching for businesses: ${error.message || 'Failed to search for businesses'}`, {
+          id: toastId
+        });
+        return [];
       }
       
-      throw new Error(data.message || data.error);
-    }
-    
-    if (!data.businesses || data.businesses.length === 0) {
-      console.log('No businesses found in the area');
+      console.log('Web scraper response:', data);
+      
+      // Handle new response format which includes businesses array
+      if (data && data.businesses && Array.isArray(data.businesses)) {
+        // Check if debug info was returned and log it
+        if (debugMode && data.debug) {
+          console.log('Debug info:', data.debug);
+          if (data.debug.logs) {
+            console.log('Debug logs:', data.debug.logs);
+          }
+        }
+        
+        const processedBusinesses = await processScrapedBusinesses(data.businesses, source, location);
+        
+        toast.success(`Found ${processedBusinesses.length} businesses in ${location}`, {
+          id: toastId
+        });
+        
+        return processedBusinesses;
+      }
+      
+      // Fallback for older format or errors
+      if (data.error) {
+        console.error('Web scraper error:', data.error);
+        
+        // If we got mock data despite an error, use it
+        if (data.mockData && data.businesses && data.businesses.length > 0) {
+          const mockBusinesses = processMockBusinesses(data.businesses, location);
+          
+          toast.success(`Found ${mockBusinesses.length} sample businesses in ${location}`, {
+            id: toastId
+          });
+          
+          return mockBusinesses;
+        }
+        
+        toast.error(data.message || data.error, {
+          id: toastId
+        });
+        
+        throw new Error(data.message || data.error);
+      }
+      
+      // If no businesses found
+      if (!data.businesses || data.businesses.length === 0) {
+        toast.error(`No businesses found in ${location}`, {
+          id: toastId
+        });
+        return [];
+      }
+      
+      // If it's mock data
+      if (data.mockData) {
+        const mockBusinesses = processMockBusinesses(data.businesses, location);
+        
+        toast.success(`Found ${mockBusinesses.length} sample businesses in ${location}`, {
+          id: toastId
+        });
+        
+        return mockBusinesses;
+      }
+      
+      // Otherwise process the scraped businesses
+      const businesses = await processScrapedBusinesses(data.businesses, source, location);
+      
+      toast.success(`Found ${businesses.length} businesses in ${location}`, {
+        id: toastId
+      });
+      
+      return businesses;
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      
+      // Handle AbortError/timeout specifically
+      if (fetchError.name === 'AbortError') {
+        console.error('Edge function timeout after', timeoutMs, 'ms');
+        toast.error(`The search timed out. Try searching with "localstack" source or a different location.`, {
+          id: toastId
+        });
+        return getMockBusinessData(location, 'timeout-fallback');
+      }
+      
+      console.error('Edge function fetch error:', fetchError);
+      toast.error(`Failed to search for businesses: ${fetchError.message}`, {
+        id: toastId
+      });
       return [];
     }
-    
-    // Check if we're using mock data
-    if (data.mockData) {
-      return processMockBusinesses(data.businesses, location);
-    }
-    
-    // Extract debug info if it exists
-    const debugInfo: ScanDebugInfo | undefined = data.debug ? {
-      logs: data.debug.logs,
-      htmlSamples: data.debug.htmlSamples
-    } : undefined;
-    
-    // Process and store the discovered businesses
-    const businesses: Business[] = [];
-    
-    for (const business of data.businesses) {
+  } catch (error) {
+    console.error('Error scanning businesses:', error);
+    toast.error(`Error: ${error.message || 'Failed to search for businesses'}`);
+    return [];
+  }
+};
+
+// Process businesses from web scraper
+const processScrapedBusinesses = async (scrapedBusinesses: any[], source: string, location: string): Promise<Business[]> => {
+  console.log(`Processing ${scrapedBusinesses.length} scraped businesses for ${location}`);
+  
+  // Process and store the discovered businesses
+  const businesses: Business[] = [];
+  
+  for (const business of scrapedBusinesses) {
+    try {
       // Check if business already exists
       const { data: existingBusinesses } = await supabase
         .from('businesses')
@@ -94,25 +180,17 @@ export const scanBusinessesInArea = async (location: string, source: string = 'y
           source: source // Set source for UI display purposes
         } as Business);
       }
+    } catch (err) {
+      console.error('Error processing business:', err);
     }
-    
-    console.log(`Successfully added ${businesses.length} new businesses`);
-    
-    // Convert to BusinessScanResponse and add debug info if present
-    const response = businesses as BusinessScanResponse;
-    if (debugInfo) {
-      response.debugInfo = debugInfo;
-    }
-    
-    return response;
-  } catch (error) {
-    console.error('Error scanning businesses:', error);
-    throw error;
   }
+  
+  console.log(`Successfully added ${businesses.length} new businesses`);
+  return businesses;
 };
 
 // Process mock businesses without saving them to database (demo mode)
-const processMockBusinesses = (mockBusinesses: any[], location: string): BusinessScanResponse => {
+const processMockBusinesses = (mockBusinesses: any[], location: string): Promise<Business[]> => {
   console.log(`Processing ${mockBusinesses.length} mock businesses for ${location}`);
   
   const businesses = mockBusinesses.map(business => {
@@ -139,11 +217,44 @@ const processMockBusinesses = (mockBusinesses: any[], location: string): Busines
     return mockBusiness;
   });
   
-  // Convert to BusinessScanResponse type
-  return businesses as BusinessScanResponse;
+  return Promise.resolve(businesses);
 };
 
-// Function to add a business manually
+// Function to generate mock business data as fallback
+function getMockBusinessData(location: string, source: string = 'mock'): Business[] {
+  console.log(`Generating mock data for ${location}`);
+  
+  // Generate 5-10 mock businesses
+  const count = Math.floor(Math.random() * 6) + 5;
+  const businesses: Business[] = [];
+  
+  for (let i = 0; i < count; i++) {
+    const name = `${location} Business ${i + 1}`;
+    const website = `business${i + 1}.com`;
+    const score = Math.floor(Math.random() * 100);
+    const now = new Date().toISOString();
+    
+    businesses.push({
+      id: `mock-${uuidv4()}`,
+      name,
+      website,
+      score,
+      last_checked: now,
+      lastChecked: now,
+      source,
+      issues: {
+        speedIssues: score < 50,
+        outdatedCMS: Math.random() > 0.5,
+        noSSL: Math.random() > 0.7,
+        notMobileFriendly: Math.random() > 0.6,
+        badFonts: Math.random() > 0.7
+      }
+    });
+  }
+  
+  return businesses;
+}
+
 export interface AddBusinessPayload {
   name: string;
   website: string;
