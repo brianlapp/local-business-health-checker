@@ -15,9 +15,3 @@ export {
   isCMSOutdated,
   isWebsiteSecure
 };
-
-// Re-export types for compatibility
-export interface AddBusinessPayload {
-  name: string;
-  website: string;
-}
