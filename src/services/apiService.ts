@@ -1,16 +1,15 @@
-
 import { supabase } from '@/lib/supabase';
-import { Business } from '@/types/business';
+import { Business, BusinessScanResponse, ScanDebugInfo } from '@/types/business';
 import { v4 as uuidv4 } from 'uuid';
 
 // Function to scan businesses in a geographic area using web scraping
-export const scanBusinessesInArea = async (location: string, source: string = 'yellowpages'): Promise<Business[]> => {
+export const scanBusinessesInArea = async (location: string, source: string = 'yellowpages', debugMode: boolean = false): Promise<BusinessScanResponse> => {
   try {
     console.log(`Scanning businesses in ${location} using ${source} scraper`);
     
     // Call the edge function to scrape for businesses
     const { data, error } = await supabase.functions.invoke('web-scraper', {
-      body: { location, source },
+      body: { location, source, debug: debugMode },
     });
     
     if (error) {
@@ -41,6 +40,12 @@ export const scanBusinessesInArea = async (location: string, source: string = 'y
     if (data.mockData) {
       return processMockBusinesses(data.businesses, location);
     }
+    
+    // Extract debug info if it exists
+    const debugInfo: ScanDebugInfo | undefined = data.debug ? {
+      logs: data.debug.logs,
+      htmlSamples: data.debug.htmlSamples
+    } : undefined;
     
     // Process and store the discovered businesses
     const businesses: Business[] = [];
@@ -92,7 +97,14 @@ export const scanBusinessesInArea = async (location: string, source: string = 'y
     }
     
     console.log(`Successfully added ${businesses.length} new businesses`);
-    return businesses;
+    
+    // Convert to BusinessScanResponse and add debug info if present
+    const response = businesses as BusinessScanResponse;
+    if (debugInfo) {
+      response.debugInfo = debugInfo;
+    }
+    
+    return response;
   } catch (error) {
     console.error('Error scanning businesses:', error);
     throw error;
@@ -100,10 +112,10 @@ export const scanBusinessesInArea = async (location: string, source: string = 'y
 };
 
 // Process mock businesses without saving them to database (demo mode)
-const processMockBusinesses = (mockBusinesses: any[], location: string): Business[] => {
+const processMockBusinesses = (mockBusinesses: any[], location: string): BusinessScanResponse => {
   console.log(`Processing ${mockBusinesses.length} mock businesses for ${location}`);
   
-  return mockBusinesses.map(business => {
+  const businesses = mockBusinesses.map(business => {
     const score = Math.floor(Math.random() * 100);
     const now = new Date().toISOString();
     
@@ -126,6 +138,9 @@ const processMockBusinesses = (mockBusinesses: any[], location: string): Busines
     
     return mockBusiness;
   });
+  
+  // Convert to BusinessScanResponse type
+  return businesses as BusinessScanResponse;
 };
 
 // Function to add a business manually

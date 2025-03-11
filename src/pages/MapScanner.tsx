@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,16 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, MapPin, Loader2, AlertCircle, Info, Bug } from 'lucide-react';
 import { scanBusinessesInArea } from '@/services/apiService';
-import { Business } from '@/types/business';
+import { Business, ScanDebugInfo } from '@/types/business';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-
-interface ScanDebugInfo {
-  logs?: string[];
-  htmlSamples?: {url: string, length: number, sample: string}[];
-}
 
 const MapScanner = () => {
   const [location, setLocation] = useState('');

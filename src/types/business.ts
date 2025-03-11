@@ -39,3 +39,14 @@ export interface Business {
   // This will be used for UI display purposes only
   source?: string;
 }
+
+// Debug information interface for the scan results
+export interface ScanDebugInfo {
+  logs?: string[];
+  htmlSamples?: {url: string, length: number, sample: string}[];
+}
+
+// Extended response that can include debug information
+export interface BusinessScanResponse extends Array<Business> {
+  debugInfo?: ScanDebugInfo;
+}
