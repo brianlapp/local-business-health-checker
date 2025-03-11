@@ -47,6 +47,6 @@ export interface ScanDebugInfo {
 }
 
 // Extended response that can include debug information
-export interface BusinessScanResponse extends Array<Business> {
+export interface BusinessScanResponse extends Business[] {
   debugInfo?: ScanDebugInfo;
 }
