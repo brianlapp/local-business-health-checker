@@ -29,13 +29,16 @@ const DataManagement: React.FC<DataManagementProps> = ({
   const handleClearAllData = async () => {
     setIsDeleting(true);
     try {
-      await clearAllBusinesses();
+      const result = await clearAllBusinesses();
+      console.log('Clear all businesses result:', result);
+      
+      // Make sure to trigger the data refresh regardless of the result
       onDataCleared();
       toast.success('All business data has been cleared');
       setIsDeleteDialogOpen(false);
     } catch (error) {
-      toast.error('Failed to clear data');
       console.error('Error clearing data:', error);
+      toast.error('Failed to clear data');
     } finally {
       setIsDeleting(false);
     }

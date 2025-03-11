@@ -22,7 +22,7 @@ export function handleScanError(
   }
   
   // Generate mock data synchronously to avoid Promise issues
-  const mockBusinesses = generateMockBusinessData(location, 'error-fallback');
+  const mockBusinesses = generateMockBusinessData(String(location), 'error-fallback');
   
   // Return mock data as a fallback with proper BusinessScanResponse type
   return {
