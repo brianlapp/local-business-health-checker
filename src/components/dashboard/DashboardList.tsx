@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Business } from '@/types/business';
 import BusinessCard from '../BusinessCard';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useBusinessSelection } from '@/hooks/useBusinessSelection';
 
 interface DashboardListProps {
   businesses: Business[];
@@ -20,10 +21,31 @@ const DashboardList: React.FC<DashboardListProps> = ({
   loading, 
   viewMode,
   onBusinessUpdate,
-  selectedBusinesses = [],
-  setSelectedBusinesses,
-  highlightedBusinesses = []
+  selectedBusinesses: externalSelectedBusinesses,
+  setSelectedBusinesses: externalSetSelectedBusinesses,
+  highlightedBusinesses: externalHighlightedBusinesses
 }) => {
+  const {
+    selectedBusinesses: internalSelectedBusinesses,
+    handleSelectBusiness: internalHandleSelectBusiness,
+  } = useBusinessSelection();
+
+  // Use either external or internal state
+  const selectedBusinesses = externalSelectedBusinesses || internalSelectedBusinesses;
+  const handleSelectBusiness = (id: string) => {
+    if (externalSetSelectedBusinesses) {
+      externalSetSelectedBusinesses(prev => {
+        if (prev.includes(id)) {
+          return prev.filter(businessId => businessId !== id);
+        } else {
+          return [...prev, id];
+        }
+      });
+    } else {
+      internalHandleSelectBusiness(id);
+    }
+  };
+  
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -40,18 +62,6 @@ const DashboardList: React.FC<DashboardListProps> = ({
       </div>
     );
   }
-
-  const handleSelectBusiness = (id: string) => {
-    if (!setSelectedBusinesses) return;
-    
-    setSelectedBusinesses(prev => {
-      if (prev.includes(id)) {
-        return prev.filter(businessId => businessId !== id);
-      } else {
-        return [...prev, id];
-      }
-    });
-  };
   
   return (
     <div className={cn(
@@ -61,14 +71,14 @@ const DashboardList: React.FC<DashboardListProps> = ({
     )}>
       {businesses.map((business) => {
         const isSelected = selectedBusinesses.includes(business.id);
-        const isHighlighted = highlightedBusinesses.includes(business.id);
+        const isHighlighted = externalHighlightedBusinesses?.includes(business.id);
         
         return (
           <div key={business.id} className={cn(
             "relative group",
             isHighlighted && "animate-pulse"
           )}>
-            {setSelectedBusinesses && (
+            {(externalSetSelectedBusinesses || internalHandleSelectBusiness) && (
               <div className="absolute top-4 left-4 z-10">
                 <Checkbox 
                   checked={isSelected}
