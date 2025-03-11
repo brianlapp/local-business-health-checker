@@ -41,12 +41,12 @@ export async function clearAllBusinesses(): Promise<boolean> {
   try {
     console.log('Starting clearAllBusinesses function');
     
-    // Delete all businesses with explicit wildcard
+    // Use delete() without filter to clear all records
     console.log('Attempting to delete all businesses records');
     const { error } = await supabase
       .from('businesses')
       .delete()
-      .is('id', 'NOT NULL');
+      .neq('id', null); // This works better than is('id', 'NOT NULL')
     
     if (error) {
       console.error('Supabase delete error:', error);
@@ -61,7 +61,7 @@ export async function clearAllBusinesses(): Promise<boolean> {
       const resetResult = await supabase
         .from('gtmetrix_usage')
         .update({ scans_used: 0 })
-        .is('id', 'NOT NULL');
+        .neq('id', null);
       
       if (resetResult.error) {
         console.warn('Warning: Could not reset GTmetrix usage counters:', resetResult.error);
