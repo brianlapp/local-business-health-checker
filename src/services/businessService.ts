@@ -13,6 +13,7 @@ import {
 import {
   scanWithLighthouse,
   scanWithGTmetrix,
+  scanWithBuiltWith,
   getGTmetrixUsage
 } from './businessScanService';
 
@@ -34,6 +35,7 @@ export {
   // Scanning Operations
   scanWithLighthouse,
   scanWithGTmetrix,
+  scanWithBuiltWith,
   getGTmetrixUsage,
   
   // Utility Functions

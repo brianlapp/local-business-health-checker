@@ -54,6 +54,32 @@ export async function scanWithLighthouse(businessId: string, url: string): Promi
   }
 }
 
+// NEW: BuiltWith scanning functionality to detect CMS and technology stack
+export async function scanWithBuiltWith(businessId: string, url: string): Promise<{ success: boolean; cms?: string }> {
+  try {
+    const { data, error } = await supabase.functions.invoke('builtwith-scan', {
+      body: { url, businessId }
+    });
+
+    if (error) throw error;
+    
+    if (data.error) {
+      console.error('BuiltWith scan error:', data.error);
+      toast.error(`Technology detection failed: ${data.error}`);
+      return { success: false };
+    }
+    
+    return { 
+      success: true,
+      cms: data.cms
+    };
+  } catch (error) {
+    console.error('Error during BuiltWith scan:', error);
+    toast.error('Technology detection failed. Please try again later.');
+    return { success: false };
+  }
+}
+
 // Get GTmetrix usage statistics
 export async function getGTmetrixUsage(): Promise<{ used: number; limit: number; resetDate: string }> {
   try {

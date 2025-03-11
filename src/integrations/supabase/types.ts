@@ -59,25 +59,34 @@ export type Database = {
       }
       gtmetrix_usage: {
         Row: {
+          created_at: string | null
           id: string
           last_updated: string
           month: string
+          reset_date: string | null
           scans_limit: number
           scans_used: number
+          updated_at: string | null
         }
         Insert: {
+          created_at?: string | null
           id?: string
           last_updated?: string
           month: string
+          reset_date?: string | null
           scans_limit?: number
           scans_used?: number
+          updated_at?: string | null
         }
         Update: {
+          created_at?: string | null
           id?: string
           last_updated?: string
           month?: string
+          reset_date?: string | null
           scans_limit?: number
           scans_used?: number
+          updated_at?: string | null
         }
         Relationships: []
       }

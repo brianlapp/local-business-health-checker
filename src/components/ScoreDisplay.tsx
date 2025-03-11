@@ -2,7 +2,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { Business } from '@/types/business';
-import { scanWithGTmetrix, scanWithLighthouse, getGTmetrixUsage } from '@/services/businessService';
+import { scanWithGTmetrix, scanWithLighthouse, scanWithBuiltWith, getGTmetrixUsage } from '@/services/businessService';
 import PerformanceScores from './score/PerformanceScores';
 import IssuesList from './score/IssuesList';
 
@@ -96,6 +96,7 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, business, cla
         gtmetrixUsage={gtmetrixUsage}
         onLighthouseScan={handleLighthouseScan}
         onGTmetrixScan={handleGTmetrixScan}
+        onScanComplete={onScanComplete}
       />
       
       <IssuesList business={business} />

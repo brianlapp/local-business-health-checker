@@ -1,15 +1,24 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ExternalLink } from 'lucide-react';
+import { 
+  ActivityIcon, 
+  ZapIcon, 
+  Loader2Icon, 
+  ExternalLinkIcon,
+  LightbulbIcon,
+  GaugeIcon 
+} from 'lucide-react';
+import CMSDetection from './CMSDetection';
 import { Business } from '@/types/business';
 
 interface PerformanceScoresProps {
   business: Business;
   isScanning: boolean;
-  gtmetrixUsage: { used: number; limit: number; } | null;
+  gtmetrixUsage: { used: number; limit: number } | null;
   onLighthouseScan: () => void;
   onGTmetrixScan: () => void;
+  onScanComplete?: () => void;
 }
 
 const PerformanceScores: React.FC<PerformanceScoresProps> = ({
@@ -18,84 +27,136 @@ const PerformanceScores: React.FC<PerformanceScoresProps> = ({
   gtmetrixUsage,
   onLighthouseScan,
   onGTmetrixScan,
+  onScanComplete
 }) => {
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Never';
-    const date = new Date(dateString);
-    return date.toLocaleDateString();
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return 'text-green-500';
+    if (score >= 60) return 'text-yellow-500';
+    if (score >= 40) return 'text-orange-500';
+    return 'text-red-500';
+  };
+
+  const getGTmetrixUsageText = () => {
+    if (!gtmetrixUsage) return '';
+    return `(${gtmetrixUsage.used} of ${gtmetrixUsage.limit} scans used)`;
   };
 
   return (
-    <div className="mb-6 p-4 border rounded-lg bg-gray-50">
-      <h4 className="font-medium mb-2">Performance Scores</h4>
+    <div className="space-y-2">
+      <h3 className="text-lg font-semibold mb-4">Performance Metrics</h3>
       
-      <div className="grid grid-cols-2 gap-4">
-        <div className="p-3 rounded-lg border bg-white">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-sm font-semibold">Lighthouse</p>
-              <p className="text-2xl font-bold">{business.lighthouseScore || 'N/A'}</p>
-            </div>
-            {business.lighthouseReportUrl && (
-              <a 
-                href={business.lighthouseReportUrl} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-              >
-                <ExternalLink className="h-4 w-4" />
-              </a>
+      {/* Lighthouse Score */}
+      <div className="border rounded-lg p-4">
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h4 className="text-sm font-medium">Lighthouse Score</h4>
+            {business.lighthouseScore || business.lighthouse_score ? (
+              <p className={`text-xl font-bold ${getScoreColor(business.lighthouseScore || business.lighthouse_score || 0)}`}>
+                {business.lighthouseScore || business.lighthouse_score}/100
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">Not scanned yet</p>
             )}
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Last scan: {formatDate(business.lastLighthouseScan)}
-          </p>
-          <Button 
-            size="sm" 
-            className="mt-2 w-full" 
-            onClick={onLighthouseScan}
-            disabled={isScanning}
-          >
-            {isScanning ? 'Scanning...' : 'Run Lighthouse Scan'}
-          </Button>
-        </div>
-        
-        <div className="p-3 rounded-lg border bg-white">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-sm font-semibold">GTmetrix</p>
-              <p className="text-2xl font-bold">{business.gtmetrixScore || 'N/A'}</p>
-            </div>
-            {business.gtmetrixReportUrl && (
-              <a 
-                href={business.gtmetrixReportUrl} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
+          <div className="flex flex-col items-end gap-2">
+            <Button 
+              size="sm" 
+              variant="outline"
+              disabled={isScanning}
+              onClick={onLighthouseScan}
+            >
+              {isScanning ? (
+                <>
+                  <Loader2Icon className="h-3 w-3 mr-1 animate-spin" />
+                  Scanning
+                </>
+              ) : (
+                <>
+                  <LightbulbIcon className="h-3 w-3 mr-1" />
+                  Scan
+                </>
+              )}
+            </Button>
+            
+            {(business.lighthouseReportUrl || business.lighthouse_report_url) && (
+              <Button 
+                size="sm" 
+                variant="link" 
+                className="h-6 px-0"
+                onClick={() => window.open(business.lighthouseReportUrl || business.lighthouse_report_url, '_blank')}
               >
-                <ExternalLink className="h-4 w-4" />
-              </a>
+                <ExternalLinkIcon className="h-3 w-3 mr-1" />
+                View Report
+              </Button>
             )}
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Last scan: {formatDate(business.lastGtmetrixScan)}
-          </p>
-          <Button 
-            size="sm" 
-            variant="outline" 
-            className="mt-2 w-full" 
-            onClick={onGTmetrixScan}
-            disabled={isScanning || (gtmetrixUsage && gtmetrixUsage.used >= gtmetrixUsage.limit)}
-          >
-            {isScanning ? 'Scanning...' : 'Run GTmetrix Scan'}
-          </Button>
-          {gtmetrixUsage && (
-            <p className="text-xs text-center mt-1">
-              {gtmetrixUsage.used}/{gtmetrixUsage.limit} scans used this month
-            </p>
-          )}
         </div>
+        {business.lastLighthouseScan && (
+          <p className="text-xs text-muted-foreground mt-2">
+            Last scan: {new Date(business.lastLighthouseScan).toLocaleDateString()}
+          </p>
+        )}
       </div>
+      
+      {/* GTmetrix Score */}
+      <div className="border rounded-lg p-4">
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h4 className="text-sm font-medium">GTmetrix Score {getGTmetrixUsageText()}</h4>
+            {business.gtmetrixScore || business.gtmetrix_score ? (
+              <p className={`text-xl font-bold ${getScoreColor(business.gtmetrixScore || business.gtmetrix_score || 0)}`}>
+                {business.gtmetrixScore || business.gtmetrix_score}/100
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">Not scanned yet</p>
+            )}
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <Button 
+              size="sm" 
+              variant="outline"
+              disabled={isScanning || (gtmetrixUsage && gtmetrixUsage.used >= gtmetrixUsage.limit)}
+              onClick={onGTmetrixScan}
+            >
+              {isScanning ? (
+                <>
+                  <Loader2Icon className="h-3 w-3 mr-1 animate-spin" />
+                  Scanning
+                </>
+              ) : (
+                <>
+                  <GaugeIcon className="h-3 w-3 mr-1" />
+                  Scan
+                </>
+              )}
+            </Button>
+            
+            {(business.gtmetrixReportUrl || business.gtmetrix_report_url) && (
+              <Button 
+                size="sm" 
+                variant="link" 
+                className="h-6 px-0"
+                onClick={() => window.open(business.gtmetrixReportUrl || business.gtmetrix_report_url, '_blank')}
+              >
+                <ExternalLinkIcon className="h-3 w-3 mr-1" />
+                View Report
+              </Button>
+            )}
+          </div>
+        </div>
+        {business.lastGtmetrixScan && (
+          <p className="text-xs text-muted-foreground mt-2">
+            Last scan: {new Date(business.lastGtmetrixScan).toLocaleDateString()}
+          </p>
+        )}
+      </div>
+      
+      {/* CMS Detection */}
+      <CMSDetection 
+        business={business} 
+        isScanning={isScanning} 
+        onScanComplete={onScanComplete} 
+      />
     </div>
   );
 };
