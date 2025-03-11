@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { Business } from '@/types/business';
 import { toast } from 'sonner';
@@ -41,20 +40,19 @@ export async function clearAllBusinesses(): Promise<boolean> {
   try {
     console.log('Starting clearAllBusinesses function');
     
-    // Instead of using `.is('id', 'NOT NULL')`, let's try a more direct approach
-    console.log('Attempting to delete all businesses records without filter');
-    const { error, count } = await supabase
+    // Simple delete without trying to return count
+    console.log('Attempting to delete all businesses records');
+    const { error } = await supabase
       .from('businesses')
       .delete()
-      .neq('id', '')  // This is a workaround to select all records
-      .select('count');
+      .neq('id', '');
     
     if (error) {
       console.error('Supabase delete error:', error);
       throw error;
     }
     
-    console.log(`Successfully deleted ${count || 'all'} business records`);
+    console.log('Successfully deleted all business records');
     
     // Reset any usage counters if needed
     try {
