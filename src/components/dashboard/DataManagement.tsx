@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { Trash2, RefreshCcw, AlertOctagon, Check, CheckSquare, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { clearAllBusinesses, clearSelectedBusinesses } from '@/services/businessService';
+import { clearAllBusinesses, clearSelectedBusinesses } from '@/services/businessCrudService';
 import { Business } from '@/types/business';
 
 interface DataManagementProps {
@@ -33,17 +32,15 @@ const DataManagement: React.FC<DataManagementProps> = ({
       const result = await clearAllBusinesses();
       console.log('Clear all businesses result:', result);
       
-      // Force immediate data refresh
+      // Close dialog and trigger refresh immediately
       setIsDeleteDialogOpen(false);
+      onDataCleared();
       
-      // Wait a moment before triggering the refresh to ensure the database has updated
-      setTimeout(() => {
-        onDataCleared();
-        toast.success('All business data has been cleared');
-      }, 500);
+      // Show success message
+      toast.success('All business data has been cleared');
     } catch (error) {
       console.error('Error clearing data:', error);
-      toast.error('Failed to clear data');
+      toast.error('Failed to clear data. Please try again.');
     } finally {
       setIsDeleting(false);
     }

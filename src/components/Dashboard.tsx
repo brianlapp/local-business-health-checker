@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Business } from '@/types/business';
-import { getBusinesses } from '@/services/businessService';
+import { getBusinesses } from '@/services/businessCrudService';
 import DashboardHeader from './dashboard/DashboardHeader';
 import DashboardStats from './dashboard/DashboardStats';
 import DashboardControls from './dashboard/DashboardControls';
@@ -61,16 +61,25 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
   useEffect(() => {
     const fetchBusinesses = async () => {
       setLoading(true);
-      const data = await getBusinesses();
-      setBusinesses(data);
-      setLoading(false);
+      try {
+        const data = await getBusinesses();
+        setBusinesses(data || []);
+      } catch (error) {
+        console.error('Error fetching businesses:', error);
+        setBusinesses([]);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchBusinesses();
   }, [dataRefreshKey]);
 
   const handleDataRefresh = () => {
+    console.log('Data refresh triggered');
+    // Force immediate data refresh by updating the refresh key
     setDataRefreshKey(prev => prev + 1);
+    // Clear any selections
     clearSelections();
   };
 
