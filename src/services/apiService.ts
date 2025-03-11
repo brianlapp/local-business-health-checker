@@ -5,10 +5,14 @@
 import { scanBusinessesInArea } from './scanningService';
 import { addBusiness, getBusinesses } from './businessCrudService';
 import { generateIssues, isCMSOutdated, isWebsiteSecure } from './businessUtilsService';
+import { scanWithGoogleMaps } from './scanning/googleMapsScanner';
+import { scanWithWebScraper } from './scanning/webScraperService';
 
 // Re-export everything
 export {
   scanBusinessesInArea,
+  scanWithGoogleMaps,
+  scanWithWebScraper,
   addBusiness,
   getBusinesses,
   generateIssues,

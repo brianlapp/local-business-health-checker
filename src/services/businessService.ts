@@ -23,6 +23,11 @@ import {
   isWebsiteSecure
 } from './businessUtilsService';
 
+// Also export from the new scanning services
+import { scanBusinessesInArea } from './scanningService';
+import { scanWithGoogleMaps } from './scanning/googleMapsScanner';
+import { scanWithWebScraper } from './scanning/webScraperService';
+
 // Re-export everything
 export {
   // CRUD Operations
@@ -37,6 +42,11 @@ export {
   scanWithGTmetrix,
   scanWithBuiltWith,
   getGTmetrixUsage,
+  
+  // New scanning APIs
+  scanBusinessesInArea,
+  scanWithGoogleMaps,
+  scanWithWebScraper,
   
   // Utility Functions
   generateIssues,
