@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Trash2, RefreshCcw, AlertOctagon, Check, CheckSquare, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,6 +28,7 @@ const DataManagement: React.FC<DataManagementProps> = ({
   const handleClearAllData = async () => {
     setIsDeleting(true);
     try {
+      console.log('Initiating clear all businesses operation');
       const result = await clearAllBusinesses();
       console.log('Clear all businesses result:', result);
       
@@ -52,14 +52,17 @@ const DataManagement: React.FC<DataManagementProps> = ({
 
     setIsDeleting(true);
     try {
-      await clearSelectedBusinesses(selectedBusinesses);
+      console.log('Deleting selected businesses:', selectedBusinesses);
+      const result = await clearSelectedBusinesses(selectedBusinesses);
+      console.log('Delete selected result:', result);
+      
       onDataCleared();
       toast.success(`${selectedBusinesses.length} businesses deleted`);
       setSelectedBusinesses([]);
       setBulkSelectionMode(false);
     } catch (error) {
-      toast.error('Failed to delete selected businesses');
       console.error('Error deleting businesses:', error);
+      toast.error('Failed to delete selected businesses');
     } finally {
       setIsDeleting(false);
     }

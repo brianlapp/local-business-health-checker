@@ -33,20 +33,36 @@ export async function getBusinesses(): Promise<Business[]> {
 
 export async function clearAllBusinesses(): Promise<boolean> {
   try {
-    // Delete all data from businesses table
+    console.log('Starting clearAllBusinesses function');
+    
+    // Delete all data from businesses table with explicit condition to make sure we match all records
     const { error } = await supabase
       .from('businesses')
       .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000'); // Make sure we match all records
+      .neq('id', '00000000-0000-0000-0000-000000000000'); // Using neq with a UUID that won't match any record ensures all records are targeted
     
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase delete error:', error);
+      throw error;
+    }
     
     // Reset any usage counters if needed
-    await supabase
-      .from('gtmetrix_usage')
-      .update({ scans_used: 0 })
-      .neq('id', '00000000-0000-0000-0000-000000000000');
+    try {
+      const resetResult = await supabase
+        .from('gtmetrix_usage')
+        .update({ scans_used: 0 })
+        .neq('id', '00000000-0000-0000-0000-000000000000');
       
+      if (resetResult.error) {
+        console.warn('Warning: Could not reset GTmetrix usage counters:', resetResult.error);
+        // Continue anyway as this is not critical
+      }
+    } catch (counterError) {
+      console.warn('Warning: Error while resetting counters:', counterError);
+      // Continue anyway as this is not critical
+    }
+    
+    console.log('clearAllBusinesses completed successfully');
     return true;
   } catch (error) {
     console.error('Error clearing business data:', error);
@@ -58,13 +74,20 @@ export async function clearSelectedBusinesses(businessIds: string[]): Promise<bo
   try {
     if (!businessIds.length) return false;
     
-    // Delete selected businesses
+    console.log('Deleting selected businesses:', businessIds);
+    
+    // Delete selected businesses with explicit IDs
     const { error } = await supabase
       .from('businesses')
       .delete()
       .in('id', businessIds);
     
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase delete selected error:', error);
+      throw error;
+    }
+    
+    console.log('Selected businesses deleted successfully');
     return true;
   } catch (error) {
     console.error('Error deleting selected businesses:', error);
