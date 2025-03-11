@@ -57,7 +57,9 @@ export async function scanBusinessesInArea(
     console.log(`Scanning businesses in ${location} using ${source} with debug mode: ${debugMode}`);
     
     if (source === 'google-maps') {
-      const result = await scanWithGoogleMaps(location, debugMode);
+      // Fix: Pass appropriate arguments - use a numeric radius instead of debugMode boolean
+      const radius = 10; // Default radius of 10km
+      const result = await scanWithGoogleMaps(location, radius);
       return result as BusinessScanResponse;
     } else {
       // For other sources like yellowpages, localstack, etc.
