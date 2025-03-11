@@ -5,12 +5,18 @@ import { toast } from 'sonner';
 
 export async function getBusinesses(): Promise<Business[]> {
   try {
+    console.log('Fetching businesses from database');
     const { data, error } = await supabase
       .from('businesses')
       .select('*')
       .order('score', { ascending: false });
     
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase fetch error:', error);
+      throw error;
+    }
+    
+    console.log(`Retrieved ${data?.length || 0} businesses`);
     
     return data.map(business => ({
       ...business,
@@ -35,12 +41,12 @@ export async function clearAllBusinesses(): Promise<boolean> {
   try {
     console.log('Starting clearAllBusinesses function');
     
-    // Use a different approach to delete all businesses
+    // Delete all businesses with explicit wildcard
     console.log('Attempting to delete all businesses records');
     const { error } = await supabase
       .from('businesses')
       .delete()
-      .gte('id', '00000000-0000-0000-0000-000000000000');
+      .is('id', 'NOT NULL');
     
     if (error) {
       console.error('Supabase delete error:', error);
@@ -55,7 +61,7 @@ export async function clearAllBusinesses(): Promise<boolean> {
       const resetResult = await supabase
         .from('gtmetrix_usage')
         .update({ scans_used: 0 })
-        .gte('id', '00000000-0000-0000-0000-000000000000');
+        .is('id', 'NOT NULL');
       
       if (resetResult.error) {
         console.warn('Warning: Could not reset GTmetrix usage counters:', resetResult.error);

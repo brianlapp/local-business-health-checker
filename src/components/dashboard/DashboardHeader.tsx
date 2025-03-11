@@ -3,7 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { getBusinesses } from '@/services/businessService';
 
 interface DashboardHeaderProps {
@@ -17,16 +17,18 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   setLoading, 
   loading 
 }) => {
-  const { toast } = useToast();
-
   const handleRefresh = async () => {
     setLoading(true);
-    const data = await getBusinesses();
-    setBusinesses(data);
-    setLoading(false);
-    toast({
-      description: "Business data refreshed",
-    });
+    try {
+      const data = await getBusinesses();
+      setBusinesses(data);
+      toast.success("Business data refreshed");
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      toast.error("Failed to refresh data");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
