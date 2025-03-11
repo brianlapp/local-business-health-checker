@@ -106,15 +106,23 @@ const MapScanner = () => {
       console.log('Scan response:', response);
       
       // Check if we're using mock data based on the response metadata
-      const businesses = Array.isArray(response) ? response : [];
+      let businesses: Business[] = [];
+      
+      // Check if response is a business array or a BusinessScanResponse
+      if (Array.isArray(response)) {
+        businesses = response;
+      } else if ('businesses' in response && Array.isArray(response.businesses)) {
+        businesses = response.businesses;
+        
+        // Set debug info if present
+        if (debugMode && response.debugInfo) {
+          setDebugInfo(response.debugInfo);
+          console.log('Debug info received and stored:', response.debugInfo);
+        }
+      }
+      
       const mockDataCheck = businesses.length > 0 && businesses.every(b => b.id && b.id.startsWith('mock-'));
       setUsingMockData(mockDataCheck);
-      
-      // Store debug info if present and debug mode is enabled
-      if (debugMode && 'debugInfo' in response && response.debugInfo) {
-        console.log('Debug info received:', response.debugInfo);
-        setDebugInfo(response.debugInfo);
-      }
       
       if (businesses.length === 0) {
         setError(`No businesses found in ${finalLocation}. Try a different location or data source.`);
