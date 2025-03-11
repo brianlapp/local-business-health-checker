@@ -17,13 +17,21 @@ serve(async (req) => {
   try {
     // Log environment details for debugging
     console.log(`Function invoked. API key exists: ${Boolean(GOOGLE_MAPS_API_KEY)}`);
-    console.log(`API key first 5 chars: ${GOOGLE_MAPS_API_KEY ? GOOGLE_MAPS_API_KEY.substring(0, 5) + '...' : 'undefined'}`);
+    if (GOOGLE_MAPS_API_KEY) {
+      console.log(`API key first 5 chars: ${GOOGLE_MAPS_API_KEY.substring(0, 5)}...`);
+      console.log(`API key length: ${GOOGLE_MAPS_API_KEY.length} characters`);
+    } else {
+      console.error('Google Maps API key is not set');
+    }
     
     // Validate API key
     if (!GOOGLE_MAPS_API_KEY) {
       console.error('Google Maps API key is not set');
       return new Response(JSON.stringify({ 
         error: 'Google Maps API key is not configured',
+        message: 'Please set a valid Google Maps API key in the Supabase Edge Function secrets',
+        test_mode: true,
+        businesses: []
       }), {
         status: 200, // Always return 200 to prevent edge function errors
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -35,6 +43,8 @@ serve(async (req) => {
     if (!location) {
       return new Response(JSON.stringify({
         error: 'Location parameter is required',
+        test_mode: true,
+        businesses: []
       }), {
         status: 200, // Always return 200
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -54,6 +64,8 @@ serve(async (req) => {
     try {
       const searchResponse = await fetch(searchUrl.toString());
       
+      console.log(`Google API HTTP Status: ${searchResponse.status} ${searchResponse.statusText}`);
+      
       // Check if the response is ok before getting JSON
       if (!searchResponse.ok) {
         console.error(`Failed to fetch data: ${searchResponse.status} ${searchResponse.statusText}`);
@@ -64,6 +76,7 @@ serve(async (req) => {
           error: `Google API request failed with status: ${searchResponse.status}`,
           message: 'Failed to connect to Google Maps API. This could be due to billing issues with your Google Cloud account.',
           details: responseText,
+          test_mode: true,
           businesses: []
         }), {
           status: 200, // Always return 200
@@ -88,14 +101,27 @@ serve(async (req) => {
                               errorMessage.includes('API project') ||
                               errorMessage.toLowerCase().includes('enabled');
         
+        // Check for API not enabled message
+        const isApiNotEnabled = errorMessage.toLowerCase().includes('not enabled') || 
+                               errorMessage.toLowerCase().includes('enable it');
+        
+        let troubleshooting = '';
+        if (isApiNotEnabled) {
+          troubleshooting = 'You need to enable the Places API in your Google Cloud Console. Go to https://console.cloud.google.com/apis/library/places-backend.googleapis.com and click "Enable".';
+        } else if (isBillingIssue) {
+          troubleshooting = 'Check your payment method and billing status in Google Cloud Console. Make sure you have a valid credit card on file and billing is enabled.';
+        }
+        
         return new Response(JSON.stringify({ 
           error: 'Google Maps API authorization error',
-          message: isBillingIssue 
-            ? 'Your Google Cloud account has a billing issue. Please check your payment method and billing status in Google Cloud Console.'
-            : 'API key may have other authorization issues. Please check your Google Cloud Console.',
-          details: 'We detected this is likely a billing/payment issue based on the error message from Google. You need to resolve payment issues in your Google Cloud Console.',
-          billing_issue: isBillingIssue,
-          error_message: searchData.error_message,
+          message: isApiNotEnabled 
+            ? 'The Places API is not enabled in your Google Cloud project.' 
+            : (isBillingIssue 
+                ? 'Your Google Cloud account has a billing issue.' 
+                : 'API key may have other authorization issues.'),
+          troubleshooting: troubleshooting,
+          details: 'Error from Google: ' + searchData.error_message,
+          test_mode: true,
           businesses: []
         }), {
           status: 200, // Return 200 to prevent edge function error
@@ -109,6 +135,7 @@ serve(async (req) => {
         return new Response(JSON.stringify({
           error: `Google Maps API error: ${searchData.status}`,
           message: searchData.error_message || 'Failed to search for businesses',
+          test_mode: true,
           businesses: [],
         }), {
           status: 200, // Return 200 to prevent edge function error
@@ -164,6 +191,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ 
         businesses,
         status: 'OK',
+        test_mode: false,
       }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -175,6 +203,7 @@ serve(async (req) => {
         error: 'Google Maps API fetch error',
         message: fetchError.message || 'Failed to connect to Google Maps API',
         details: 'This could be due to network issues, invalid API key format, or billing issues with your Google Cloud account',
+        test_mode: true,
         businesses: []
       }), {
         status: 200, // Return 200 to prevent edge function error
@@ -189,6 +218,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       error: error.message || 'An unexpected error occurred',
       message: 'There was a problem processing your request',
+      test_mode: true,
       businesses: [],
     }), {
       status: 200, 

@@ -1,15 +1,17 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, MapPin, Loader2, AlertCircle, Info, Bug } from 'lucide-react';
+import { Search, MapPin, Loader2, AlertCircle, Info, Bug, ExternalLink } from 'lucide-react';
 import { scanBusinessesInArea } from '@/services/apiService';
 import { Business, ScanDebugInfo, BusinessScanResponse } from '@/types/business';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
+import { AlertCircleIcon } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const MapScanner = () => {
   const [location, setLocation] = useState('');
@@ -18,6 +20,7 @@ const MapScanner = () => {
   const [scannedBusinesses, setScannedBusinesses] = useState<Business[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [apiTip, setApiTip] = useState<string | null>(null);
+  const [apiTroubleshooting, setApiTroubleshooting] = useState<string | null>(null);
   const [source, setSource] = useState('google'); // Default to Google Maps API
   const [usingMockData, setUsingMockData] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
@@ -76,6 +79,7 @@ const MapScanner = () => {
     setScannedBusinesses([]);
     setError(null);
     setApiTip(null);
+    setApiTroubleshooting(null);
     setUsingMockData(false);
     setDebugInfo(null);
     
@@ -106,34 +110,58 @@ const MapScanner = () => {
       
       // Check if we're using mock data based on the response metadata
       let businesses: Business[] = [];
+      let testMode = false;
       
       // Check if response is a business array or a BusinessScanResponse
       if (Array.isArray(response)) {
         businesses = response;
-      } else if ('businesses' in response && Array.isArray(response.businesses)) {
+      } else if ('businesses' in response) {
         businesses = response.businesses;
+        
+        // Check if we're in test mode
+        if ('test_mode' in response) {
+          testMode = response.test_mode;
+        }
+        
+        // Check for troubleshooting info
+        if ('troubleshooting' in response && response.troubleshooting) {
+          setApiTroubleshooting(response.troubleshooting);
+        }
         
         // Set debug info if present
         if (debugMode && response.debugInfo) {
-          // Fix TypeScript error by properly typing the debug info
           setDebugInfo(response.debugInfo as ScanDebugInfo);
           console.log('Debug info received and stored:', response.debugInfo);
         }
+        
+        // Set error if present
+        if ('error' in response && response.error) {
+          setError(response.error);
+          if ('message' in response && response.message) {
+            setApiTip(response.message);
+          }
+        }
       }
       
-      const mockDataCheck = businesses.length > 0 && businesses.every(b => b.id && b.id.startsWith('mock-'));
+      const mockDataCheck = testMode || (businesses.length > 0 && businesses.every(b => b.id && b.id.startsWith('mock-')));
       setUsingMockData(mockDataCheck);
       
       if (businesses.length === 0) {
-        setError(`No businesses found in ${finalLocation}. Try a different location or data source.`);
+        if (!error) {
+          setError(`No businesses found in ${finalLocation}. Try a different location or data source.`);
+        }
         toast.info('No businesses found in this area. Try a different search.');
-        setApiTip('Try using a more specific location or a different area. Make sure to include the city and province in the format "City, Province" or "City, Province, Canada".');
+        if (!apiTip) {
+          setApiTip('Try using a more specific location or a different area. Make sure to include the city and province in the format "City, Province" or "City, Province, Canada".');
+        }
       } else {
         setScannedBusinesses(businesses);
         
         if (mockDataCheck) {
           toast.success(`Found ${businesses.length} sample businesses for ${finalLocation}`);
-          setApiTip('We\'re showing sample data because the API couldn\'t access real business data for this location.');
+          if (!apiTip) {
+            setApiTip('We\'re showing sample data because the API couldn\'t access real business data for this location.');
+          }
         } else {
           toast.success(`Found ${businesses.length} businesses in ${finalLocation}`);
         }
@@ -287,17 +315,46 @@ const MapScanner = () => {
             <CardTitle>Scan Results</CardTitle>
           </CardHeader>
           <CardContent>
+            {error && source === 'google' && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircleIcon className="h-4 w-4" />
+                <AlertTitle>Google Maps API Error</AlertTitle>
+                <AlertDescription>
+                  <p>{error}</p>
+                  {apiTip && <p className="mt-1">{apiTip}</p>}
+                  {apiTroubleshooting && (
+                    <div className="mt-2 p-2 bg-destructive/10 rounded-md text-sm">
+                      <p className="font-medium">Troubleshooting:</p>
+                      <p>{apiTroubleshooting}</p>
+                      <a 
+                        href="https://console.cloud.google.com/apis/library/places-backend.googleapis.com" 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="flex items-center mt-2 text-blue-600 hover:underline"
+                      >
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        Google Cloud Console - Enable Places API
+                      </a>
+                    </div>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+            
             {usingMockData && !error && (
               <div className="bg-amber-50 text-amber-800 p-4 rounded-md mb-4 flex items-start dark:bg-amber-900/20 dark:text-amber-400">
                 <Info className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium">Demo Mode Active</p>
-                  <p className="text-sm">You're viewing sample business data. In a production environment, you'd connect to a business data API.</p>
+                  <p className="text-sm">
+                    You're viewing sample business data. In a production environment, you'd connect to a business data API.
+                    {apiTip && <span className="block mt-1">{apiTip}</span>}
+                  </p>
                 </div>
               </div>
             )}
             
-            {error && (
+            {error && source !== 'google' && (
               <div className="bg-destructive/10 text-destructive p-4 rounded-md mb-4 flex items-start">
                 <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
                 <div>
@@ -311,7 +368,7 @@ const MapScanner = () => {
               </div>
             )}
             
-            {apiTip && !error && (
+            {apiTip && !error && !usingMockData && (
               <div className="bg-blue-50 text-blue-800 p-4 rounded-md mb-4 flex items-start dark:bg-blue-900/20 dark:text-blue-400">
                 <Info className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
                 <p className="text-sm whitespace-pre-line">{apiTip}</p>

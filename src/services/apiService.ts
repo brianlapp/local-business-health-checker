@@ -13,6 +13,10 @@ export const scanBusinessesInArea = async (location: string, source: string = 'g
     
     let businesses: Business[] = [];
     let debugInfo: ScanDebugInfo | null = null;
+    let testMode = false;
+    let errorInfo = null;
+    let apiMessage = null;
+    let troubleshooting = null;
     
     try {
       // Choose the appropriate source for business data
@@ -25,11 +29,17 @@ export const scanBusinessesInArea = async (location: string, source: string = 'g
             id: toastId
           });
           
+          errorInfo = result.error;
+          apiMessage = result.message;
+          troubleshooting = result.troubleshooting;
+          testMode = result.test_mode || false;
+          
           // If Google Maps API fails, try using localstack (which gives mock data)
           console.log('Falling back to localstack due to Google Maps API error');
           businesses = await getMockBusinessData(location, 'fallback');
         } else {
           businesses = result.businesses;
+          testMode = result.test_mode || false;
           
           toast.success(`Found ${businesses.length} businesses in ${location} using Google Maps`, {
             id: toastId
@@ -53,6 +63,7 @@ export const scanBusinessesInArea = async (location: string, source: string = 'g
         // Use localstack source (delivers mock data)
         const result = await scanWithWebScraper(location, 'localstack', debugMode);
         businesses = Array.isArray(result) ? result : result.businesses;
+        testMode = true;
         
         if ('debugInfo' in result) {
           debugInfo = result.debugInfo;
@@ -70,15 +81,19 @@ export const scanBusinessesInArea = async (location: string, source: string = 'g
         return [];
       }
       
-      // Return the full response with debug info if in debug mode
-      if (debugMode && debugInfo) {
+      // Return the full response with additional info if available
+      if (errorInfo || debugInfo || testMode || apiMessage || troubleshooting) {
         return {
           businesses,
           count: businesses.length,
           location,
           source,
           timestamp: new Date().toISOString(),
-          debugInfo
+          test_mode: testMode,
+          error: errorInfo,
+          message: apiMessage,
+          troubleshooting,
+          debugInfo: debugInfo
         };
       }
       
@@ -91,7 +106,12 @@ export const scanBusinessesInArea = async (location: string, source: string = 'g
       });
       
       // Return mock data as a fallback
-      return getMockBusinessData(location, 'error-fallback');
+      return {
+        businesses: await getMockBusinessData(location, 'error-fallback'),
+        test_mode: true,
+        error: fetchError.message || 'Failed to search for businesses',
+        message: 'Using sample data due to an error with the business search API'
+      };
     }
   } catch (error: any) {
     console.error('Error scanning businesses:', error);
@@ -101,7 +121,13 @@ export const scanBusinessesInArea = async (location: string, source: string = 'g
 };
 
 // Function to scan businesses using Google Maps API
-async function scanWithGoogleMaps(location: string, radius: number = 10): Promise<{businesses: Business[], error?: string, message?: string}> {
+async function scanWithGoogleMaps(location: string, radius: number = 10): Promise<{
+  businesses: Business[], 
+  error?: string, 
+  message?: string,
+  troubleshooting?: string,
+  test_mode?: boolean
+}> {
   try {
     console.log(`Scanning with Google Maps API: ${location}, radius: ${radius}km`);
     
@@ -115,7 +141,8 @@ async function scanWithGoogleMaps(location: string, radius: number = 10): Promis
       return { 
         businesses: [], 
         error: error.message || 'Failed to connect to Google Maps API',
-        message: 'There was an issue connecting to the Google Maps API. Please try again later.'
+        message: 'There was an issue connecting to the Google Maps API. Please try again later.',
+        test_mode: true
       };
     }
     
@@ -127,7 +154,9 @@ async function scanWithGoogleMaps(location: string, radius: number = 10): Promis
       return {
         businesses: [],
         error: data.error,
-        message: data.message || 'Google Maps API returned an error'
+        message: data.message || 'Google Maps API returned an error',
+        troubleshooting: data.troubleshooting,
+        test_mode: data.test_mode || true
       };
     }
     
@@ -135,7 +164,8 @@ async function scanWithGoogleMaps(location: string, radius: number = 10): Promis
       return {
         businesses: [],
         error: 'No businesses found',
-        message: 'No businesses with websites were found in this location.'
+        message: 'No businesses with websites were found in this location.',
+        test_mode: data.test_mode || false
       };
     }
     
@@ -143,14 +173,16 @@ async function scanWithGoogleMaps(location: string, radius: number = 10): Promis
     const processedBusinesses = await processScrapedBusinesses(data.businesses, 'google-maps', location);
     
     return {
-      businesses: processedBusinesses
+      businesses: processedBusinesses,
+      test_mode: data.test_mode || false
     };
   } catch (error: any) {
     console.error('Error in Google Maps scan:', error);
     return {
       businesses: [],
       error: error.message || 'An unexpected error occurred',
-      message: 'Failed to search for businesses using Google Maps.'
+      message: 'Failed to search for businesses using Google Maps.',
+      test_mode: true
     };
   }
 }
