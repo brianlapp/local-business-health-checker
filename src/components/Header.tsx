@@ -1,7 +1,8 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Search, Bell, Settings } from 'lucide-react';
+import { Search, Bell, Settings, Map } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -39,9 +40,12 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
           <Button variant="ghost" size="icon">
             <Settings className="h-5 w-5" />
           </Button>
-          <Button className="hidden sm:flex">
-            New Scan
-          </Button>
+          <Link to="/map-scanner">
+            <Button className="hidden sm:flex">
+              <Map className="mr-2 h-4 w-4" />
+              Scan Area
+            </Button>
+          </Link>
         </div>
       </div>
     </header>

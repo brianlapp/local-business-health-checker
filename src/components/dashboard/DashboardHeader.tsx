@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Map, Plus, RefreshCw } from 'lucide-react';
+import { Plus, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { getBusinesses } from '@/services/businessService';
@@ -37,12 +37,6 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
       </div>
       
       <div className="flex items-center space-x-3">
-        <Link to="/map-scanner">
-          <Button>
-            <Map className="mr-2 h-4 w-4" />
-            Scan Area
-          </Button>
-        </Link>
         <Link to="/add-business">
           <Button variant="outline">
             <Plus className="mr-2 h-4 w-4" />
