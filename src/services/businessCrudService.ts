@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { Business } from '@/types/business';
 import { toast } from 'sonner';
@@ -41,12 +40,12 @@ export async function clearAllBusinesses(): Promise<boolean> {
   try {
     console.log('Starting clearAllBusinesses function');
     
-    // Use delete() without filter to clear all records
+    // Use delete() without any filters to clear all records
     console.log('Attempting to delete all businesses records');
     const { error } = await supabase
       .from('businesses')
       .delete()
-      .neq('id', null); // This works better than is('id', 'NOT NULL')
+      .filter('id', 'not.is', null); // This is the correct syntax for deleting all records
     
     if (error) {
       console.error('Supabase delete error:', error);
@@ -61,7 +60,7 @@ export async function clearAllBusinesses(): Promise<boolean> {
       const resetResult = await supabase
         .from('gtmetrix_usage')
         .update({ scans_used: 0 })
-        .neq('id', null);
+        .filter('id', 'not.is', null); // Use the same approach for consistency
       
       if (resetResult.error) {
         console.warn('Warning: Could not reset GTmetrix usage counters:', resetResult.error);
