@@ -295,19 +295,47 @@ const processScrapedBusinesses = async (scrapedBusinesses: any[], source: string
   
   // Process and store the discovered businesses
   const businesses: Business[] = [];
+  const existingBusinesses: Business[] = [];
+  
+  // First collect all websites to check at once
+  const websites = scrapedBusinesses.map(business => business.website);
+  
+  // Fetch all existing businesses with these websites in one query
+  const { data: existingBusinessData } = await supabase
+    .from('businesses')
+    .select('*')
+    .in('website', websites);
+    
+  const existingBusinessMap = new Map();
+  if (existingBusinessData) {
+    existingBusinessData.forEach(business => {
+      existingBusinessMap.set(business.website, business);
+    });
+  }
   
   for (const business of scrapedBusinesses) {
     try {
-      // Check if business already exists
-      const { data: existingBusinesses } = await supabase
-        .from('businesses')
-        .select('id')
-        .eq('website', business.website)
-        .limit(1);
+      // Check if business already exists using our map
+      const existingBusiness = existingBusinessMap.get(business.website);
         
-      if (existingBusinesses && existingBusinesses.length > 0) {
+      if (existingBusiness) {
         console.log(`Business already exists: ${business.name}`);
-        continue; // Skip existing businesses
+        
+        // Add the existing business to our results
+        existingBusinesses.push({
+          ...existingBusiness,
+          lastChecked: existingBusiness.last_checked,
+          speedScore: existingBusiness.speed_score,
+          lighthouseScore: existingBusiness.lighthouse_score,
+          gtmetrixScore: existingBusiness.gtmetrix_score,
+          lighthouseReportUrl: existingBusiness.lighthouse_report_url,
+          gtmetrixReportUrl: existingBusiness.gtmetrix_report_url,
+          lastLighthouseScan: existingBusiness.last_lighthouse_scan,
+          lastGtmetrixScan: existingBusiness.last_gtmetrix_scan,
+          issues: generateIssues(existingBusiness),
+          source: source // Set source for UI display purposes
+        });
+        continue; // Skip to the next business
       }
       
       // Calculate initial score
@@ -346,8 +374,11 @@ const processScrapedBusinesses = async (scrapedBusinesses: any[], source: string
     }
   }
   
-  console.log(`Successfully added ${businesses.length} new businesses`);
-  return businesses;
+  // Combine new and existing businesses
+  const allBusinesses = [...businesses, ...existingBusinesses];
+  
+  console.log(`Successfully added ${businesses.length} new businesses and found ${existingBusinesses.length} existing businesses`);
+  return allBusinesses;
 };
 
 // Process mock businesses without saving them to database (demo mode)
