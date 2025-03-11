@@ -3,136 +3,95 @@ import { Business, BusinessScanResponse, ScanDebugInfo } from '@/types/business'
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
 
-// Function to scan businesses in a geographic area using web scraping
-export const scanBusinessesInArea = async (location: string, source: string = 'yellowpages', debugMode: boolean = false): Promise<Business[] | BusinessScanResponse> => {
+// Function to scan businesses in a geographic area using Google Maps API
+export const scanBusinessesInArea = async (location: string, source: string = 'google', debugMode: boolean = false): Promise<Business[] | BusinessScanResponse> => {
   try {
-    console.log(`Scanning businesses in ${location} using ${source} scraper with debug mode: ${debugMode ? 'ON' : 'OFF'}`);
+    console.log(`Scanning businesses in ${location} using ${source} source with debug mode: ${debugMode ? 'ON' : 'OFF'}`);
     
     // Show toast to user
     const toastId = toast.loading(`Scanning for businesses in ${location}...`);
     
-    // Call the edge function to scrape for businesses with a timeout
-    const timeoutMs = 35000; // 35 seconds timeout (edge functions have 60s max)
+    let businesses: Business[] = [];
+    let debugInfo: ScanDebugInfo | null = null;
     
     try {
-      // Set up AbortController for timeout handling
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-      
-      // Call the edge function with debug mode parameter
-      // Note: Supabase SDK doesn't support the signal property for edge functions
-      // We'll handle the timeout differently
-      const { data, error } = await supabase.functions.invoke('web-scraper', {
-        body: { location, source, debug: debugMode }
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (error) {
-        console.error('Edge function error:', error);
-        toast.error(`Error searching for businesses: ${error.message || 'Failed to search for businesses'}`, {
-          id: toastId
-        });
-        return [];
-      }
-      
-      console.log('Web scraper response:', data);
-      
-      // Handle new response format which includes businesses array
-      if (data && data.businesses && Array.isArray(data.businesses)) {
-        // Check if debug info was returned and log it
-        if (debugMode && data.debugInfo) {
-          console.log('Debug info:', data.debugInfo);
-          if (data.debugInfo.logs) {
-            console.log('Debug logs:', data.debugInfo.logs);
-          }
-        }
+      // Choose the appropriate source for business data
+      if (source === 'google') {
+        // Use Google Maps API
+        const result = await scanWithGoogleMaps(location);
         
-        const processedBusinesses = await processScrapedBusinesses(data.businesses, source, location);
-        
-        toast.success(`Found ${processedBusinesses.length} businesses in ${location}`, {
-          id: toastId
-        });
-        
-        // Return the full response with debug info if in debug mode
-        if (debugMode && data.debugInfo) {
-          return {
-            businesses: processedBusinesses,
-            count: processedBusinesses.length,
-            location,
-            source,
-            timestamp: new Date().toISOString(),
-            debugInfo: data.debugInfo as ScanDebugInfo
-          };
-        }
-        
-        return processedBusinesses;
-      }
-      
-      // Fallback for older format or errors
-      if (data.error) {
-        console.error('Web scraper error:', data.error);
-        
-        // If we got mock data despite an error, use it
-        if (data.mockData && data.businesses && data.businesses.length > 0) {
-          const mockBusinesses = await processMockBusinesses(data.businesses, location);
-          
-          toast.success(`Found ${mockBusinesses.length} sample businesses in ${location}`, {
+        if (result.error) {
+          toast.error(`Error: ${result.message || result.error}`, {
             id: toastId
           });
           
-          return mockBusinesses;
+          // If Google Maps API fails, try using localstack (which gives mock data)
+          console.log('Falling back to localstack due to Google Maps API error');
+          businesses = await getMockBusinessData(location, 'fallback');
+        } else {
+          businesses = result.businesses;
+          
+          toast.success(`Found ${businesses.length} businesses in ${location} using Google Maps`, {
+            id: toastId
+          });
+        }
+      } 
+      else if (source === 'yellowpages') {
+        // Use web scraper with YellowPages source
+        const result = await scanWithWebScraper(location, 'yellowpages', debugMode);
+        businesses = Array.isArray(result) ? result : result.businesses;
+        
+        if ('debugInfo' in result) {
+          debugInfo = result.debugInfo;
         }
         
-        toast.error(data.message || data.error, {
+        toast.success(`Found ${businesses.length} businesses in ${location}`, {
           id: toastId
         });
+      } 
+      else if (source === 'localstack') {
+        // Use localstack source (delivers mock data)
+        const result = await scanWithWebScraper(location, 'localstack', debugMode);
+        businesses = Array.isArray(result) ? result : result.businesses;
         
-        throw new Error(data.message || data.error);
+        if ('debugInfo' in result) {
+          debugInfo = result.debugInfo;
+        }
+        
+        toast.success(`Found ${businesses.length} sample businesses in ${location}`, {
+          id: toastId
+        });
       }
-      
-      // If no businesses found
-      if (!data.businesses || data.businesses.length === 0) {
-        toast.error(`No businesses found in ${location}`, {
+      else {
+        // Unknown source
+        toast.error(`Unknown source: ${source}`, {
           id: toastId
         });
         return [];
       }
       
-      // If it's mock data
-      if (data.mockData) {
-        const mockBusinesses = await processMockBusinesses(data.businesses, location);
-        
-        toast.success(`Found ${mockBusinesses.length} sample businesses in ${location}`, {
-          id: toastId
-        });
-        
-        return mockBusinesses;
+      // Return the full response with debug info if in debug mode
+      if (debugMode && debugInfo) {
+        return {
+          businesses,
+          count: businesses.length,
+          location,
+          source,
+          timestamp: new Date().toISOString(),
+          debugInfo
+        };
       }
-      
-      // Otherwise process the scraped businesses
-      const businesses = await processScrapedBusinesses(data.businesses, source, location);
-      
-      toast.success(`Found ${businesses.length} businesses in ${location}`, {
-        id: toastId
-      });
       
       return businesses;
     } catch (fetchError: any) {
-      // Handle AbortError/timeout specifically
-      if (fetchError.name === 'AbortError') {
-        console.error('Edge function timeout after', timeoutMs, 'ms');
-        toast.error(`The search timed out. Try searching with "localstack" source or a different location.`, {
-          id: toastId
-        });
-        return getMockBusinessData(location, 'timeout-fallback');
-      }
+      console.error('Scan error:', fetchError);
       
-      console.error('Edge function fetch error:', fetchError);
-      toast.error(`Failed to search for businesses: ${fetchError.message}`, {
+      toast.error(`Error: ${fetchError.message || 'Failed to search for businesses'}`, {
         id: toastId
       });
-      return [];
+      
+      // Return mock data as a fallback
+      return getMockBusinessData(location, 'error-fallback');
     }
   } catch (error: any) {
     console.error('Error scanning businesses:', error);
@@ -140,6 +99,134 @@ export const scanBusinessesInArea = async (location: string, source: string = 'y
     return [];
   }
 };
+
+// Function to scan businesses using Google Maps API
+async function scanWithGoogleMaps(location: string, radius: number = 10): Promise<{businesses: Business[], error?: string, message?: string}> {
+  try {
+    console.log(`Scanning with Google Maps API: ${location}, radius: ${radius}km`);
+    
+    // Call the edge function to search for businesses using Google Maps
+    const { data, error } = await supabase.functions.invoke('google-maps-search', {
+      body: { location, radius }
+    });
+    
+    if (error) {
+      console.error('Google Maps edge function error:', error);
+      return { 
+        businesses: [], 
+        error: error.message || 'Failed to connect to Google Maps API',
+        message: 'There was an issue connecting to the Google Maps API. Please try again later.'
+      };
+    }
+    
+    console.log('Google Maps response:', data);
+    
+    // Check for API errors
+    if (data.error) {
+      console.error('Google Maps API error:', data.error);
+      return {
+        businesses: [],
+        error: data.error,
+        message: data.message || 'Google Maps API returned an error'
+      };
+    }
+    
+    if (!data.businesses || data.businesses.length === 0) {
+      return {
+        businesses: [],
+        error: 'No businesses found',
+        message: 'No businesses with websites were found in this location.'
+      };
+    }
+    
+    // Process the businesses and convert them to our format
+    const processedBusinesses = await processScrapedBusinesses(data.businesses, 'google-maps', location);
+    
+    return {
+      businesses: processedBusinesses
+    };
+  } catch (error: any) {
+    console.error('Error in Google Maps scan:', error);
+    return {
+      businesses: [],
+      error: error.message || 'An unexpected error occurred',
+      message: 'Failed to search for businesses using Google Maps.'
+    };
+  }
+}
+
+// Function to scan businesses using web scraper edge function (YellowPages or LocalStack)
+async function scanWithWebScraper(location: string, source: string = 'yellowpages', debugMode: boolean = false): Promise<Business[] | BusinessScanResponse> {
+  try {
+    console.log(`Scanning with web-scraper: ${location}, source: ${source}, debug: ${debugMode}`);
+    
+    // Call the edge function to scrape for businesses
+    const { data, error } = await supabase.functions.invoke('web-scraper', {
+      body: { location, source, debug: debugMode }
+    });
+    
+    if (error) {
+      console.error('Edge function error:', error);
+      throw new Error(error.message || 'Failed to search for businesses');
+    }
+    
+    console.log('Web scraper response:', data);
+    
+    // Handle new response format which includes businesses array
+    if (data && data.businesses && Array.isArray(data.businesses)) {
+      // Check if debug info was returned and log it
+      if (debugMode && data.debug) {
+        console.log('Debug info:', data.debug);
+      }
+      
+      const processedBusinesses = await processScrapedBusinesses(data.businesses, source, location);
+      
+      // Return the full response with debug info if in debug mode
+      if (debugMode && data.debug) {
+        return {
+          businesses: processedBusinesses,
+          count: processedBusinesses.length,
+          location,
+          source,
+          timestamp: new Date().toISOString(),
+          debugInfo: data.debug as ScanDebugInfo
+        };
+      }
+      
+      return processedBusinesses;
+    }
+    
+    // Fallback for older format or errors
+    if (data.error) {
+      console.error('Web scraper error:', data.error);
+      
+      // If we got mock data despite an error, use it
+      if (data.mockData && data.businesses && data.businesses.length > 0) {
+        const mockBusinesses = await processMockBusinesses(data.businesses, location);
+        return mockBusinesses;
+      }
+      
+      throw new Error(data.message || data.error);
+    }
+    
+    // If no businesses found
+    if (!data.businesses || data.businesses.length === 0) {
+      return [];
+    }
+    
+    // If it's mock data
+    if (data.mockData) {
+      const mockBusinesses = await processMockBusinesses(data.businesses, location);
+      return mockBusinesses;
+    }
+    
+    // Otherwise process the scraped businesses
+    return await processScrapedBusinesses(data.businesses, source, location);
+  } catch (error: any) {
+    console.error('Error in web scraper scan:', error);
+    throw error;
+  }
+}
 
 // Process businesses from web scraper
 const processScrapedBusinesses = async (scrapedBusinesses: any[], source: string, location: string): Promise<Business[]> => {

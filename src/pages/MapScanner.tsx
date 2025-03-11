@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,7 +18,7 @@ const MapScanner = () => {
   const [scannedBusinesses, setScannedBusinesses] = useState<Business[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [apiTip, setApiTip] = useState<string | null>(null);
-  const [source, setSource] = useState('yellowpages');
+  const [source, setSource] = useState('google'); // Default to Google Maps API
   const [usingMockData, setUsingMockData] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
   const [debugInfo, setDebugInfo] = useState<ScanDebugInfo | null>(null);
@@ -116,7 +115,8 @@ const MapScanner = () => {
         
         // Set debug info if present
         if (debugMode && response.debugInfo) {
-          setDebugInfo(response.debugInfo);
+          // Fix TypeScript error by properly typing the debug info
+          setDebugInfo(response.debugInfo as ScanDebugInfo);
           console.log('Debug info received and stored:', response.debugInfo);
         }
       }
@@ -133,7 +133,7 @@ const MapScanner = () => {
         
         if (mockDataCheck) {
           toast.success(`Found ${businesses.length} sample businesses for ${finalLocation}`);
-          setApiTip('We\'re showing sample data because our scraper couldn\'t access the real business directory. For production use, you would need to integrate with a business data API like Google Places or Yelp.');
+          setApiTip('We\'re showing sample data because the API couldn\'t access real business data for this location.');
         } else {
           toast.success(`Found ${businesses.length} businesses in ${finalLocation}`);
         }
@@ -146,7 +146,7 @@ const MapScanner = () => {
       toast.error('Failed to scan area: ' + (error.message || 'Unknown error'));
       
       if (error.message && error.message.includes('Edge Function')) {
-        setApiTip('There was an issue with the web scraper. This could be a temporary issue with the website we\'re scraping or with our edge function. Please try again later or try a different data source.');
+        setApiTip('There was an issue with our business search service. This could be a temporary issue. Please try again later or try a different data source.');
       }
     } finally {
       setIsScanning(false);
@@ -158,9 +158,9 @@ const MapScanner = () => {
   };
   
   const dataSources = [
+    { value: 'google', label: 'Google Maps' },
     { value: 'yellowpages', label: 'Yellow Pages' },
-    { value: 'localstack', label: 'LocalStack' },
-    // Add more sources as they get implemented
+    { value: 'localstack', label: 'LocalStack (Sample Data)' },
   ];
   
   return (
