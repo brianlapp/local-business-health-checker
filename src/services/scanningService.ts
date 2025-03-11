@@ -1,6 +1,6 @@
 
 import { toast } from 'sonner';
-import { Business, BusinessScanResponse } from '@/types/business';
+import { Business, BusinessScanResponse, ScanDebugInfo } from '@/types/business';
 import { generateMockBusinessData } from './businessProcessingService';
 import { scanWithGoogleMaps } from './scanning/googleMapsScanner';
 import { scanWithWebScraper } from './scanning/webScraperService';
@@ -46,20 +46,22 @@ export function handleScanError(
  * Scans for businesses in a given area using multiple sources
  * @param location - Location to scan (city, province, country)
  * @param source - Source to use (google-maps, yellowpages, etc)
+ * @param debugMode - Whether to include debug information in the response
  */
 export async function scanBusinessesInArea(
   location: string, 
-  source: string = 'google-maps'
+  source: string = 'google-maps',
+  debugMode: boolean = false
 ): Promise<BusinessScanResponse> {
   try {
-    console.log(`Scanning businesses in ${location} using ${source}`);
+    console.log(`Scanning businesses in ${location} using ${source} with debug mode: ${debugMode}`);
     
     if (source === 'google-maps') {
-      const result = await scanWithGoogleMaps(location);
+      const result = await scanWithGoogleMaps(location, debugMode);
       return result as BusinessScanResponse;
     } else {
       // For other sources like yellowpages, localstack, etc.
-      const result = await scanWithWebScraper(location, source);
+      const result = await scanWithWebScraper(location, source, debugMode);
       
       if (Array.isArray(result)) {
         return {
