@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -371,90 +372,91 @@ const MapScanner = () => {
             
             {apiTip && !error && !usingMockData && (
               <div className="bg-blue-50 text-blue-800 p-4 rounded-md mb-4 flex items-start dark:bg-blue-900/20 dark:text-blue-400">
-              <Info className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-              <p className="text-sm whitespace-pre-line">{apiTip}</p>
-            </div>
-          )}
-          
-          {debugInfo && debugInfo.logs && debugInfo.logs.length > 0 && (
-            <div className="bg-gray-50 text-gray-800 p-4 rounded-md mb-4 dark:bg-gray-900/20 dark:text-gray-400 overflow-hidden">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-medium flex items-center">
-                  <Bug className="h-4 w-4 mr-2" />
-                  Debug Information
-                </h3>
-                <span className="text-xs bg-gray-200 px-2 py-1 rounded dark:bg-gray-800">
-                  {debugInfo.logs.length} log entries
-                </span>
+                <Info className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+                <p className="text-sm whitespace-pre-line">{apiTip}</p>
               </div>
-              <div className="text-xs font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded max-h-60 overflow-y-auto">
-                {debugInfo.logs.map((log, i) => (
-                  <div key={i} className="py-1">
-                    {log}
-                  </div>
-                ))}
-              </div>
-              
-              {debugInfo.htmlSamples && debugInfo.htmlSamples.length > 0 && (
-                <div className="mt-4">
-                  <h4 className="text-sm font-medium mb-2">HTML Samples ({debugInfo.htmlSamples.length})</h4>
-                  <div className="space-y-2">
-                    {debugInfo.htmlSamples.map((sample, i) => (
-                      <div key={i} className="bg-gray-100 dark:bg-gray-800 p-2 rounded text-xs">
-                        <div className="flex justify-between mb-1">
-                          <span className="font-semibold">{sample.url}</span>
-                          <span>{sample.length} bytes</span>
-                        </div>
-                        <pre className="whitespace-pre-wrap overflow-x-auto max-h-20">
-                          {sample.sample}
-                        </pre>
-                      </div>
-                    ))}
-                  </div>
+            )}
+            
+            {debugInfo && debugInfo.logs && debugInfo.logs.length > 0 && (
+              <div className="bg-gray-50 text-gray-800 p-4 rounded-md mb-4 dark:bg-gray-900/20 dark:text-gray-400 overflow-hidden">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-medium flex items-center">
+                    <Bug className="h-4 w-4 mr-2" />
+                    Debug Information
+                  </h3>
+                  <span className="text-xs bg-gray-200 px-2 py-1 rounded dark:bg-gray-800">
+                    {debugInfo.logs.length} log entries
+                  </span>
                 </div>
-              )}
-            </div>
-          )}
-          
-          {scannedBusinesses.length === 0 ? (
-            <div className="text-center py-8">
-              <MapPin className="h-12 w-12 mx-auto text-muted-foreground opacity-20" />
-              <p className="mt-2 text-muted-foreground">
-                {isScanning 
-                  ? 'Scanning for Canadian businesses...' 
-                  : 'No businesses scanned yet. Enter a Canadian location and start scanning.'}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="text-sm text-muted-foreground mb-2">
-                Found {scannedBusinesses.length} businesses in {location}
-              </div>
-              <div className="space-y-2">
-                {scannedBusinesses.map((business) => (
-                  <div 
-                    key={business.id} 
-                    className="flex justify-between items-center p-3 bg-secondary/50 rounded-lg hover:bg-secondary transition-colors"
-                  >
-                    <div>
-                      <div className="font-medium">{business.name}</div>
-                      <div className="text-sm text-muted-foreground">{business.website}</div>
+                <div className="text-xs font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded max-h-60 overflow-y-auto">
+                  {debugInfo.logs.map((log, i) => (
+                    <div key={i} className="py-1">
+                      {log}
                     </div>
-                    <div className={`text-sm font-bold px-2 py-1 rounded ${
-                      business.score >= 80 ? 'bg-red-100 text-red-600' : 
-                      business.score >= 60 ? 'bg-orange-100 text-orange-600' : 
-                      business.score >= 40 ? 'bg-yellow-100 text-yellow-600' : 
-                      'bg-green-100 text-green-600'
-                    }`}>
-                      {business.score}
+                  ))}
+                </div>
+                
+                {debugInfo.htmlSamples && debugInfo.htmlSamples.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="text-sm font-medium mb-2">HTML Samples ({debugInfo.htmlSamples.length})</h4>
+                    <div className="space-y-2">
+                      {debugInfo.htmlSamples.map((sample, i) => (
+                        <div key={i} className="bg-gray-100 dark:bg-gray-800 p-2 rounded text-xs">
+                          <div className="flex justify-between mb-1">
+                            <span className="font-semibold">{sample.url}</span>
+                            <span>{sample.length} bytes</span>
+                          </div>
+                          <pre className="whitespace-pre-wrap overflow-x-auto max-h-20">
+                            {sample.sample}
+                          </pre>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
+                )}
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            )}
+            
+            {scannedBusinesses.length === 0 ? (
+              <div className="text-center py-8">
+                <MapPin className="h-12 w-12 mx-auto text-muted-foreground opacity-20" />
+                <p className="mt-2 text-muted-foreground">
+                  {isScanning 
+                    ? 'Scanning for Canadian businesses...' 
+                    : 'No businesses scanned yet. Enter a Canadian location and start scanning.'}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="text-sm text-muted-foreground mb-2">
+                  Found {scannedBusinesses.length} businesses in {location}
+                </div>
+                <div className="space-y-2">
+                  {scannedBusinesses.map((business) => (
+                    <div 
+                      key={business.id} 
+                      className="flex justify-between items-center p-3 bg-secondary/50 rounded-lg hover:bg-secondary transition-colors"
+                    >
+                      <div>
+                        <div className="font-medium">{business.name}</div>
+                        <div className="text-sm text-muted-foreground">{business.website}</div>
+                      </div>
+                      <div className={`text-sm font-bold px-2 py-1 rounded ${
+                        business.score >= 80 ? 'bg-red-100 text-red-600' : 
+                        business.score >= 60 ? 'bg-orange-100 text-orange-600' : 
+                        business.score >= 40 ? 'bg-yellow-100 text-yellow-600' : 
+                        'bg-green-100 text-green-600'
+                      }`}>
+                        {business.score}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
