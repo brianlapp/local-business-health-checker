@@ -3,19 +3,26 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import { Business } from '@/types/business';
 import BusinessCard from '../BusinessCard';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface DashboardListProps {
   businesses: Business[];
   loading: boolean;
   viewMode: 'grid' | 'list';
   onBusinessUpdate?: (businesses: Business[]) => void;
+  selectedBusinesses?: string[];
+  setSelectedBusinesses?: React.Dispatch<React.SetStateAction<string[]>>;
+  highlightedBusinesses?: string[];
 }
 
 const DashboardList: React.FC<DashboardListProps> = ({ 
   businesses, 
   loading, 
   viewMode,
-  onBusinessUpdate 
+  onBusinessUpdate,
+  selectedBusinesses = [],
+  setSelectedBusinesses,
+  highlightedBusinesses = []
 }) => {
   if (loading) {
     return (
@@ -33,6 +40,18 @@ const DashboardList: React.FC<DashboardListProps> = ({
       </div>
     );
   }
+
+  const handleSelectBusiness = (id: string) => {
+    if (!setSelectedBusinesses) return;
+    
+    setSelectedBusinesses(prev => {
+      if (prev.includes(id)) {
+        return prev.filter(businessId => businessId !== id);
+      } else {
+        return [...prev, id];
+      }
+    });
+  };
   
   return (
     <div className={cn(
@@ -40,14 +59,40 @@ const DashboardList: React.FC<DashboardListProps> = ({
         ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6' 
         : 'space-y-4'
     )}>
-      {businesses.map((business) => (
-        <BusinessCard 
-          key={business.id} 
-          business={business}
-          className="animate-slide-up"
-          onUpdate={onBusinessUpdate}
-        />
-      ))}
+      {businesses.map((business) => {
+        const isSelected = selectedBusinesses.includes(business.id);
+        const isHighlighted = highlightedBusinesses.includes(business.id);
+        
+        return (
+          <div key={business.id} className={cn(
+            "relative group",
+            isHighlighted && "animate-pulse"
+          )}>
+            {setSelectedBusinesses && (
+              <div className="absolute top-4 left-4 z-10">
+                <Checkbox 
+                  checked={isSelected}
+                  onCheckedChange={() => handleSelectBusiness(business.id)}
+                  className={cn(
+                    "transition-opacity",
+                    selectedBusinesses.length > 0 ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                  )}
+                />
+              </div>
+            )}
+            
+            <BusinessCard 
+              business={business}
+              className={cn(
+                "animate-slide-up transition-all",
+                isHighlighted && "border-green-500 shadow-lg shadow-green-100 dark:shadow-green-900/20",
+                isSelected && "border-primary"
+              )}
+              onUpdate={onBusinessUpdate}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 };

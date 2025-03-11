@@ -30,6 +30,47 @@ export async function getBusinesses(): Promise<Business[]> {
   }
 }
 
+export async function clearAllBusinesses(): Promise<boolean> {
+  try {
+    // Delete all data from businesses table
+    const { error } = await supabase
+      .from('businesses')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000'); // Make sure we match all records
+    
+    if (error) throw error;
+    
+    // Reset any usage counters if needed
+    await supabase
+      .from('gtmetrix_usage')
+      .update({ scans_used: 0 })
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+      
+    return true;
+  } catch (error) {
+    console.error('Error clearing business data:', error);
+    throw error;
+  }
+}
+
+export async function clearSelectedBusinesses(businessIds: string[]): Promise<boolean> {
+  try {
+    if (!businessIds.length) return false;
+    
+    // Delete selected businesses
+    const { error } = await supabase
+      .from('businesses')
+      .delete()
+      .in('id', businessIds);
+    
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Error deleting selected businesses:', error);
+    throw error;
+  }
+}
+
 export async function addBusiness(business: Omit<Business, 'id' | 'issues'>): Promise<Business | null> {
   try {
     const { data, error } = await supabase

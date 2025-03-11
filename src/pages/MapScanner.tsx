@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, MapPin, Loader2, AlertCircle, Info, Bug, ExternalLink } from 'lucide-react';
+import { Search, MapPin, Loader2, AlertCircle, Info, Bug, ExternalLink, ArrowRight, Check } from 'lucide-react';
 import { scanBusinessesInArea } from '@/services/apiService';
 import { Business, ScanDebugInfo, BusinessScanResponse } from '@/types/business';
 import { toast } from 'sonner';
@@ -25,6 +24,9 @@ const MapScanner = () => {
   const [usingMockData, setUsingMockData] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
   const [debugInfo, setDebugInfo] = useState<ScanDebugInfo | null>(null);
+  const [scanComplete, setScanComplete] = useState(false);
+  const [autoRedirect, setAutoRedirect] = useState(false);
+  
   const navigate = useNavigate();
   
   // Function to format location string
@@ -53,6 +55,9 @@ const MapScanner = () => {
       toast.error('Please enter a location to scan');
       return;
     }
+    
+    // Reset the scan complete state
+    setScanComplete(false);
     
     // Format the location before validation and sending to API
     const formattedLocation = formatLocation(location);
@@ -158,6 +163,7 @@ const MapScanner = () => {
         setApiTip('Try using a more specific location or a different area. Make sure to include the city and province in the format "City, Province" or "City, Province, Canada".');
       } else if (businesses.length > 0) {
         setScannedBusinesses(businesses);
+        setScanComplete(true);
         
         if (isMockData) {
           toast.success(`Found ${businesses.length} sample businesses for ${finalLocation}`);
@@ -166,6 +172,13 @@ const MapScanner = () => {
           }
         } else {
           toast.success(`Found ${businesses.length} businesses in ${finalLocation}`);
+        }
+        
+        // Auto-redirect if enabled
+        if (autoRedirect) {
+          setTimeout(() => {
+            handleViewResults();
+          }, 2000);
         }
       }
     } catch (error: any) {
@@ -181,6 +194,15 @@ const MapScanner = () => {
     } finally {
       setIsScanning(false);
     }
+  };
+  
+  const handleViewResults = () => {
+    navigate('/', { 
+      state: { 
+        newBusinesses: scannedBusinesses,
+        source: location
+      } 
+    });
   };
   
   const handleViewAll = () => {
@@ -260,6 +282,21 @@ const MapScanner = () => {
               
               <div className="flex items-center space-x-2">
                 <Checkbox 
+                  id="autoRedirect" 
+                  checked={autoRedirect}
+                  onCheckedChange={(checked) => setAutoRedirect(checked === true)}
+                  disabled={isScanning}
+                />
+                <label 
+                  htmlFor="autoRedirect" 
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Auto-redirect to dashboard after scan
+                </label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox 
                   id="debugMode" 
                   checked={debugMode}
                   onCheckedChange={(checked) => setDebugMode(checked === true)}
@@ -317,6 +354,24 @@ const MapScanner = () => {
             <CardTitle>Scan Results</CardTitle>
           </CardHeader>
           <CardContent>
+            {scanComplete && scannedBusinesses.length > 0 && (
+              <Alert className="mb-4 bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400">
+                <Check className="h-4 w-4" />
+                <AlertTitle>Scan Complete!</AlertTitle>
+                <AlertDescription className="space-y-2">
+                  <p>Found {scannedBusinesses.length} businesses in {location}.</p>
+                  <Button 
+                    variant="outline" 
+                    className="bg-white dark:bg-gray-800 mt-2"
+                    onClick={handleViewResults}
+                  >
+                    View Results on Dashboard
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+            
             {error && source === 'google' && scannedBusinesses.length === 0 && (
               <Alert variant="destructive" className="mb-4">
                 <AlertCircleIcon className="h-4 w-4" />
@@ -370,7 +425,7 @@ const MapScanner = () => {
               </div>
             )}
             
-            {apiTip && !error && !usingMockData && (
+            {apiTip && !error && !usingMockData && !scanComplete && (
               <div className="bg-blue-50 text-blue-800 p-4 rounded-md mb-4 flex items-start dark:bg-blue-900/20 dark:text-blue-400">
                 <Info className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
                 <p className="text-sm whitespace-pre-line">{apiTip}</p>
