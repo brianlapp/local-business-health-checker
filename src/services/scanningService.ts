@@ -1,6 +1,9 @@
+
 import { toast } from 'sonner';
 import { Business, BusinessScanResponse } from '@/types/business';
-import { generateMockBusinessData } from '../businessProcessingService';
+import { generateMockBusinessData } from './businessProcessingService';
+import { scanWithGoogleMaps } from './scanning/googleMapsScanner';
+import { scanWithWebScraper } from './scanning/webScraperService';
 
 /**
  * Handles errors and returns mock data as fallback
@@ -37,4 +40,40 @@ export function handleScanError(
     error: error.message || 'Failed to search for businesses',
     message: 'Using sample data due to an error with the business search API'
   };
+}
+
+/**
+ * Scans for businesses in a given area using multiple sources
+ * @param location - Location to scan (city, province, country)
+ * @param source - Source to use (google-maps, yellowpages, etc)
+ */
+export async function scanBusinessesInArea(
+  location: string, 
+  source: string = 'google-maps'
+): Promise<BusinessScanResponse> {
+  try {
+    console.log(`Scanning businesses in ${location} using ${source}`);
+    
+    if (source === 'google-maps') {
+      const result = await scanWithGoogleMaps(location);
+      return result as BusinessScanResponse;
+    } else {
+      // For other sources like yellowpages, localstack, etc.
+      const result = await scanWithWebScraper(location, source);
+      
+      if (Array.isArray(result)) {
+        return {
+          businesses: result,
+          count: result.length,
+          location,
+          source,
+          timestamp: new Date().toISOString()
+        };
+      }
+      
+      return result;
+    }
+  } catch (error: any) {
+    return handleScanError(error, location);
+  }
 }
