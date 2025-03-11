@@ -11,6 +11,8 @@ import DataManagement from './dashboard/DataManagement';
 import { useLocation } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useBusinessSelection } from '@/hooks/useBusinessSelection';
+import { useBusinessFiltering } from '@/hooks/useBusinessFiltering';
 
 interface DashboardProps {
   className?: string;
@@ -20,14 +22,27 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
-  const [sortBy, setSortBy] = useState<'score' | 'name' | 'date'>('score');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [selectedBusinesses, setSelectedBusinesses] = useState<string[]>([]);
-  const [newlyAddedBusinesses, setNewlyAddedBusinesses] = useState<string[]>([]);
   const [dataRefreshKey, setDataRefreshKey] = useState(0);
+  const [newlyAddedBusinesses, setNewlyAddedBusinesses] = useState<string[]>([]);
   
   const location = useLocation();
   
+  // Use our custom hooks
+  const { 
+    selectedBusinesses, 
+    handleSelectBusiness,
+    clearSelections,
+    selectMultipleBusinesses 
+  } = useBusinessSelection();
+  
+  const {
+    sortBy,
+    setSortBy,
+    sortOrder,
+    toggleSortOrder,
+    filteredAndSortedBusinesses
+  } = useBusinessFiltering(businesses);
+
   // Check if there are newly added businesses from the location state
   useEffect(() => {
     if (location.state?.newBusinesses && Array.isArray(location.state.newBusinesses)) {
@@ -56,29 +71,8 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
 
   const handleDataRefresh = () => {
     setDataRefreshKey(prev => prev + 1);
-    setSelectedBusinesses([]);
+    clearSelections();
   };
-
-  const toggleSortOrder = () => {
-    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-  };
-
-  const sortedBusinesses = [...businesses].sort((a, b) => {
-    if (sortBy === 'score') {
-      return sortOrder === 'desc' ? b.score - a.score : a.score - b.score;
-    } else if (sortBy === 'name') {
-      return sortOrder === 'desc' 
-        ? b.name.localeCompare(a.name) 
-        : a.name.localeCompare(b.name);
-    } else if (sortBy === 'date') {
-      const dateA = a.lastChecked ? new Date(a.lastChecked) : new Date(0);
-      const dateB = b.lastChecked ? new Date(b.lastChecked) : new Date(0);
-      return sortOrder === 'desc' 
-        ? dateB.getTime() - dateA.getTime() 
-        : dateA.getTime() - dateB.getTime();
-    }
-    return 0;
-  });
 
   return (
     <div className={cn('container py-8', className)}>
@@ -112,17 +106,18 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
         businessCount={businesses.length} 
         onDataCleared={handleDataRefresh}
         selectedBusinesses={selectedBusinesses}
-        setSelectedBusinesses={setSelectedBusinesses}
+        setSelectedBusinesses={selectMultipleBusinesses}
         businesses={businesses}
       />
       
       <DashboardList 
-        businesses={sortedBusinesses} 
+        businesses={filteredAndSortedBusinesses} 
         loading={loading} 
         viewMode={viewMode}
         onBusinessUpdate={setBusinesses}
         selectedBusinesses={selectedBusinesses}
-        setSelectedBusinesses={setSelectedBusinesses}
+        setSelectedBusinesses={selectMultipleBusinesses}
+        onSelectBusiness={handleSelectBusiness}
         highlightedBusinesses={newlyAddedBusinesses}
       />
     </div>

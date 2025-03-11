@@ -7,14 +7,16 @@ import CardActions from './CardActions';
 interface ExpandableContentProps {
   business: Business;
   onScanComplete: () => Promise<void>;
+  className?: string;
 }
 
 const ExpandableContent: React.FC<ExpandableContentProps> = ({ 
   business, 
-  onScanComplete 
+  onScanComplete,
+  className = ''
 }) => {
   return (
-    <div className="px-5 pb-5 animate-slide-up">
+    <div className={`px-5 pb-5 animate-slide-up ${className}`}>
       <div className="pt-4 border-t">
         <ScoreDisplay 
           score={business.score} 

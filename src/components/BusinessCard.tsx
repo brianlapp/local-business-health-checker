@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { cn } from '@/lib/utils';
 import { Business } from '@/types/business';
 import { getBusinesses } from '@/services/businessService';
@@ -7,6 +7,7 @@ import BusinessHeader from './business/BusinessHeader';
 import ScoreBadge from './business/ScoreBadge';
 import ExpandableContent from './business/ExpandableContent';
 import ToggleExpandButton from './business/ToggleExpandButton';
+import { useExpand } from '@/hooks/useExpand';
 
 interface BusinessCardProps {
   business: Business;
@@ -15,7 +16,7 @@ interface BusinessCardProps {
 }
 
 const BusinessCard: React.FC<BusinessCardProps> = ({ business, className, onUpdate }) => {
-  const [expanded, setExpanded] = useState(false);
+  const { expanded, toggleExpanded, handleToggleButtonClick } = useExpand(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   
   const handleScanComplete = async () => {
@@ -30,13 +31,6 @@ const BusinessCard: React.FC<BusinessCardProps> = ({ business, className, onUpda
     } finally {
       setIsRefreshing(false);
     }
-  };
-  
-  const toggleExpanded = () => setExpanded(!expanded);
-  
-  const handleToggleButtonClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    toggleExpanded();
   };
   
   return (
