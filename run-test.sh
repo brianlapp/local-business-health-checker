@@ -37,7 +37,7 @@ SUPABASE_PID=$!
 echo "Waiting for server to start..."
 sleep 5
 
-echo -e "\n${GREEN}Running test script...${NC}"
+echo -e "\n${GREEN}Running enhanced test script...${NC}"
 echo "This will test the scraper with location: 'Carleton Place, Ontario, Canada'"
 
 # Run the test script with Node.js

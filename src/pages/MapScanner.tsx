@@ -4,11 +4,18 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, MapPin, Loader2, AlertCircle, Info } from 'lucide-react';
+import { Search, MapPin, Loader2, AlertCircle, Info, Bug } from 'lucide-react';
 import { scanBusinessesInArea } from '@/services/apiService';
 import { Business } from '@/types/business';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
+
+interface ScanDebugInfo {
+  logs?: string[];
+  htmlSamples?: {url: string, length: number, sample: string}[];
+}
 
 const MapScanner = () => {
   const [location, setLocation] = useState('');
@@ -19,6 +26,8 @@ const MapScanner = () => {
   const [apiTip, setApiTip] = useState<string | null>(null);
   const [source, setSource] = useState('yellowpages');
   const [usingMockData, setUsingMockData] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<ScanDebugInfo | null>(null);
   const navigate = useNavigate();
   
   // Function to format location string
@@ -74,6 +83,7 @@ const MapScanner = () => {
     setError(null);
     setApiTip(null);
     setUsingMockData(false);
+    setDebugInfo(null);
     
     try {
       // Start the progress animation
@@ -88,7 +98,9 @@ const MapScanner = () => {
       }, 500);
       
       toast.info(`Scanning for businesses in ${finalLocation}...`);
-      const businesses = await scanBusinessesInArea(finalLocation, source);
+      
+      // Include debug mode in the API call
+      const businesses = await scanBusinessesInArea(finalLocation, source, debugMode);
       
       clearInterval(progressInterval);
       setProgress(100);
@@ -96,6 +108,11 @@ const MapScanner = () => {
       // Check if we're using mock data based on the response metadata
       const mockDataCheck = businesses.length > 0 && businesses.every(b => b.id && b.id.startsWith('mock-'));
       setUsingMockData(mockDataCheck);
+      
+      // Store debug info if present
+      if (debugMode && businesses.debugInfo) {
+        setDebugInfo(businesses.debugInfo);
+      }
       
       if (businesses.length === 0) {
         setError(`No businesses found in ${finalLocation}. Try a different location or data source.`);
@@ -201,6 +218,25 @@ const MapScanner = () => {
                 </p>
               </div>
               
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="debugMode" 
+                  checked={debugMode}
+                  onCheckedChange={(checked) => setDebugMode(checked === true)}
+                  disabled={isScanning}
+                />
+                <label 
+                  htmlFor="debugMode" 
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center"
+                >
+                  <Bug className="h-4 w-4 mr-1" />
+                  Enable Debug Mode
+                </label>
+              </div>
+              <p className="text-xs text-muted-foreground -mt-2">
+                Provides additional technical details for troubleshooting
+              </p>
+              
               <Button 
                 type="submit" 
                 className="w-full" 
@@ -269,6 +305,46 @@ const MapScanner = () => {
               <div className="bg-blue-50 text-blue-800 p-4 rounded-md mb-4 flex items-start dark:bg-blue-900/20 dark:text-blue-400">
                 <Info className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
                 <p className="text-sm whitespace-pre-line">{apiTip}</p>
+              </div>
+            )}
+            
+            {debugInfo && debugInfo.logs && debugInfo.logs.length > 0 && (
+              <div className="bg-gray-50 text-gray-800 p-4 rounded-md mb-4 dark:bg-gray-900/20 dark:text-gray-400 overflow-hidden">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-medium flex items-center">
+                    <Bug className="h-4 w-4 mr-2" />
+                    Debug Information
+                  </h3>
+                  <span className="text-xs bg-gray-200 px-2 py-1 rounded dark:bg-gray-800">
+                    {debugInfo.logs.length} log entries
+                  </span>
+                </div>
+                <div className="text-xs font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded max-h-60 overflow-y-auto">
+                  {debugInfo.logs.map((log, i) => (
+                    <div key={i} className="py-1">
+                      {log}
+                    </div>
+                  ))}
+                </div>
+                
+                {debugInfo.htmlSamples && debugInfo.htmlSamples.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="text-sm font-medium mb-2">HTML Samples ({debugInfo.htmlSamples.length})</h4>
+                    <div className="space-y-2">
+                      {debugInfo.htmlSamples.map((sample, i) => (
+                        <div key={i} className="bg-gray-100 dark:bg-gray-800 p-2 rounded text-xs">
+                          <div className="flex justify-between mb-1">
+                            <span className="font-semibold">{sample.url}</span>
+                            <span>{sample.length} bytes</span>
+                          </div>
+                          <pre className="whitespace-pre-wrap overflow-x-auto max-h-20">
+                            {sample.sample}
+                          </pre>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             

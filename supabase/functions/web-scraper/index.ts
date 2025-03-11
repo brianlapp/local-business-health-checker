@@ -12,6 +12,7 @@ const corsHeaders = {
 interface ScrapingRequest {
   location: string;
   source?: string;
+  debug?: boolean; // Enable debug mode to capture logs and HTML samples
 }
 
 interface BusinessData {
@@ -19,6 +20,43 @@ interface BusinessData {
   website: string;
   source?: string;
   phone?: string;
+}
+
+// Array to store debug logs
+let debugLogs: string[] = [];
+// Array to store HTML samples
+let htmlSamples: {url: string, length: number, sample: string}[] = [];
+// Flag for debug mode
+let debugMode = false;
+
+// Enhanced logging function that captures logs for debugging
+function debugLog(message: string, data?: any): void {
+  const timestamp = new Date().toISOString();
+  const logMessage = data 
+    ? `${timestamp} | ${message}: ${typeof data === 'object' ? JSON.stringify(data) : data}`
+    : `${timestamp} | ${message}`;
+  
+  console.log(logMessage);
+  
+  if (debugMode) {
+    debugLogs.push(logMessage);
+  }
+}
+
+// Function to capture HTML samples for debugging
+function captureHtmlSample(url: string, html: string): void {
+  if (!debugMode) return;
+  
+  // Only store a reasonable sample (first 2000 chars)
+  const sample = html.substring(0, 2000) + '... [truncated]';
+  
+  htmlSamples.push({
+    url,
+    length: html.length,
+    sample
+  });
+  
+  debugLog(`Captured HTML sample from ${url}, total length: ${html.length} characters`);
 }
 
 // Pool of user agents to rotate through to avoid detection
@@ -82,16 +120,19 @@ function getBrowserLikeHeaders(customReferer?: string): Record<string, string> {
 /**
  * Extract business data using multiple selector strategies with enhanced parsing
  */
-function extractBusinessData(html: string, source: string): BusinessData[] {
-  console.log(`Extracting business data from ${source}, HTML length: ${html.length}`);
+function extractBusinessData(html: string, source: string, url: string): BusinessData[] {
+  debugLog(`Extracting business data from ${source}, URL: ${url}, HTML length: ${html.length}`);
   
   // Count potential business blocks for debugging
   const potentialBlocks = (html.match(/business-name|business-listing|company-card|search-result/g) || []).length;
-  console.log(`Found ${potentialBlocks} potential business blocks`);
+  debugLog(`Found ${potentialBlocks} potential business blocks in HTML`);
+  
+  // Capture HTML sample for debugging
+  captureHtmlSample(url, html);
   
   const dom = new DOMParser().parseFromString(html, 'text/html');
   if (!dom) {
-    console.error('Failed to parse HTML');
+    debugLog('Failed to parse HTML into DOM');
     return [];
   }
   
@@ -117,22 +158,27 @@ function extractBusinessData(html: string, source: string): BusinessData[] {
     'article'  // Many sites use article tags for listings
   ];
   
+  // Log selectors being attempted
+  debugLog(`Trying ${selectors.length} different business listing selectors`);
+  
   // Try each selector until we find elements
   for (const selector of selectors) {
     try {
       businessElements = Array.from(dom.querySelectorAll(selector));
+      debugLog(`Selector "${selector}" found ${businessElements.length} elements`);
+      
       if (businessElements.length > 0) {
-        console.log(`Found ${businessElements.length} business elements with selector: ${selector}`);
+        debugLog(`Using selector: ${selector} with ${businessElements.length} business elements`);
         break;
       }
     } catch (err) {
-      console.error(`Error with selector ${selector}:`, err);
+      debugLog(`Error with selector ${selector}: ${err}`);
     }
   }
   
   // If no elements were found with any selector, try alternative approaches
   if (businessElements.length === 0) {
-    console.log('No business elements found with standard selectors, trying alternative approaches');
+    debugLog('No business elements found with standard selectors, trying alternative approaches');
     
     // Try to find any elements that might contain business information
     try {
@@ -141,13 +187,14 @@ function extractBusinessData(html: string, source: string): BusinessData[] {
         '[class*="business"],[class*="listing"],[class*="result"],[class*="company"],[id*="business"],[id*="listing"]'
       );
       
+      debugLog(`Found ${alternativeElements.length} potential business elements through attribute analysis`);
+      
       if (alternativeElements.length > 0) {
-        console.log(`Found ${alternativeElements.length} potential business elements through attribute analysis`);
         businessElements = Array.from(alternativeElements);
       } else {
         // Try to find parent containers that might hold business listings
         const containers = dom.querySelectorAll('div.container, div.content, div.results, div.listings, main, section');
-        console.log(`Examining ${containers.length} potential container elements`);
+        debugLog(`Examining ${containers.length} potential container elements`);
         
         // Look for containers with multiple similar children that might be listings
         for (const container of Array.from(containers)) {
@@ -161,7 +208,7 @@ function extractBusinessData(html: string, source: string): BusinessData[] {
               if (firstChild instanceof HTMLElement && secondChild instanceof HTMLElement &&
                   firstChild.tagName === secondChild.tagName && 
                   firstChild.className === secondChild.className) {
-                console.log(`Found potential listing container with ${children.length} similar children`);
+                debugLog(`Found potential listing container with ${children.length} similar children`);
                 businessElements = Array.from(children);
                 break;
               }
@@ -170,12 +217,12 @@ function extractBusinessData(html: string, source: string): BusinessData[] {
         }
       }
     } catch (err) {
-      console.error('Error in alternative element search:', err);
+      debugLog(`Error in alternative element search: ${err}`);
     }
     
     // If still no elements, try alternative name-based parsing
     if (businessElements.length === 0) {
-      console.log('Trying alternative name-based parsing');
+      debugLog('Trying alternative name-based parsing');
       const nameElements = dom.querySelectorAll('h2, h3, h4, .name, [class*="name"], [class*="title"]');
       
       // Check if these might be business names
@@ -183,7 +230,7 @@ function extractBusinessData(html: string, source: string): BusinessData[] {
         return (el as Element).textContent?.trim();
       }).filter(text => text && text.length > 0 && text.length < 100);  // Business names are typically not too long
       
-      console.log(`Found ${potentialBusinessNames.length} business names with alternative parsing`);
+      debugLog(`Found ${potentialBusinessNames.length} business names with alternative parsing`);
       
       // If we found potential business names, create simple business objects
       if (potentialBusinessNames.length > 0) {
@@ -204,11 +251,13 @@ function extractBusinessData(html: string, source: string): BusinessData[] {
       }
       
       // If still no success, try regex extraction
-      return extractBusinessesWithRegex(html, source);
+      return extractBusinessesWithRegex(html, source, url);
     }
   }
   
   // Process each business element
+  debugLog(`Processing ${businessElements.length} business elements`);
+  
   for (const element of businessElements) {
     try {
       // Try multiple selectors for business name
@@ -294,7 +343,7 @@ function extractBusinessData(html: string, source: string): BusinessData[] {
             website = href;
           } else if (href.startsWith('/')) {
             // Relative URL - try to construct full URL based on source
-            const baseUrl = source === 'yellowpages' ? 'https://www.yellowpages.com' : 
+            const baseUrl = source === 'yellowpages' ? 'https://www.yellowpages.ca' : 
                            source === 'localstack' ? 'https://localstack.com' : '';
             if (baseUrl) {
               website = baseUrl + href;
@@ -373,23 +422,26 @@ function extractBusinessData(html: string, source: string): BusinessData[] {
         phone: phone || undefined
       });
     } catch (err) {
-      console.error('Error processing business element:', err);
+      debugLog(`Error processing business element: ${err}`);
     }
   }
   
+  debugLog(`Extracted ${businesses.length} businesses from ${source}`);
   return businesses;
 }
 
 /**
  * Fallback method to extract business data using regex patterns
  */
-function extractBusinessesWithRegex(html: string, source: string): BusinessData[] {
-  console.log('Attempting to extract business data with regex patterns');
+function extractBusinessesWithRegex(html: string, source: string, url: string): BusinessData[] {
+  debugLog('Attempting to extract business data with regex patterns');
   const businesses: BusinessData[] = [];
   
   // Pattern for finding business blocks
   const businessBlockPattern = /<div[^>]*class="[^"]*(?:result|listing|business)[^"]*"[^>]*>(.*?)<\/div>/gs;
   const blocks = html.match(businessBlockPattern) || [];
+  
+  debugLog(`Found ${blocks.length} potential business blocks with regex`);
   
   blocks.forEach((block, index) => {
     try {
@@ -422,11 +474,11 @@ function extractBusinessesWithRegex(html: string, source: string): BusinessData[
         source
       });
     } catch (err) {
-      console.error(`Error processing regex block ${index}:`, err);
+      debugLog(`Error processing regex block ${index}: ${err}`);
     }
   });
   
-  console.log(`Extracted ${businesses.length} businesses using regex patterns`);
+  debugLog(`Extracted ${businesses.length} businesses using regex patterns`);
   return businesses;
 }
 
@@ -435,7 +487,7 @@ function extractBusinessesWithRegex(html: string, source: string): BusinessData[
  */
 async function scrapeYellowPages(location: string): Promise<BusinessData[]> {
   try {
-    console.log('Raw location input:', location);
+    debugLog('Raw location input:', location);
     
     // Format location
     const cleanLocation = location.replace(/\s+/g, ' ').trim();
@@ -446,7 +498,7 @@ async function scrapeYellowPages(location: string): Promise<BusinessData[]> {
     const stateOrProvince = locationParts[1] || '';
     const country = locationParts[2] || '';
     
-    console.log(`Parsed location: City=${cityName}, State/Province=${stateOrProvince}, Country=${country}`);
+    debugLog(`Parsed location: City=${cityName}, State/Province=${stateOrProvince}, Country=${country}`);
     
     // Create multiple location formats for better matching
     const formattedLocations: string[] = [];
@@ -465,7 +517,7 @@ async function scrapeYellowPages(location: string): Promise<BusinessData[]> {
       stateOrProvince.toLowerCase().includes('prince edward') || 
       country.toLowerCase().includes('canada');
     
-    console.log(`Is Canadian location: ${isCanadian}`);
+    debugLog(`Is Canadian location: ${isCanadian}`);
     
     // Generate multiple URL patterns to try
     let urlFormats: string[] = [];
@@ -479,13 +531,23 @@ async function scrapeYellowPages(location: string): Promise<BusinessData[]> {
         encodeURIComponent(`${cityName} ${stateOrProvince}`)
       );
       
-      // Add Canadian YellowPages URLs
+      // Add Canadian YellowPages URLs - use yellowpages.ca domain
       urlFormats = urlFormats.concat([
         `https://www.yellowpages.ca/search/si/1/${encodeURIComponent('businesses')}/${encodeURIComponent(cityName + ' ' + stateOrProvince)}`,
         `https://www.yellowpages.ca/search/si/1/${encodeURIComponent('local businesses')}/${encodeURIComponent(cityName + ' ' + stateOrProvince)}`,
         `https://www.yellowpages.ca/search/si/1/${encodeURIComponent('businesses')}/${encodeURIComponent(cityName)}`,
         `https://www.yellowpages.ca/search/si/1/${encodeURIComponent('restaurants')}/${encodeURIComponent(cityName)}`
       ]);
+      
+      // Try with formatted location with different separators
+      const formattedCity = cityName.toLowerCase().replace(/\s+/g, '-');
+      const formattedProvince = stateOrProvince.toLowerCase().replace(/\s+/g, '-');
+      
+      urlFormats.push(
+        `https://www.yellowpages.ca/locations/${formattedCity}-${formattedProvince}`,
+        `https://www.yellowpages.ca/search/si/1/businesses/${formattedCity}+${formattedProvince}`,
+        `https://www.yellowpages.ca/locations/${formattedCity}`
+      );
     } else {
       // Standard US formats
       formattedLocations.push(
@@ -494,22 +556,32 @@ async function scrapeYellowPages(location: string): Promise<BusinessData[]> {
         encodeURIComponent(`${cityName} ${stateOrProvince}`),
         encodeURIComponent(cleanLocation.toLowerCase().replace(/[,\s]+/g, '-'))
       );
+      
+      // Add US YellowPages URLs
+      urlFormats = urlFormats.concat([
+        `https://www.yellowpages.com/search?search_terms=businesses&geo_location_terms=${formattedLocations[0]}`,
+        `https://www.yellowpages.com/${formattedLocations[3]}/businesses`
+      ]);
     }
     
     // Add standard URL formats for all locations
     formattedLocations.forEach(loc => {
+      // Determine domain based on Canadian location
+      const domain = isCanadian ? 'yellowpages.ca' : 'yellowpages.com';
+      
       urlFormats = urlFormats.concat([
-        `https://www.yellowpages.com/search?search_terms=businesses&geo_location_terms=${loc}`,
-        `https://www.yellowpages.com/${loc.toLowerCase().replace(/%20/g, '-')}/businesses`,
-        `https://www.yellowpages.com/search?terms=business&geo_location_terms=${loc}`,
-        `https://www.yellowpages.com/search?search_terms=local+businesses&geo_location_terms=${loc}`,
-        `https://www.yellowpages.com/search?search_terms=restaurants&geo_location_terms=${loc}`,
-        `https://www.yellowpages.com/search?search_terms=retail&geo_location_terms=${loc}`
+        `https://www.${domain}/search?search_terms=businesses&geo_location_terms=${loc}`,
+        `https://www.${domain}/search?terms=business&geo_location_terms=${loc}`,
+        `https://www.${domain}/search?search_terms=local+businesses&geo_location_terms=${loc}`,
+        `https://www.${domain}/search?search_terms=restaurants&geo_location_terms=${loc}`,
+        `https://www.${domain}/search?search_terms=retail&geo_location_terms=${loc}`
       ]);
     });
     
     // Deduplicate URLs
     urlFormats = [...new Set(urlFormats)];
+    
+    debugLog(`Generated ${urlFormats.length} URLs to try for YellowPages:`, urlFormats);
     
     let response: Response | undefined = undefined;
     let usedUrl = '';
@@ -519,7 +591,7 @@ async function scrapeYellowPages(location: string): Promise<BusinessData[]> {
     
     // Try each URL format with a delay between attempts
     for (const url of urlFormats) {
-      console.log('Trying URL format:', url);
+      debugLog('Trying YellowPages URL format:', url);
       
       // Reset retry counter for each URL
       retryCount = 0;
@@ -529,7 +601,7 @@ async function scrapeYellowPages(location: string): Promise<BusinessData[]> {
           // Add a longer delay between requests to avoid being blocked
           // Exponential backoff with jitter
           const delay = 1000 + Math.pow(2, retryCount) * 1000 + Math.random() * 2000;
-          console.log(`Waiting ${Math.round(delay)}ms before request (retry ${retryCount})`);
+          debugLog(`Waiting ${Math.round(delay)}ms before request (retry ${retryCount})`);
           await new Promise(resolve => setTimeout(resolve, delay));
           
           // Rotate user agents and add more browser-like behavior
@@ -537,14 +609,18 @@ async function scrapeYellowPages(location: string): Promise<BusinessData[]> {
             retryCount > 0 ? url : 'https://www.google.com/search?q=businesses+in+' + encodeURIComponent(cleanLocation)
           );
           
+          debugLog(`Making fetch request to ${url} with user agent: ${headers['User-Agent'].substring(0, 50)}...`);
+          
           const tempResponse = await fetch(url, { headers });
+          
+          debugLog(`Got response from ${url} with status: ${tempResponse.status}`);
           
           if (tempResponse.ok) {
             response = tempResponse;
             usedUrl = url;
             html = await tempResponse.text();
-            console.log(`Successful response from URL: ${url}`);
-            console.log('Response HTML length:', html.length);
+            debugLog(`Successful response from URL: ${url}`);
+            debugLog('Response HTML length:', html.length);
             
             // Check if the response contains the requested location
             const locationMatches = 
@@ -552,7 +628,7 @@ async function scrapeYellowPages(location: string): Promise<BusinessData[]> {
               (stateOrProvince === '' || html.toLowerCase().includes(stateOrProvince.toLowerCase()));
             
             if (!locationMatches) {
-              console.log('Response does not contain the requested location, trying next URL...');
+              debugLog('Response does not contain the requested location, trying next URL...');
               continue; // Skip this response and try the next URL
             }
             
@@ -561,30 +637,30 @@ async function scrapeYellowPages(location: string): Promise<BusinessData[]> {
                 html.includes('class="result"') || 
                 html.includes('organic') ||
                 html.includes('<div class="listing"')) {
-              console.log('Found business data in response for the correct location');
+              debugLog('Found business data in response for the correct location');
               break; // Found a working URL with data
             } else {
-              console.log('Page does not contain business results, trying next format...');
+              debugLog('Page does not contain business results, trying next format...');
               continue; // Try next URL if this one doesn't have business data
             }
           } else {
-            console.log(`Failed with status ${tempResponse.status} for URL: ${url}`);
+            debugLog(`Failed with status ${tempResponse.status} for URL: ${url}`);
             
             // If we got a 403 or 429, we're likely being rate limited or blocked
             if (tempResponse.status === 403 || tempResponse.status === 429) {
               retryCount++;
-              console.log(`Blocked by anti-scraping measures. Retry ${retryCount}/${maxRetries}`);
+              debugLog(`Blocked by anti-scraping measures. Retry ${retryCount}/${maxRetries}`);
               continue; // Try again with this URL after a longer delay
             }
             
             break; // Move to next URL for other error codes
           }
         } catch (e) {
-          console.error(`Error fetching URL ${url}:`, e);
+          debugLog(`Error fetching URL ${url}:`, e);
           retryCount++;
           
           if (retryCount < maxRetries) {
-            console.log(`Retrying... (${retryCount}/${maxRetries})`);
+            debugLog(`Retrying... (${retryCount}/${maxRetries})`);
             continue;
           }
           
@@ -605,7 +681,7 @@ async function scrapeYellowPages(location: string): Promise<BusinessData[]> {
     
     // If we couldn't get data from any URL, try a fallback approach
     if (!html || html.length < 1000) {
-      console.log('Failed to fetch results from YellowPages, trying alternative approach');
+      debugLog('Failed to fetch results from YellowPages, trying alternative approach');
       
       // Try a different approach - pretend to be a mobile device
       const mobileHeaders = {
@@ -623,11 +699,12 @@ async function scrapeYellowPages(location: string): Promise<BusinessData[]> {
         'Upgrade-Insecure-Requests': '1'
       };
       
-      // Try a mobile-specific URL
-      const mobileUrl = `https://m.yellowpages.com/search?search_terms=businesses&geo_location_terms=${encodeURIComponent(cleanLocation)}`;
+      // Try mobile-specific URLs, prioritizing the Canadian domain for Canadian locations
+      const mobileDomain = isCanadian ? 'm.yellowpages.ca' : 'm.yellowpages.com';
+      const mobileUrl = `https://${mobileDomain}/search?search_terms=businesses&geo_location_terms=${encodeURIComponent(cleanLocation)}`;
       
       try {
-        console.log('Trying mobile URL:', mobileUrl);
+        debugLog('Trying mobile URL:', mobileUrl);
         await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 2000));
         
         const mobileResponse = await fetch(mobileUrl, { headers: mobileHeaders });
@@ -635,12 +712,12 @@ async function scrapeYellowPages(location: string): Promise<BusinessData[]> {
         if (mobileResponse.ok) {
           html = await mobileResponse.text();
           usedUrl = mobileUrl;
-          console.log(`Got mobile response, length: ${html.length}`);
+          debugLog(`Got mobile response, length: ${html.length}`);
         } else {
-          console.log(`Mobile approach failed with status ${mobileResponse.status}`);
+          debugLog(`Mobile approach failed with status ${mobileResponse.status}`);
         }
       } catch (mobileError) {
-        console.error('Mobile approach failed:', mobileError);
+        debugLog('Mobile approach failed:', mobileError);
       }
     }
     
@@ -649,15 +726,15 @@ async function scrapeYellowPages(location: string): Promise<BusinessData[]> {
       throw new Error(`Failed to fetch results from YellowPages for location: ${cleanLocation}`);
     }
     
-    console.log('Successfully retrieved HTML from:', usedUrl);
+    debugLog('Successfully retrieved HTML from:', usedUrl);
     
     // Extract business data using our improved extraction function
-    const businesses = extractBusinessData(html, 'yellowpages');
+    const businesses = extractBusinessData(html, 'yellowpages', usedUrl);
     
-    console.log(`Found ${businesses.length} businesses with websites`);
+    debugLog(`Found ${businesses.length} businesses with websites from YellowPages`);
     return businesses;
   } catch (error: any) {
-    console.error('Detailed YellowPages scraping error:', {
+    debugLog('Detailed YellowPages scraping error:', {
       name: error.name,
       message: error.message,
       stack: error.stack,
@@ -672,7 +749,7 @@ async function scrapeYellowPages(location: string): Promise<BusinessData[]> {
  */
 async function scrapeLocalStack(location: string): Promise<BusinessData[]> {
   try {
-    console.log('Scraping LocalStack for:', location);
+    debugLog('Scraping LocalStack for:', location);
     const formattedLocation = encodeURIComponent(location.trim());
     
     // Format location more effectively for LocalStack
@@ -721,6 +798,8 @@ async function scrapeLocalStack(location: string): Promise<BusinessData[]> {
     // Deduplicate URLs
     urls = [...new Set(urls)];
     
+    debugLog(`Generated ${urls.length} URLs to try for LocalStack:`, urls);
+    
     let html = '';
     let usedUrl = '';
     let retryCount = 0;
@@ -728,14 +807,14 @@ async function scrapeLocalStack(location: string): Promise<BusinessData[]> {
     
     // Try multiple URL formats with retry logic
     for (const url of urls) {
-      console.log(`Trying LocalStack URL: ${url}`);
+      debugLog(`Trying LocalStack URL: ${url}`);
       retryCount = 0;
       
       while (retryCount < maxRetries) {
         try {
           // Add a delay between requests with exponential backoff
           const delay = 1000 + Math.pow(2, retryCount) * 1000 + Math.random() * 2000;
-          console.log(`Waiting ${Math.round(delay)}ms before request (retry ${retryCount})`);
+          debugLog(`Waiting ${Math.round(delay)}ms before request (retry ${retryCount})`);
           await new Promise(resolve => setTimeout(resolve, delay));
           
           // Use different referer based on retry count
@@ -745,40 +824,42 @@ async function scrapeLocalStack(location: string): Promise<BusinessData[]> {
           
           const response = await fetch(url, { headers: getBrowserLikeHeaders(referer) });
           
+          debugLog(`Got response from ${url} with status: ${response.status}`);
+          
           if (response.ok) {
             html = await response.text();
             usedUrl = url;
-            console.log(`Successful response from LocalStack URL: ${url}, length: ${html.length}`);
+            debugLog(`Successful response from LocalStack URL: ${url}, length: ${html.length}`);
             
             // Check if the page contains actual results with multiple indicators
             if (html.includes('business-listing') || 
                 html.includes('company-card') || 
                 html.includes('business-result') ||
                 html.includes('search-result')) {
-              console.log('Found business data in LocalStack response');
+              debugLog('Found business data in LocalStack response');
               break; // Found a working URL with data
             } else {
-              console.log('LocalStack page does not contain business results, trying next format...');
+              debugLog('LocalStack page does not contain business results, trying next format...');
               break; // Move to next URL if this one doesn't have business data
             }
           } else {
-            console.log(`Failed LocalStack request with status ${response.status}`);
+            debugLog(`Failed LocalStack request with status ${response.status}`);
             
             // If we got a 403 or 429, we're likely being rate limited
             if (response.status === 403 || response.status === 429) {
               retryCount++;
-              console.log(`Blocked by anti-scraping measures. Retry ${retryCount}/${maxRetries}`);
+              debugLog(`Blocked by anti-scraping measures. Retry ${retryCount}/${maxRetries}`);
               continue; // Try again with this URL after a longer delay
             }
             
             break; // Move to next URL for other error codes
           }
         } catch (e) {
-          console.error(`Error fetching LocalStack URL ${url}:`, e);
+          debugLog(`Error fetching LocalStack URL ${url}:`, e);
           retryCount++;
           
           if (retryCount < maxRetries) {
-            console.log(`Retrying... (${retryCount}/${maxRetries})`);
+            debugLog(`Retrying... (${retryCount}/${maxRetries})`);
             continue;
           }
           
@@ -799,12 +880,12 @@ async function scrapeLocalStack(location: string): Promise<BusinessData[]> {
     
     // Try alternative approach if we couldn't get data
     if (!html || html.length < 1000) {
-      console.log('Failed to get valid response from LocalStack, trying alternative approach');
+      debugLog('Failed to get valid response from LocalStack, trying alternative approach');
       
       // Try a different approach - use a different domain or API endpoint
       try {
         const alternativeUrl = `https://api.localstack.com/businesses/search?location=${encodeURIComponent(cityName)}`;
-        console.log('Trying alternative LocalStack API:', alternativeUrl);
+        debugLog('Trying alternative LocalStack API:', alternativeUrl);
         
         await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 2000));
         
@@ -816,11 +897,13 @@ async function scrapeLocalStack(location: string): Promise<BusinessData[]> {
           }
         });
         
+        debugLog(`Got alternative response with status: ${altResponse.status}`);
+        
         if (altResponse.ok) {
           // Try to parse as JSON first
           try {
             const jsonData = await altResponse.json();
-            console.log('Got JSON response from alternative API');
+            debugLog('Got JSON response from alternative API');
             
             // Extract businesses from JSON if available
             if (jsonData && Array.isArray(jsonData.businesses)) {
@@ -831,7 +914,7 @@ async function scrapeLocalStack(location: string): Promise<BusinessData[]> {
               })).filter((biz: BusinessData) => biz.name && biz.website);
               
               if (apiBusinesses.length > 0) {
-                console.log(`Found ${apiBusinesses.length} businesses from LocalStack API`);
+                debugLog(`Found ${apiBusinesses.length} businesses from LocalStack API`);
                 return apiBusinesses;
               }
             }
@@ -839,35 +922,35 @@ async function scrapeLocalStack(location: string): Promise<BusinessData[]> {
             // If not JSON, try to parse as HTML
             html = await altResponse.text();
             usedUrl = alternativeUrl;
-            console.log(`Got alternative response, length: ${html.length}`);
+            debugLog(`Got alternative response as HTML, length: ${html.length}`);
           }
         } else {
-          console.log(`Alternative approach failed with status ${altResponse.status}`);
+          debugLog(`Alternative approach failed with status ${altResponse.status}`);
         }
       } catch (altError) {
-        console.error('Alternative approach failed:', altError);
+        debugLog('Alternative approach failed:', altError);
       }
     }
     
     // If we have HTML content, try to extract business data
     if (html && html.length > 1000) {
-      console.log('Successfully retrieved HTML from:', usedUrl);
+      debugLog('Successfully retrieved HTML from:', usedUrl);
       
       // Extract business data using our improved extraction function
-      const businesses = extractBusinessData(html, 'localstack');
+      const businesses = extractBusinessData(html, 'localstack', usedUrl);
       
       // If we found businesses, return them, otherwise fall back to mock data
       if (businesses.length > 0) {
-        console.log(`Found ${businesses.length} businesses from LocalStack`);
+        debugLog(`Found ${businesses.length} businesses from LocalStack`);
         return businesses;
       }
     }
     
     // Fall back to mock data if we couldn't get real data
-    console.log('No businesses found in LocalStack data, using mock data');
+    debugLog('No businesses found in LocalStack data, using mock data');
     return getMockBusinessData(location);
   } catch (error) {
-    console.error('Error scraping LocalStack:', error);
+    debugLog('Error scraping LocalStack:', error);
     return getMockBusinessData(location);
   }
 }
@@ -876,7 +959,7 @@ async function scrapeLocalStack(location: string): Promise<BusinessData[]> {
  * Generate realistic mock business data based on location
  */
 function getMockBusinessData(location: string): BusinessData[] {
-  console.log(`Generating enhanced mock data for location: ${location}`);
+  debugLog(`Generating enhanced mock data for location: ${location}`);
   
   // Extract city name from location
   const locationParts = location.split(',').map(part => part.trim());
@@ -970,17 +1053,25 @@ function getMockBusinessData(location: string): BusinessData[] {
     });
   }
   
+  debugLog(`Generated ${mockBusinesses.length} mock businesses for ${location}`);
   return mockBusinesses;
 }
 
 serve(async (req) => {
+  // Reset debug variables
+  debugLogs = [];
+  htmlSamples = [];
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { location, source = 'auto' }: ScrapingRequest = await req.json();
+    const { location, source = 'auto', debug = false }: ScrapingRequest = await req.json();
+    
+    // Set debug mode
+    debugMode = debug;
     
     if (!location) {
       return new Response(
@@ -990,14 +1081,14 @@ serve(async (req) => {
     }
     
     // Log the exact request details
-    console.log({
-      message: 'Starting business scrape request',
+    debugLog('Starting business scrape request', {
       location,
       source,
+      debug,
       timestamp: new Date().toISOString()
     });
 
-    console.log(`Scraping businesses in: "${location}" from source: ${source}`);
+    debugLog(`Scraping businesses in: "${location}" from source: ${source}`);
 
     // Store results from each source separately for better reporting
     const results: Record<string, any> = {
@@ -1015,7 +1106,7 @@ serve(async (req) => {
     // Function to safely run a scraper with timing and error handling
     const runScraper = async (scraperName: string, scraperFn: (loc: string) => Promise<BusinessData[]>) => {
       try {
-        console.log(`Starting ${scraperName} scraper...`);
+        debugLog(`Starting ${scraperName} scraper...`);
         const startTime = Date.now();
         const scrapedBusinesses = await scraperFn(location);
         const duration = Date.now() - startTime;
@@ -1028,11 +1119,12 @@ serve(async (req) => {
           error: null
         };
         
-        console.log(`Found ${scrapedBusinesses.length} businesses from ${scraperName} in ${duration}ms`);
+        debugLog(`Found ${scrapedBusinesses.length} businesses from ${scraperName} in ${duration}ms`);
         return scrapedBusinesses;
       } catch (error) {
-        console.error(`Error scraping ${scraperName}:`, error);
-        results[scraperName].error = error instanceof Error ? error.message : String(error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        debugLog(`Error scraping ${scraperName}:`, errorMessage);
+        results[scraperName].error = errorMessage;
         results[scraperName].success = false;
         return [];
       }
@@ -1045,7 +1137,7 @@ serve(async (req) => {
         allBusinesses = await runScraper('localstack', scrapeLocalStack);
       } else {
         // Auto mode - try multiple sources in parallel for better performance
-        console.log('Auto mode: trying multiple data sources in parallel');
+        debugLog('Auto mode: trying multiple data sources in parallel');
         
         // Run both scrapers in parallel
         const [ypBusinesses, lsBusinesses] = await Promise.all([
@@ -1059,7 +1151,7 @@ serve(async (req) => {
       
       // If we still have no businesses, use mock data
       if (allBusinesses.length === 0) {
-        console.log('No businesses found from any source, using mock data');
+        debugLog('No businesses found from any source, using mock data');
         const mockBusinesses = getMockBusinessData(location);
         results.mock = {
           success: true,
@@ -1071,7 +1163,8 @@ serve(async (req) => {
         mockDataUsed = true;
       }
     } catch (e) {
-      console.error('All scrapers failed:', e);
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      debugLog('All scrapers failed:', errorMessage);
       const mockBusinesses = getMockBusinessData(location);
       results.mock = {
         success: true,
@@ -1088,7 +1181,7 @@ serve(async (req) => {
       index === self.findIndex(b => b.website === business.website)
     );
     
-    console.log(`Found ${uniqueBusinesses.length} unique businesses out of ${allBusinesses.length} total`);
+    debugLog(`Found ${uniqueBusinesses.length} unique businesses out of ${allBusinesses.length} total`);
     
     // Prepare source information for response
     let effectiveSource = source;
@@ -1102,8 +1195,8 @@ serve(async (req) => {
       effectiveSource = sources.join('+') || 'none';
     }
     
-    // Include detailed results for debugging purposes
-    return new Response(JSON.stringify({
+    // Create response object with debug info if requested
+    const responseObj: any = {
       businesses: uniqueBusinesses,
       count: uniqueBusinesses.length,
       location,
@@ -1131,17 +1224,37 @@ serve(async (req) => {
           } : undefined
         }
       }
-    }), {
+    };
+    
+    // Add debug information if debug mode was enabled
+    if (debugMode) {
+      responseObj.debug = {
+        logs: debugLogs,
+        htmlSamples: htmlSamples
+      };
+    }
+    
+    return new Response(JSON.stringify(responseObj), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    console.error('Error processing request:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    debugLog('Error processing request:', errorMessage);
     
-    return new Response(JSON.stringify({
+    const responseObj: any = {
       error: 'Failed to scrape business data',
-      details: error instanceof Error ? error.message : String(error),
+      details: errorMessage,
       timestamp: new Date().toISOString()
-    }), {
+    };
+    
+    // Add debug logs if debug mode was enabled
+    if (debugMode) {
+      responseObj.debug = {
+        logs: debugLogs
+      };
+    }
+    
+    return new Response(JSON.stringify(responseObj), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
