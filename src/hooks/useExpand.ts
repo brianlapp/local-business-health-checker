@@ -1,15 +1,24 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
+/**
+ * Custom hook for managing expandable/collapsible UI elements
+ * @param initialState - Initial expanded state (default: false)
+ * @returns Object containing expanded state and helper functions
+ */
 export function useExpand(initialState: boolean = false) {
   const [expanded, setExpanded] = useState(initialState);
   
-  const toggleExpanded = () => setExpanded(!expanded);
+  // Use useCallback to prevent unnecessary re-renders
+  const toggleExpanded = useCallback(() => {
+    setExpanded(prev => !prev);
+  }, []);
   
-  const handleToggleButtonClick = (e: React.MouseEvent) => {
+  // Stop propagation for nested clickable elements
+  const handleToggleButtonClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     toggleExpanded();
-  };
+  }, [toggleExpanded]);
   
   return {
     expanded,
