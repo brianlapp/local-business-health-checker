@@ -21,10 +21,13 @@ export function handleScanError(
     toast.error(`Error: ${error.message || 'Failed to search for businesses'}`);
   }
   
+  // Generate mock data synchronously to avoid Promise issues
+  const mockBusinesses = generateMockBusinessData(location, 'error-fallback');
+  
   // Return mock data as a fallback with proper BusinessScanResponse type
   return {
-    businesses: generateMockBusinessData(location, 'error-fallback'),
-    count: generateMockBusinessData(location, 'error-fallback').length,
+    businesses: mockBusinesses,
+    count: mockBusinesses.length,
     location,
     source: 'error-fallback',
     timestamp: new Date().toISOString(),

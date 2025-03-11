@@ -128,7 +128,7 @@ export const processMockBusinesses = (mockBusinesses: any[], location: string): 
 };
 
 // Function to generate mock business data as fallback
-export function generateMockBusinessData(location: string, source: string = 'mock'): Promise<Business[]> {
+export function generateMockBusinessData(location: string, source: string = 'mock'): Business[] {
   console.log(`Generating mock data for ${location}`);
   
   // Generate 5-10 mock businesses
@@ -159,5 +159,5 @@ export function generateMockBusinessData(location: string, source: string = 'moc
     });
   }
   
-  return Promise.resolve(businesses);
+  return businesses;
 }
