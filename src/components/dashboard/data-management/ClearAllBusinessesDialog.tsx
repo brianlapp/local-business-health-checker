@@ -38,7 +38,10 @@ const ClearAllBusinessesDialog: React.FC<ClearAllBusinessesDialogProps> = ({
       toast.success('All business data has been cleared');
     } catch (error) {
       console.error('Error clearing data:', error);
-      toast.error('Failed to clear data. Please try again.');
+      
+      // Provide more specific error information to the user
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Failed to clear data: ${errorMessage}. Please check console for details.`);
     } finally {
       setIsDeleting(false);
     }
