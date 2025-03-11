@@ -57,17 +57,47 @@ export async function scanWithLighthouse(businessId: string, url: string): Promi
 // Get GTmetrix usage statistics
 export async function getGTmetrixUsage(): Promise<{ used: number; limit: number; resetDate: string }> {
   try {
-    const { data, error } = await supabase
+    // First try to get the GTmetrix usage record
+    let { data, error } = await supabase
       .from('gtmetrix_usage')
       .select('*')
-      .single();
+      .order('created_at', { ascending: false })
+      .limit(1);
     
-    if (error) throw error;
+    // If there's no record or an error, create a default one
+    if (error || !data || data.length === 0) {
+      console.log('No GTmetrix usage records found, creating default');
+      
+      // Get current month in YYYY-MM format
+      const currentDate = new Date();
+      const currentMonth = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+      
+      // Insert a default record
+      const { data: newRecord, error: insertError } = await supabase
+        .from('gtmetrix_usage')
+        .insert({
+          month: currentMonth,
+          scans_used: 0,
+          scans_limit: 3,
+          reset_date: new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1).toISOString()
+        })
+        .select()
+        .single();
+      
+      if (insertError) {
+        console.error('Error creating GTmetrix usage record:', insertError);
+        return { used: 0, limit: 3, resetDate: new Date().toISOString() };
+      }
+      
+      data = [newRecord];
+    }
+    
+    const record = data[0];
     
     return {
-      used: data.scans_used || 0,
-      limit: data.monthly_limit || 3,
-      resetDate: data.reset_date || new Date().toISOString()
+      used: record.scans_used || 0,
+      limit: record.scans_limit || 3,
+      resetDate: record.reset_date || new Date().toISOString()
     };
   } catch (error) {
     console.error('Error fetching GTmetrix usage:', error);
