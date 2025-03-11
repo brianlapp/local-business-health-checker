@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, MapPin, Loader2, AlertCircle, Info, Bug } from 'lucide-react';
 import { scanBusinessesInArea } from '@/services/apiService';
-import { Business, ScanDebugInfo } from '@/types/business';
+import { Business, ScanDebugInfo, BusinessScanResponse } from '@/types/business';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
@@ -93,19 +94,26 @@ const MapScanner = () => {
       
       toast.info(`Scanning for businesses in ${finalLocation}...`);
       
-      // Include debug mode in the API call
-      const businesses = await scanBusinessesInArea(finalLocation, source, debugMode);
+      // Add more detailed console logging
+      console.log(`Starting business scan for ${finalLocation} with source ${source}, debug mode: ${debugMode}`);
+      
+      // Use the updated function signature with debugMode parameter
+      const response = await scanBusinessesInArea(finalLocation, source, debugMode);
       
       clearInterval(progressInterval);
       setProgress(100);
       
+      console.log('Scan response:', response);
+      
       // Check if we're using mock data based on the response metadata
+      const businesses = Array.isArray(response) ? response : [];
       const mockDataCheck = businesses.length > 0 && businesses.every(b => b.id && b.id.startsWith('mock-'));
       setUsingMockData(mockDataCheck);
       
-      // Store debug info if present
-      if (debugMode && businesses.debugInfo) {
-        setDebugInfo(businesses.debugInfo);
+      // Store debug info if present and debug mode is enabled
+      if (debugMode && 'debugInfo' in response && response.debugInfo) {
+        console.log('Debug info received:', response.debugInfo);
+        setDebugInfo(response.debugInfo);
       }
       
       if (businesses.length === 0) {
