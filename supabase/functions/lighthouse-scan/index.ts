@@ -47,6 +47,9 @@ serve(async (req) => {
       const apiUrl = new URL('https://www.googleapis.com/pagespeedonline/v5/runPagespeed');
       apiUrl.searchParams.append('url', formattedUrl);
       apiUrl.searchParams.append('strategy', 'mobile');
+      apiUrl.searchParams.append('category', 'performance');
+      apiUrl.searchParams.append('category', 'accessibility');
+      apiUrl.searchParams.append('category', 'best-practices');
       
       const response = await fetch(apiUrl.toString());
       
@@ -93,7 +96,29 @@ serve(async (req) => {
         // Return a mock score if rate limited
         console.log('Lighthouse API rate limited, returning mock score');
         
-        const mockScore = Math.floor(Math.random() * 60) + 20; // Random score between 20-80
+        // Instead of random score, try to fetch from the actual website if possible
+        let mockScore = 0;
+        try {
+          // Try a basic fetch to see if the site loads quickly
+          const start = Date.now();
+          const basicFetch = await fetch(formattedUrl, { 
+            method: 'GET',
+            headers: { 'User-Agent': 'Mozilla/5.0 (compatible; LighthouseScanner/1.0)' }
+          });
+          const loadTime = Date.now() - start;
+          
+          // Calculate a score based on load time
+          // <500ms: 90+, <1000ms: 80+, <2000ms: 60+, <3000ms: 40+, otherwise lower
+          if (loadTime < 500) mockScore = 90 + Math.floor(Math.random() * 10);
+          else if (loadTime < 1000) mockScore = 80 + Math.floor(Math.random() * 10);
+          else if (loadTime < 2000) mockScore = 60 + Math.floor(Math.random() * 20);
+          else if (loadTime < 3000) mockScore = 40 + Math.floor(Math.random() * 20);
+          else mockScore = 20 + Math.floor(Math.random() * 20);
+        } catch {
+          // If even a basic fetch fails, assume a low score
+          mockScore = Math.floor(Math.random() * 40) + 20; // Random score between 20-60
+        }
+        
         const reportUrl = `https://pagespeed.web.dev/report?url=${encodeURIComponent(formattedUrl)}`;
         
         // Update the business with mock data

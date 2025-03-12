@@ -1,4 +1,3 @@
-
 import { Business } from '@/types/business';
 
 export function generateIssues(business: any) {
@@ -6,11 +5,11 @@ export function generateIssues(business: any) {
   const speedScore = business.lighthouse_score || business.speed_score || 0;
   
   return {
-    speedIssues: speedScore < 50,
+    speedIssues: speedScore < 70, // More reasonable threshold based on industry standards
     outdatedCMS: isCMSOutdated(business.cms),
     noSSL: !isWebsiteSecure(business.website),
     notMobileFriendly: !isMobileFriendly(business),
-    badFonts: Math.random() > 0.7, // Example placeholder
+    badFonts: hasBadFonts(business), // Use new function instead of random
   };
 }
 
@@ -28,6 +27,55 @@ export function isCMSOutdated(cms: string | null | undefined): boolean {
 
 export function isWebsiteSecure(website: string): boolean {
   return website.startsWith('https://') || !website.startsWith('http://');
+}
+
+// New function to determine if a site might be using bad fonts
+// Instead of using random, we use heuristics
+export function hasBadFonts(business: any): boolean {
+  // If we have technologies data, check for modern font usage
+  if (business.technologies && Array.isArray(business.technologies)) {
+    // Check if the site uses modern font technologies
+    const modernFontTech = ['Google Fonts', 'Font Awesome', 'Adobe Fonts', 'Typekit'];
+    
+    for (const tech of business.technologies) {
+      const techName = (tech.name || '').toLowerCase();
+      if (modernFontTech.some(t => techName.includes(t.toLowerCase()))) {
+        return false; // Using modern font tech, likely not bad fonts
+      }
+    }
+  }
+  
+  // Check for sites that typically have good typography
+  if (business.website) {
+    const siteName = business.website.toLowerCase();
+    // Sites built with modern platforms usually have good typography
+    if (siteName.includes('shopify') || 
+        siteName.includes('wix') || 
+        siteName.includes('squarespace') ||
+        siteName.includes('webflow')) {
+      return false;
+    }
+  }
+  
+  // For newly scanned sites where we don't have enough data yet,
+  // we'll assume they don't have bad fonts (instead of random generation)
+  if (business.created_at) {
+    const creationDate = new Date(business.created_at);
+    const now = new Date();
+    const daysSinceCreation = (now.getTime() - creationDate.getTime()) / (1000 * 3600 * 24);
+    if (daysSinceCreation < 7) {
+      return false;
+    }
+  }
+  
+  // For sites with high page speed scores, assume they've invested in good design too
+  if ((business.lighthouse_score || business.speed_score || 0) > 85) {
+    return false;
+  }
+  
+  // Default: For now, keep some randomness but with lower probability (20% chance)
+  // This will be replaced with better detection in future
+  return Math.random() < 0.2;
 }
 
 export function isMobileFriendly(business: any): boolean {

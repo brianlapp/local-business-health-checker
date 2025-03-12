@@ -17,6 +17,9 @@ const IssuesList: React.FC<IssuesListProps> = ({ business }) => {
   const isMobileFriendly = typeof business.is_mobile_friendly === 'boolean' 
     ? business.is_mobile_friendly 
     : !issues.notMobileFriendly;
+  
+  // Get the most accurate lighthouse score
+  const lighthouseScore = business.lighthouseScore || business.lighthouse_score || business.speedScore || 0;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
@@ -24,7 +27,7 @@ const IssuesList: React.FC<IssuesListProps> = ({ business }) => {
         icon={Zap} 
         title="Speed Issues" 
         active={issues.speedIssues} 
-        info={`Page Speed: ${business.lighthouseScore || business.speedScore || 'N/A'}/100`}
+        info={`Page Speed: ${lighthouseScore}/100`}
       />
       <IssueItem 
         icon={Clock} 
