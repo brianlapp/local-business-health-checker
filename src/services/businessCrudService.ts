@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { Business } from '@/types/business';
 import { toast } from 'sonner';
@@ -53,25 +52,21 @@ export async function clearAllBusinesses(): Promise<boolean> {
       return true;
     }
     
-    // Using a different approach that's more reliable
-    // Delete all rows without using any filter conditions
-    const { error: deleteError } = await supabase
-      .from('businesses')
-      .delete()
-      .neq('id', null);  // This should match all rows where ID is not null
+    // Use a raw SQL query with the execute method to delete all businesses
+    // This is a more direct approach that avoids the UUID parsing issues
+    const { error: deleteError } = await supabase.rpc('delete_all_businesses');
     
     if (deleteError) {
-      console.error('Supabase delete error:', deleteError);
+      console.error('Delete all businesses error:', deleteError);
       throw deleteError;
     }
     
     console.log('Successfully deleted all business records');
     
-    // Reset GTmetrix usage counters using the same approach
+    // Reset GTmetrix usage counters
     const { error: resetError } = await supabase
       .from('gtmetrix_usage')
-      .update({ scans_used: 0 })
-      .neq('id', null);  // This should match all rows where ID is not null
+      .update({ scans_used: 0 });
     
     if (resetError) {
       console.warn('Warning: Could not reset GTmetrix usage counters:', resetError);
