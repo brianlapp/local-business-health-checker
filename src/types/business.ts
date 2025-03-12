@@ -23,6 +23,7 @@ export interface Business {
   lastLighthouseScan?: string | null;
   lastGtmetrixScan?: string | null;
   source?: string;
+  has_real_score?: boolean;
   
   // Adding database column names as optional properties to fix type issues
   speed_score?: number;

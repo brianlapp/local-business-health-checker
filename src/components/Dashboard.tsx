@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Business } from '@/types/business';
 import { getBusinesses, scanWithLighthouse, getBusinessesNeedingRealScores } from '@/services/businessService';
+import { supabase } from '@/lib/supabase';
 import DashboardHeader from './dashboard/DashboardHeader';
 import DashboardStats from './dashboard/DashboardStats';
 import DashboardControls from './dashboard/DashboardControls';
@@ -38,7 +38,6 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
 
   const location = useLocation();
   
-  // Use our custom hooks
   const { 
     selectedBusinesses, 
     handleSelectBusiness,
@@ -54,13 +53,11 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
     filteredAndSortedBusinesses
   } = useBusinessFiltering(businesses, searchQuery);
 
-  // Check if there are newly added businesses from the location state
   useEffect(() => {
     if (location.state?.newBusinesses && Array.isArray(location.state.newBusinesses)) {
       const newIds = location.state.newBusinesses.map((b: Business) => b.id);
       setNewlyAddedBusinesses(newIds);
       
-      // Clear the newly added businesses after 10 seconds
       const timer = setTimeout(() => {
         setNewlyAddedBusinesses([]);
       }, 10000);
@@ -75,7 +72,6 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
       try {
         const data = await getBusinesses();
         
-        // Start scanning unscanned businesses
         const unscannedBusinesses = data.filter(b => !b.lighthouse_score && !b.lighthouseScore);
         
         if (unscannedBusinesses.length > 0) {
@@ -83,26 +79,20 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
           setScanningProgress(0);
           toast.info(`Scanning ${unscannedBusinesses.length} businesses for performance data...`);
           
-          // Counter for rate limit warnings
           let rateLimitCount = 0;
           
-          // Scan businesses sequentially with added delay to avoid rate limits
           for (let i = 0; i < unscannedBusinesses.length; i++) {
             const business = unscannedBusinesses[i];
             try {
-              // Add a delay between scans to reduce rate limiting
               if (i > 0) {
-                // Wait 3-5 seconds between scans
                 const delay = 3000 + Math.random() * 2000;
                 await new Promise(resolve => setTimeout(resolve, delay));
               }
               
               const result = await scanWithLighthouse(business.id, business.website);
               
-              // Check if response contained a rate limit note
-              if (result && result.reportUrl && result?.note) {
+              if (result && result.reportUrl && result.note) {
                 if (result.note.includes('Resuming in')) {
-                  // Extract the time info from the note
                   const timeMatch = result.note.match(/Resuming in ~(\d+) minutes/);
                   if (timeMatch && timeMatch[1]) {
                     const minutes = parseInt(timeMatch[1]);
@@ -112,7 +102,6 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
                     setRateResumeTime(resumeTime.toLocaleTimeString());
                     setIsRateLimited(true);
                     
-                    // Break the loop if we've hit a hard rate limit
                     break;
                   }
                 }
@@ -120,26 +109,22 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
                 if (result.note.includes('rate limited')) {
                   rateLimitCount++;
                   
-                  // Only show toast for the first few rate limits to avoid spam
                   if (rateLimitCount <= 3) {
-                    toast.warning(`Rate limit encountered for ${business.name}. Using estimated score.`);
+                    toast.warning(`Rate limit encountered for ${business.name}. Skipping for now.`);
                   } 
                   
-                  // Set the warning flag once we hit multiple rate limits
                   if (rateLimitCount >= 3 && !rateLimitWarning) {
                     setRateLimitWarning(true);
                   }
                 }
               }
               
-              // Update progress
               setScanningProgress(i + 1);
             } catch (error) {
               console.error(`Error scanning ${business.name}:`, error);
             }
           }
           
-          // Refresh the business list after scanning
           const updatedData = await getBusinesses();
           setBusinesses(updatedData || []);
           
@@ -168,11 +153,8 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
 
   const handleDataRefresh = () => {
     console.log('Data refresh triggered');
-    // Force immediate data refresh by updating the refresh key
     setDataRefreshKey(prev => prev + 1);
-    // Clear any selections
     clearSelections();
-    // Reset rate limit warning
     setRateLimitWarning(false);
     setIsRateLimited(false);
     setRateResumeTime(null);
@@ -184,14 +166,13 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
       const businessIds = await getBusinessesNeedingRealScores();
       
       if (businessIds.length === 0) {
-        toast.info("No businesses with estimated scores found.");
+        toast.info("No businesses needing score updates found.");
         setIsRetryingEstimates(false);
         return;
       }
       
-      toast.info(`Retrying real scores for ${businessIds.length} businesses with estimated data...`);
+      toast.info(`Retrying to scan ${businessIds.length} businesses...`);
       
-      // Get full business data for the IDs
       const { data: businessesToRetry } = await supabase
         .from('businesses')
         .select('*')
@@ -199,13 +180,11 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
       
       setTotalToScan(businessesToRetry.length);
       
-      // Retry each business with a delay between
       for (let i = 0; i < businessesToRetry.length; i++) {
         const business = businessesToRetry[i];
         
-        // Add a delay between scans
         if (i > 0) {
-          const delay = 5000 + Math.random() * 5000; // Longer 5-10 second delay for retries
+          const delay = 5000 + Math.random() * 5000;
           await new Promise(resolve => setTimeout(resolve, delay));
         }
         
@@ -213,8 +192,7 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
           const result = await scanWithLighthouse(business.id, business.website);
           setScanningProgress(i + 1);
           
-          // Check if we hit a rate limit
-          if (result?.note?.includes('Resuming in')) {
+          if (result && result.note && result.note.includes('Resuming in')) {
             const timeMatch = result.note.match(/Resuming in ~(\d+) minutes/);
             if (timeMatch && timeMatch[1]) {
               const minutes = parseInt(timeMatch[1]);
@@ -224,7 +202,6 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
               setRateResumeTime(resumeTime.toLocaleTimeString());
               setIsRateLimited(true);
               
-              // Break the loop if we've hit a hard rate limit
               break;
             }
           }
@@ -233,7 +210,6 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
         }
       }
       
-      // Refresh businesses data
       const refreshedData = await getBusinesses();
       setBusinesses(refreshedData || []);
       
@@ -243,8 +219,8 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
         toast.success("Retry complete!");
       }
     } catch (error) {
-      console.error("Error retrying estimates:", error);
-      toast.error("Failed to retry estimates");
+      console.error("Error retrying scans:", error);
+      toast.error("Failed to retry scans");
     } finally {
       setIsRetryingEstimates(false);
       setScanningProgress(0);
@@ -290,9 +266,6 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
               Google's API rate limit has been reached. Scanning has been paused and will resume automatically
               {rateResumeTime ? ` at approximately ${rateResumeTime}` : ' soon'}.
             </p>
-            <p>
-              Estimated performance scores are being used temporarily and will be replaced with real data when available.
-            </p>
           </AlertDescription>
         </Alert>
       )}
@@ -303,7 +276,7 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
           <AlertTitle>Some API Rate Limiting Detected</AlertTitle>
           <AlertDescription className="flex flex-col gap-2">
             <p>
-              Google's API rate limits have been reached for some businesses. Some performance scores are estimates based on website response time.
+              Google's API rate limits have been reached for some businesses. Some websites could not be scanned.
             </p>
             <Button 
               variant="outline" 
@@ -313,7 +286,7 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
               disabled={isRetryingEstimates}
             >
               <RefreshCw className={`mr-2 h-4 w-4 ${isRetryingEstimates ? 'animate-spin' : ''}`} />
-              Retry Estimated Scores
+              Retry Scanning
             </Button>
           </AlertDescription>
         </Alert>

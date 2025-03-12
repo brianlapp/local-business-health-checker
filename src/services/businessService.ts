@@ -14,7 +14,8 @@ import {
   scanWithLighthouse,
   scanWithGTmetrix,
   scanWithBuiltWith,
-  getGTmetrixUsage
+  getGTmetrixUsage,
+  getBusinessesNeedingRealScores
 } from './businessScanService';
 
 import {
@@ -42,6 +43,7 @@ export {
   scanWithGTmetrix,
   scanWithBuiltWith,
   getGTmetrixUsage,
+  getBusinessesNeedingRealScores,
   
   // New scanning APIs
   scanBusinessesInArea,

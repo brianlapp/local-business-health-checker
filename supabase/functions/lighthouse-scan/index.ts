@@ -7,9 +7,9 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
 // Rate limiting configuration
 let scanCount = 0;
-const MAX_SCANS_PER_INSTANCE = 10; // Further reduced to be more conservative
+const MAX_SCANS_PER_INSTANCE = 15; // Maximum scans per instance
 const RATE_LIMIT_RESET_TIME = 60000; // 1 minute in milliseconds
-const MIN_DELAY_BETWEEN_SCANS = 3000; // Increased to 3 seconds minimum delay
+const MIN_DELAY_BETWEEN_SCANS = 2000; // 2 seconds minimum delay
 const BACKOFF_PERIOD = 300000; // 5 minutes backoff if rate limited
 let lastScanTime = 0;
 let rateLimitedUntil = 0; // Timestamp when we can resume after hitting rate limit
@@ -61,14 +61,32 @@ serve(async (req) => {
     const currentTime = Date.now();
     if (rateLimitedUntil > currentTime) {
       const waitTime = Math.ceil((rateLimitedUntil - currentTime) / 60000); // minutes
-      console.log(`In rate limit backoff period. Resuming in ~${waitTime} minutes. Using fallback.`);
-      return await useFallbackMethod(formattedUrl, businessId, supabase, false, `Rate limited. Resuming in ~${waitTime} minutes.`);
+      console.log(`In rate limit backoff period. Resuming in ~${waitTime} minutes.`);
+      
+      // Return a specific rate limit response
+      return new Response(JSON.stringify({
+        success: false,
+        error: "Rate limited",
+        note: `Rate limited. Resuming in ~${waitTime} minutes.`
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 429
+      });
     }
     
     // Check for internal rate limiting
     if (scanCount >= MAX_SCANS_PER_INSTANCE) {
-      console.log('Internal rate limit reached, using fallback scoring method');
-      return await useFallbackMethod(formattedUrl, businessId, supabase, true);
+      console.log('Internal rate limit reached, queuing for later');
+      
+      // Return a specific rate limit response
+      return new Response(JSON.stringify({
+        success: false,
+        error: "Internal rate limit",
+        note: "Too many requests. Please try again later."
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 429
+      });
     }
     
     // Enforce delay between scans to avoid external rate limiting
@@ -98,11 +116,29 @@ serve(async (req) => {
           'User-Agent': 'BizScan-LighthouseFunction/1.0',
         },
         // Set timeout to prevent long-hanging requests
-        signal: AbortSignal.timeout(20000), // 20 second timeout
+        signal: AbortSignal.timeout(15000), // 15 second timeout
       });
       
       if (!response.ok) {
         const errorText = await response.text();
+        
+        // Handle rate limit errors
+        if (response.status === 429 || errorText.includes('RESOURCE_EXHAUSTED') || errorText.includes('Quota exceeded')) {
+          // Set a backoff period before we try again
+          rateLimitedUntil = Date.now() + BACKOFF_PERIOD;
+          console.log(`Rate limit hit. Setting backoff until ${new Date(rateLimitedUntil).toISOString()}`);
+          
+          const waitTime = Math.ceil(BACKOFF_PERIOD / 60000); // minutes
+          return new Response(JSON.stringify({
+            success: false,
+            error: "Rate limited by Google API",
+            note: `Rate limited. Resuming in ~${waitTime} minutes.`
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 429
+          });
+        }
+        
         throw new Error(`Lighthouse API error: ${response.status} - ${errorText}`);
       }
       
@@ -120,8 +156,7 @@ serve(async (req) => {
         .update({
           lighthouse_score: lighthouseScore,
           lighthouse_report_url: reportUrl,
-          last_lighthouse_scan: new Date().toISOString(),
-          has_real_score: true // Mark this as a real score, not estimated
+          last_lighthouse_scan: new Date().toISOString()
         })
         .eq('id', businessId);
 
@@ -131,17 +166,17 @@ serve(async (req) => {
       
       // Return the performance data
       const performanceData = {
+        success: true,
         lighthouseScore,
         reportUrl,
-        createdAt: new Date().toISOString(),
-        isRealScore: true
+        createdAt: new Date().toISOString()
       };
       
       return new Response(JSON.stringify(performanceData), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } catch (error) {
-      // Handle rate limiting errors more gracefully
+      // Handle specific error cases
       console.error('Lighthouse API error:', error.message);
       
       if (error.message.includes('429') || 
@@ -152,21 +187,24 @@ serve(async (req) => {
         rateLimitedUntil = Date.now() + BACKOFF_PERIOD;
         console.log(`Rate limit hit. Setting backoff until ${new Date(rateLimitedUntil).toISOString()}`);
         
-        return await useFallbackMethod(
-          formattedUrl, 
-          businessId, 
-          supabase, 
-          false, 
-          `API rate limited. Next attempt in 5 minutes.`
-        );
+        const waitTime = Math.ceil(BACKOFF_PERIOD / 60000); // minutes
+        return new Response(JSON.stringify({
+          success: false,
+          error: "Rate limited by Google API",
+          note: `Rate limited. Resuming in ~${waitTime} minutes.`
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 429
+        });
       } else if (error.message.includes('timeout')) {
-        return await useFallbackMethod(
-          formattedUrl, 
-          businessId, 
-          supabase, 
-          false, 
-          `Request timed out. Using estimated score.`
-        );
+        return new Response(JSON.stringify({
+          success: false,
+          error: "Request timed out",
+          note: `Request timed out. Please try again later.`
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 408
+        });
       } else {
         throw error;
       }
@@ -175,6 +213,7 @@ serve(async (req) => {
     console.error('Error in Lighthouse scan:', error);
     
     return new Response(JSON.stringify({ 
+      success: false,
       error: error.message,
       message: 'Failed to perform Lighthouse scan'
     }), {
@@ -183,72 +222,3 @@ serve(async (req) => {
     });
   }
 });
-
-// Extracted fallback method to a separate function
-async function useFallbackMethod(
-  formattedUrl: string, 
-  businessId: string, 
-  supabase: any, 
-  isInternalLimit: boolean,
-  customMessage?: string
-) {
-  console.log(`Using fallback scoring method for ${formattedUrl}`);
-  
-  // Instead of random score, try to fetch from the actual website if possible
-  let mockScore = 0;
-  const message = customMessage || (isInternalLimit 
-    ? "API rate limited by internal controls. Using estimated performance score." 
-    : "Google API rate limited. Using estimated performance score.");
-  
-  try {
-    // Try a basic fetch to see if the site loads quickly
-    const start = Date.now();
-    const basicFetch = await fetch(formattedUrl, { 
-      method: 'HEAD',
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; LighthouseScanner/1.0)' },
-      signal: AbortSignal.timeout(5000) // 5 second timeout
-    });
-    const loadTime = Date.now() - start;
-    
-    // Calculate a score based on load time
-    // <500ms: 90+, <1000ms: 80+, <2000ms: 60+, <3000ms: 40+, otherwise lower
-    if (loadTime < 500) mockScore = 90 + Math.floor(Math.random() * 10);
-    else if (loadTime < 1000) mockScore = 80 + Math.floor(Math.random() * 10);
-    else if (loadTime < 2000) mockScore = 60 + Math.floor(Math.random() * 20);
-    else if (loadTime < 3000) mockScore = 40 + Math.floor(Math.random() * 20);
-    else mockScore = 20 + Math.floor(Math.random() * 20);
-    
-    console.log(`Estimated score for ${formattedUrl}: ${mockScore} (based on ${loadTime}ms load time)`);
-  } catch (fetchError) {
-    // If even a basic fetch fails, assume a low score
-    console.error(`Failed to fetch ${formattedUrl} for fallback scoring:`, fetchError);
-    mockScore = Math.floor(Math.random() * 40) + 20; // Random score between 20-60
-  }
-  
-  const reportUrl = `https://pagespeed.web.dev/report?url=${encodeURIComponent(formattedUrl)}`;
-  
-  // Update the business with mock data
-  try {
-    await supabase
-      .from('businesses')
-      .update({
-        lighthouse_score: mockScore,
-        lighthouse_report_url: reportUrl,
-        last_lighthouse_scan: new Date().toISOString(),
-        has_real_score: false // Mark this as an estimated score
-      })
-      .eq('id', businessId);
-  } catch (dbError) {
-    console.error(`Error updating database for fallback score:`, dbError);
-  }
-      
-  return new Response(JSON.stringify({
-    lighthouseScore: mockScore,
-    reportUrl,
-    createdAt: new Date().toISOString(),
-    note: message,
-    isRealScore: false
-  }), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
-}

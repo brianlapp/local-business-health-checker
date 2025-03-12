@@ -7,8 +7,7 @@ import {
   Loader2Icon, 
   ExternalLinkIcon,
   LightbulbIcon,
-  GaugeIcon,
-  AlertCircleIcon 
+  GaugeIcon
 } from 'lucide-react';
 import CMSDetection from './CMSDetection';
 import { Business } from '@/types/business';
@@ -42,9 +41,6 @@ const PerformanceScores: React.FC<PerformanceScoresProps> = ({
     if (!gtmetrixUsage) return '';
     return `(${gtmetrixUsage.used} of ${gtmetrixUsage.limit} scans used)`;
   };
-  
-  // Check if the lighthouse score is estimated
-  const isEstimatedScore = business.has_real_score === false;
 
   return (
     <div className="space-y-2">
@@ -56,11 +52,6 @@ const PerformanceScores: React.FC<PerformanceScoresProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h4 className="text-sm font-medium">Lighthouse Score</h4>
-              {isEstimatedScore && (
-                <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-800 border-yellow-300">
-                  Estimated
-                </Badge>
-              )}
             </div>
             {business.lighthouseScore || business.lighthouse_score ? (
               <p className={`text-xl font-bold ${getScoreColor(business.lighthouseScore || business.lighthouse_score || 0)}`}>
@@ -73,7 +64,7 @@ const PerformanceScores: React.FC<PerformanceScoresProps> = ({
           <div className="flex flex-col items-end gap-2">
             <Button 
               size="sm" 
-              variant={isEstimatedScore ? "default" : "outline"}
+              variant="outline"
               disabled={isScanning}
               onClick={onLighthouseScan}
             >
@@ -81,11 +72,6 @@ const PerformanceScores: React.FC<PerformanceScoresProps> = ({
                 <>
                   <Loader2Icon className="h-3 w-3 mr-1 animate-spin" />
                   Scanning
-                </>
-              ) : isEstimatedScore ? (
-                <>
-                  <AlertCircleIcon className="h-3 w-3 mr-1" />
-                  Get Real Score
                 </>
               ) : (
                 <>
@@ -111,7 +97,6 @@ const PerformanceScores: React.FC<PerformanceScoresProps> = ({
         {business.lastLighthouseScan && (
           <p className="text-xs text-muted-foreground mt-2">
             Last scan: {new Date(business.lastLighthouseScan).toLocaleDateString()}
-            {isEstimatedScore && " (estimated)"}
           </p>
         )}
       </div>
