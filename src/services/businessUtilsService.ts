@@ -6,7 +6,8 @@ export function generateIssues(business: any) {
   const gtmetrixScore = business.gtmetrix_score || business.gtmetrixScore || 0;
   const speedScore = Math.max(lighthouseScore, gtmetrixScore);
   
-  return {
+  // Generate the individual issues
+  const issues = {
     // Only mark speed issues if both scores are low (when available)
     speedIssues: gtmetrixScore > 0 && lighthouseScore > 0 
       ? (gtmetrixScore < 70 && lighthouseScore < 70)  // Both scores must be low
@@ -14,8 +15,60 @@ export function generateIssues(business: any) {
     outdatedCMS: isCMSOutdated(business.cms),
     noSSL: !isWebsiteSecure(business.website),
     notMobileFriendly: !isMobileFriendly(business),
-    badFonts: hasBadFonts(business), // Use new function instead of random
+    badFonts: hasBadFonts(business),
   };
+  
+  // Instead of just returning the issues object, also update the business score
+  // This will ensure the score is properly calculated based on the actual issues
+  calculateBusinessScore(business, issues);
+  
+  return issues;
+}
+
+// New function to calculate the business score based on issues
+export function calculateBusinessScore(business: any, issues?: any) {
+  // If issues aren't provided, generate them
+  const currentIssues = issues || generateIssues(business);
+  
+  // Start with a base score of 0 (0 = perfect site, 100 = terrible site)
+  let score = 0;
+  
+  // Add penalty points for each issue
+  if (currentIssues.speedIssues) score += 30;
+  if (currentIssues.outdatedCMS) score += 20;
+  if (currentIssues.noSSL) score += 15;
+  if (currentIssues.notMobileFriendly) score += 15;
+  if (currentIssues.badFonts) score += 10;
+  
+  // Use Lighthouse/GTmetrix scores to influence the score
+  const lighthouseScore = business.lighthouse_score || business.lighthouseScore || 0;
+  const gtmetrixScore = business.gtmetrix_score || business.gtmetrixScore || 0;
+  
+  // If we have both scores, use the average
+  if (lighthouseScore > 0 && gtmetrixScore > 0) {
+    const avgPerformanceScore = (lighthouseScore + gtmetrixScore) / 2;
+    
+    // If performance is good but we've still got a high Shit Score,
+    // reduce the score slightly as a correction factor
+    if (avgPerformanceScore > 80 && score > 50) {
+      score = Math.max(40, score - 20); // Cap at minimum 40 if there are other issues
+    }
+    // If performance is bad but we've got a low Shit Score,
+    // increase the score as a correction factor
+    else if (avgPerformanceScore < 60 && score < 30) {
+      score = Math.min(60, score + 20); // Cap at maximum 60 to not overpenalize
+    }
+  }
+  
+  // Cap the score at 100
+  score = Math.min(100, score);
+  
+  // Update the business score if it's different
+  if (business.score !== score) {
+    business.score = score;
+  }
+  
+  return score;
 }
 
 export function isCMSOutdated(cms: string | null | undefined): boolean {

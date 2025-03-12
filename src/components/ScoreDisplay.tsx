@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { Business } from '@/types/business';
@@ -83,6 +84,12 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, business, cla
         <div className="ml-4">
           <p className="text-sm text-muted-foreground">Shit Score™</p>
           <h3 className="text-xl font-semibold">{scoreText}</h3>
+          <p className="text-sm text-muted-foreground">
+            {score <= 30 ? "This site looks good!" : 
+             score <= 50 ? "This site has some issues." : 
+             score <= 70 ? "This site needs work." : 
+             "This site needs serious help!"}
+          </p>
           <p className="text-sm text-muted-foreground">
             Last checked: {business.lastChecked ? new Date(business.lastChecked).toLocaleDateString() : 'N/A'}
           </p>
