@@ -160,7 +160,11 @@ async function incrementGTmetrixUsage() {
 }
 
 // Lighthouse scanning functionality
-export async function scanWithLighthouse(businessId: string, url: string): Promise<{ success: boolean; reportUrl?: string }> {
+export async function scanWithLighthouse(businessId: string, url: string): Promise<{ 
+  success: boolean; 
+  reportUrl?: string; 
+  note?: string; 
+}> {
   try {
     const { data, error } = await supabase.functions.invoke('lighthouse-scan', {
       body: { url, businessId }
@@ -186,7 +190,8 @@ export async function scanWithLighthouse(businessId: string, url: string): Promi
     
     return { 
       success: true,
-      reportUrl: data.reportUrl
+      reportUrl: data.reportUrl,
+      note: data.note
     };
   } catch (error) {
     console.error('Error during Lighthouse scan:', error);
