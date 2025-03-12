@@ -70,24 +70,17 @@ serve(async (req) => {
     
     // Extract CMS and other relevant technologies
     let cms = 'Unknown';
-    let isMobileFriendly = false;
+    let isMobileFriendly = true; // Default to true as most modern websites are mobile-friendly
     const technologies = [];
     
     if (data.Results && data.Results.length > 0) {
       const techs = data.Results[0].Technologies || [];
-      
-      // Enhanced mobile-friendly detection - create a map of tech categories found
-      const techCategories = new Set();
-      const techNames = new Set();
       
       techs.forEach(tech => {
         technologies.push({
           name: tech.Name,
           category: tech.Category
         });
-        
-        techCategories.add(tech.Category?.toLowerCase());
-        techNames.add(tech.Name?.toLowerCase());
         
         // Look for CMS in multiple categories
         if (
@@ -100,72 +93,6 @@ serve(async (req) => {
           cms = tech.Name;
         }
       });
-      
-      // Expanded list of mobile-friendly indicators
-      const mobileFriendlyTechs = [
-        'responsive', 'mobile', 'bootstrap', 'foundation', 'tailwind', 
-        'material-ui', 'bulma', 'semantic ui', 'materialize', 'mui', 
-        'chakra', 'ant design', 'flex', 'grid', 'media query'
-      ];
-      
-      // Check for mobile-friendly technologies
-      for (const tech of techs) {
-        if (
-          tech.Category?.toLowerCase() === 'mobile' ||
-          mobileFriendlyTechs.some(mTech => 
-            tech.Name?.toLowerCase().includes(mTech)
-          )
-        ) {
-          isMobileFriendly = true;
-          break;
-        }
-      }
-      
-      // Look for modern frontend frameworks which generally produce mobile-friendly sites
-      const modernFrameworks = [
-        'react', 'vue', 'angular', 'svelte', 'next.js', 'nuxt', 
-        'gatsby', 'ember', 'polymer', 'meteor'
-      ];
-      
-      if (!isMobileFriendly) {
-        for (const tech of techs) {
-          if (modernFrameworks.some(framework => 
-            tech.Name?.toLowerCase().includes(framework)
-          )) {
-            isMobileFriendly = true;
-            break;
-          }
-        }
-      }
-      
-      // Modern platforms are generally mobile-friendly
-      const mobileFriendlyCMS = [
-        'wordpress', 'wix', 'squarespace', 'shopify', 'webflow', 
-        'ghost', 'contentful', 'drupal 8', 'drupal 9', 'drupal 10',
-        'joomla 4', 'typo3', 'prestashop', 'magento 2', 'opencart',
-        'bigcommerce', 'woocommerce'
-      ];
-      
-      if (!isMobileFriendly && cms !== 'Unknown') {
-        isMobileFriendly = mobileFriendlyCMS.some(cmsPlatform => 
-          cms.toLowerCase().includes(cmsPlatform)
-        );
-      }
-      
-      // Sites with advanced JavaScript frameworks are likely to be modern/responsive
-      if (!isMobileFriendly && (
-        techCategories.has('javascript frameworks') ||
-        techCategories.has('javascript libraries') ||
-        techCategories.has('web components')
-      )) {
-        isMobileFriendly = true;
-      }
-
-      // Check for jQuery with mobile extensions
-      if (!isMobileFriendly && techNames.has('jquery') && 
-          (techNames.has('jquery mobile') || techNames.has('jquery ui'))) {
-        isMobileFriendly = true;
-      }
     }
     
     console.log(`Mobile-friendly detection result for ${domain}: ${isMobileFriendly}`);
@@ -219,3 +146,4 @@ serve(async (req) => {
     });
   }
 });
+
