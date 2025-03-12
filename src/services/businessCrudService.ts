@@ -48,11 +48,16 @@ export async function clearAllBusinesses(): Promise<boolean> {
     
     console.log(`Found ${businessCount} businesses to delete`);
     
-    // Delete all businesses - using a different filter approach
+    if (businessCount === 0) {
+      console.log('No businesses to delete');
+      return true;
+    }
+    
+    // Delete all businesses - using a more direct approach without filters
     const { error: deleteError } = await supabase
       .from('businesses')
       .delete()
-      .neq('id', null); // Changed from filter('id', 'is', 'not.null') to neq('id', null)
+      .gte('id', '00000000-0000-0000-0000-000000000000');
     
     if (deleteError) {
       console.error('Supabase delete error:', deleteError);
@@ -65,7 +70,7 @@ export async function clearAllBusinesses(): Promise<boolean> {
     const { error: resetError } = await supabase
       .from('gtmetrix_usage')
       .update({ scans_used: 0 })
-      .neq('id', null); // Changed from filter('id', 'is', 'not.null') to neq('id', null)
+      .gte('id', '00000000-0000-0000-0000-000000000000');
     
     if (resetError) {
       console.warn('Warning: Could not reset GTmetrix usage counters:', resetError);

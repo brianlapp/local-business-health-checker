@@ -48,7 +48,15 @@ const ClearAllBusinessesDialog: React.FC<ClearAllBusinessesDialogProps> = ({
       console.error('Error clearing data:', error);
       
       // Provide more specific error information to the user
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      let errorMessage = 'Unknown error';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        // For Supabase errors which may be objects with message properties
+        const errorObj = error as any;
+        errorMessage = errorObj.message || errorObj.error || JSON.stringify(error);
+      }
+      
       toast.error(`Failed to clear data: ${errorMessage}`, { id: toastId });
     } finally {
       setIsDeleting(false);
