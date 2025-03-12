@@ -76,11 +76,18 @@ serve(async (req) => {
     if (data.Results && data.Results.length > 0) {
       const techs = data.Results[0].Technologies || [];
       
+      // Enhanced mobile-friendly detection - create a map of tech categories found
+      const techCategories = new Set();
+      const techNames = new Set();
+      
       techs.forEach(tech => {
         technologies.push({
           name: tech.Name,
           category: tech.Category
         });
+        
+        techCategories.add(tech.Category?.toLowerCase());
+        techNames.add(tech.Name?.toLowerCase());
         
         // Look for CMS in multiple categories
         if (
@@ -92,31 +99,76 @@ serve(async (req) => {
         ) {
           cms = tech.Name;
         }
-        
-        // Check for mobile-friendly technologies
-        if (
-          tech.Category === 'Mobile' ||
-          tech.Name.toLowerCase().includes('responsive') ||
-          tech.Name.toLowerCase().includes('mobile') ||
-          tech.Name.toLowerCase().includes('bootstrap') ||
-          tech.Name.toLowerCase().includes('foundation')
-        ) {
-          isMobileFriendly = true;
-        }
       });
       
-      // Additional mobile-friendly indicators
-      if (
-        cms.toLowerCase().includes('wordpress') ||
-        cms.toLowerCase().includes('wix') ||
-        cms.toLowerCase().includes('squarespace') ||
-        cms.toLowerCase().includes('shopify') ||
-        cms.toLowerCase().includes('webflow')
-      ) {
-        // Modern platforms are generally mobile-friendly
+      // Expanded list of mobile-friendly indicators
+      const mobileFriendlyTechs = [
+        'responsive', 'mobile', 'bootstrap', 'foundation', 'tailwind', 
+        'material-ui', 'bulma', 'semantic ui', 'materialize', 'mui', 
+        'chakra', 'ant design', 'flex', 'grid', 'media query'
+      ];
+      
+      // Check for mobile-friendly technologies
+      for (const tech of techs) {
+        if (
+          tech.Category?.toLowerCase() === 'mobile' ||
+          mobileFriendlyTechs.some(mTech => 
+            tech.Name?.toLowerCase().includes(mTech)
+          )
+        ) {
+          isMobileFriendly = true;
+          break;
+        }
+      }
+      
+      // Look for modern frontend frameworks which generally produce mobile-friendly sites
+      const modernFrameworks = [
+        'react', 'vue', 'angular', 'svelte', 'next.js', 'nuxt', 
+        'gatsby', 'ember', 'polymer', 'meteor'
+      ];
+      
+      if (!isMobileFriendly) {
+        for (const tech of techs) {
+          if (modernFrameworks.some(framework => 
+            tech.Name?.toLowerCase().includes(framework)
+          )) {
+            isMobileFriendly = true;
+            break;
+          }
+        }
+      }
+      
+      // Modern platforms are generally mobile-friendly
+      const mobileFriendlyCMS = [
+        'wordpress', 'wix', 'squarespace', 'shopify', 'webflow', 
+        'ghost', 'contentful', 'drupal 8', 'drupal 9', 'drupal 10',
+        'joomla 4', 'typo3', 'prestashop', 'magento 2', 'opencart',
+        'bigcommerce', 'woocommerce'
+      ];
+      
+      if (!isMobileFriendly && cms !== 'Unknown') {
+        isMobileFriendly = mobileFriendlyCMS.some(cmsPlatform => 
+          cms.toLowerCase().includes(cmsPlatform)
+        );
+      }
+      
+      // Sites with advanced JavaScript frameworks are likely to be modern/responsive
+      if (!isMobileFriendly && (
+        techCategories.has('javascript frameworks') ||
+        techCategories.has('javascript libraries') ||
+        techCategories.has('web components')
+      )) {
+        isMobileFriendly = true;
+      }
+
+      // Check for jQuery with mobile extensions
+      if (!isMobileFriendly && techNames.has('jquery') && 
+          (techNames.has('jquery mobile') || techNames.has('jquery ui'))) {
         isMobileFriendly = true;
       }
     }
+    
+    console.log(`Mobile-friendly detection result for ${domain}: ${isMobileFriendly}`);
     
     // Update the business record with CMS and mobile-friendly status
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
@@ -142,6 +194,7 @@ serve(async (req) => {
     }
     
     const result = {
+      success: true,
       cms,
       technologies,
       domain,

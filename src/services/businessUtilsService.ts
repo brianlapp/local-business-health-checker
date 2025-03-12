@@ -39,11 +39,15 @@ export function isMobileFriendly(business: any): boolean {
   // Otherwise make an educated guess based on CMS and other factors
   const mobileFriendlyCMS = [
     'WordPress', 'Wix', 'Squarespace', 'Shopify', 
-    'Webflow', 'Ghost', 'Bubble', 'React', 'Vue', 'Angular'
+    'Webflow', 'Ghost', 'Bubble', 'React', 'Vue', 'Angular',
+    'Tailwind', 'Bootstrap', 'Foundation', 'Material UI',
+    'Nuxt', 'Next.js', 'Gatsby', 'Svelte'
   ];
   
-  // If it's a modern CMS, it's likely mobile-friendly
-  if (business.cms && mobileFriendlyCMS.some(cms => business.cms.includes(cms))) {
+  // If it's a modern CMS or framework, it's likely mobile-friendly
+  if (business.cms && mobileFriendlyCMS.some(cms => 
+    business.cms.toLowerCase().includes(cms.toLowerCase())
+  )) {
     return true;
   }
   
