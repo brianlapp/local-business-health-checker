@@ -1,6 +1,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { invokeEdgeFunction } from './api/supabaseApiClient';
 
 // GTmetrix scanning functionality
 export async function scanWithGTmetrix(businessId: string, url: string): Promise<{ success: boolean; reportUrl?: string }> {
@@ -35,7 +36,11 @@ export async function scanWithLighthouse(businessId: string, url: string): Promi
       body: { url, businessId }
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Lighthouse invoke error:', error);
+      toast.error(`Lighthouse scan failed: ${error.message}`);
+      return { success: false };
+    }
     
     if (data.error) {
       console.error('Lighthouse scan error:', data.error);
@@ -43,9 +48,15 @@ export async function scanWithLighthouse(businessId: string, url: string): Promi
       return { success: false };
     }
     
+    if (data.note && data.note.includes('rate limited')) {
+      toast.warning('Google API rate limited. Using estimated performance score.');
+    } else {
+      toast.success('Lighthouse scan completed successfully!');
+    }
+    
     return { 
       success: true,
-      reportUrl: data.reportUrl || data.report_url
+      reportUrl: data.reportUrl
     };
   } catch (error) {
     console.error('Error during Lighthouse scan:', error);
@@ -54,19 +65,50 @@ export async function scanWithLighthouse(businessId: string, url: string): Promi
   }
 }
 
-// NEW: BuiltWith scanning functionality to detect CMS and technology stack
-export async function scanWithBuiltWith(businessId: string, url: string): Promise<{ success: boolean; cms?: string }> {
+// BuiltWith scanning functionality to detect CMS and technology stack
+export async function scanWithBuiltWith(businessId: string, website: string): Promise<{ success: boolean; cms?: string }> {
   try {
+    console.log(`Scanning website with BuiltWith: ${website}`);
+    
+    // Update CMS in the database
+    const updateCms = async (cms: string) => {
+      const { error } = await supabase
+        .from('businesses')
+        .update({
+          cms: cms,
+          last_checked: new Date().toISOString()
+        })
+        .eq('id', businessId);
+      
+      if (error) {
+        console.error('Error updating CMS:', error);
+        throw error;
+      }
+    };
+    
     const { data, error } = await supabase.functions.invoke('builtwith-scan', {
-      body: { url, businessId }
+      body: { website, businessId }
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('BuiltWith invoke error:', error);
+      toast.error(`Technology detection failed: ${error.message}`);
+      return { success: false };
+    }
     
     if (data.error) {
       console.error('BuiltWith scan error:', data.error);
       toast.error(`Technology detection failed: ${data.error}`);
       return { success: false };
+    }
+    
+    if (data.cms) {
+      // Update the business with the detected CMS
+      await updateCms(data.cms);
+      toast.success(`CMS detected: ${data.cms}`);
+    } else {
+      await updateCms('Unknown');
+      toast.info('No CMS detected');
     }
     
     return { 

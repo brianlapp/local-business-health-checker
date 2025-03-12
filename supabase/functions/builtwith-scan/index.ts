@@ -15,28 +15,36 @@ serve(async (req) => {
   }
 
   try {
-    const { website } = await req.json();
+    const { url, businessId } = await req.json();
     
-    if (!website) {
+    if (!url) {
       throw new Error('Website parameter is required');
     }
 
     // Extract domain from the website URL
-    let domain = website;
+    let domain = url;
     try {
-      const url = new URL(website);
-      domain = url.hostname;
+      // Handle URLs with or without protocol
+      if (!domain.startsWith('http')) {
+        domain = 'https://' + domain;
+      }
+      const urlObj = new URL(domain);
+      domain = urlObj.hostname;
     } catch (e) {
-      console.warn(`Could not parse URL: ${website}, using as-is`);
+      console.warn(`Could not parse URL: ${url}, using as-is`);
     }
 
     console.log(`Scanning technology stack for: ${domain}`);
     
-    const url = new URL('https://api.builtwith.com/free1/api.json');
-    url.searchParams.append('KEY', BUILTWITH_API_KEY!);
-    url.searchParams.append('LOOKUP', domain);
+    if (!BUILTWITH_API_KEY) {
+      throw new Error('BUILTWITH_API_KEY environment variable is not set');
+    }
     
-    const response = await fetch(url.toString());
+    const apiUrl = new URL('https://api.builtwith.com/free1/api.json');
+    apiUrl.searchParams.append('KEY', BUILTWITH_API_KEY);
+    apiUrl.searchParams.append('LOOKUP', domain);
+    
+    const response = await fetch(apiUrl.toString());
     
     if (!response.ok) {
       const errorText = await response.text();

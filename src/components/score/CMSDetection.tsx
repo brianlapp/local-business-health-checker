@@ -21,6 +21,7 @@ const CMSDetection: React.FC<CMSDetectionProps> = ({
   const handleCMSScan = async () => {
     try {
       setScanning(true);
+      // Pass the website instead of url to match what the functions expect
       await scanWithBuiltWith(business.id, business.website);
       
       if (onScanComplete) {
