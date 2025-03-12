@@ -52,11 +52,11 @@ export async function clearAllBusinesses(): Promise<boolean> {
       return true;
     }
     
-    // Delete all records with a WHERE clause that matches all rows
+    // Delete all records using filter() with a true condition
     const { error: deleteError } = await supabase
       .from('businesses')
       .delete()
-      .eq('id', 'id', { foreignTable: 'businesses' }); // This is a valid tautology that will match all rows
+      .filter('id', 'neq', null);
     
     if (deleteError) {
       console.error('Supabase delete error:', deleteError);
@@ -65,11 +65,11 @@ export async function clearAllBusinesses(): Promise<boolean> {
     
     console.log('Successfully deleted all business records');
     
-    // Reset GTmetrix usage counters with a WHERE clause
+    // Reset GTmetrix usage counters using filter() with a true condition
     const { error: resetError } = await supabase
       .from('gtmetrix_usage')
       .update({ scans_used: 0 })
-      .eq('id', 'id', { foreignTable: 'gtmetrix_usage' }); // This is a valid tautology that will match all rows
+      .filter('id', 'neq', null);
     
     if (resetError) {
       console.warn('Warning: Could not reset GTmetrix usage counters:', resetError);
