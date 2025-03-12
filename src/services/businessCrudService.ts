@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { Business } from '@/types/business';
 import { toast } from 'sonner';
@@ -52,11 +53,12 @@ export async function clearAllBusinesses(): Promise<boolean> {
       return true;
     }
     
-    // Delete all records without using a filter
-    // This will delete all records in the table
+    // Delete all records WITH a WHERE clause that matches all records
+    // Using WHERE true to satisfy PostgreSQL's requirement for a WHERE clause
     const { error: deleteError } = await supabase
       .from('businesses')
-      .delete();
+      .delete()
+      .eq('id', 'id'); // This is a tautology that will match all rows
     
     if (deleteError) {
       console.error('Supabase delete error:', deleteError);
@@ -65,10 +67,11 @@ export async function clearAllBusinesses(): Promise<boolean> {
     
     console.log('Successfully deleted all business records');
     
-    // Reset GTmetrix usage counters
+    // Reset GTmetrix usage counters WITH a WHERE clause
     const { error: resetError } = await supabase
       .from('gtmetrix_usage')
-      .update({ scans_used: 0 });
+      .update({ scans_used: 0 })
+      .eq('id', 'id'); // This is a tautology that will match all rows
     
     if (resetError) {
       console.warn('Warning: Could not reset GTmetrix usage counters:', resetError);
