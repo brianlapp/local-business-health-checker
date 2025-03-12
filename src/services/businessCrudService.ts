@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { Business } from '@/types/business';
 import { toast } from 'sonner';
@@ -53,8 +52,7 @@ export async function clearAllBusinesses(): Promise<boolean> {
       return true;
     }
     
-    // Use a raw SQL query with the execute method to delete all businesses
-    // This is a more direct approach that avoids the UUID parsing issues
+    // Call the database function to delete all businesses
     const { error: deleteError } = await supabase.rpc('delete_all_businesses');
     
     if (deleteError) {
