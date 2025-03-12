@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { Business } from '@/types/business';
@@ -27,17 +26,17 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, business, cla
   }, []);
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-red-500 bg-red-50';
-    if (score >= 60) return 'text-orange-500 bg-orange-50';
-    if (score >= 40) return 'text-yellow-500 bg-yellow-50';
-    return 'text-green-500 bg-green-50';
+    if (score <= 20) return 'text-green-500 bg-green-50';
+    if (score <= 40) return 'text-yellow-500 bg-yellow-50';
+    if (score <= 60) return 'text-orange-500 bg-orange-50';
+    return 'text-red-500 bg-red-50';
   };
 
   const getScoreText = (score: number) => {
-    if (score >= 80) return 'Critical';
-    if (score >= 60) return 'Poor';
-    if (score >= 40) return 'Fair';
-    return 'Good';
+    if (score <= 20) return 'Good';
+    if (score <= 40) return 'Fair';
+    if (score <= 60) return 'Poor';
+    return 'Critical';
   };
 
   const handleLighthouseScan = async () => {

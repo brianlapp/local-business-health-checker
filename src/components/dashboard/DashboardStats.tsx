@@ -37,7 +37,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ businesses }) => {
           <CardTitle className="text-sm font-medium text-muted-foreground">Critical Sites</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-3xl font-bold">{businesses.filter(b => b.score >= 80).length}</div>
+          <div className="text-3xl font-bold">{businesses.filter(b => b.score > 60).length}</div>
         </CardContent>
       </Card>
     </div>
