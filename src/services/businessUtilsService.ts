@@ -30,54 +30,86 @@ export function calculateBusinessScore(business: any, issues?: any) {
   // If issues aren't provided, generate them
   const currentIssues = issues || generateIssues(business);
   
+  console.log('------ START SCORE CALCULATION ------');
+  console.log(`Business: ${business.name}, Current score: ${business.score}`);
+  console.log('Issues:', JSON.stringify(currentIssues));
+  
   // Start with a base score of 0 (0 = perfect site, 100 = terrible site)
   let score = 0;
   
   // Add penalty points for each issue
-  if (currentIssues.speedIssues) score += 30;
-  if (currentIssues.outdatedCMS) score += 20;
-  if (currentIssues.noSSL) score += 15;
-  if (currentIssues.notMobileFriendly) score += 15;
-  if (currentIssues.badFonts) score += 10;
+  if (currentIssues.speedIssues) {
+    score += 30;
+    console.log('Added +30 for speed issues, score now:', score);
+  }
+  if (currentIssues.outdatedCMS) {
+    score += 20;
+    console.log('Added +20 for outdated CMS, score now:', score);
+  }
+  if (currentIssues.noSSL) {
+    score += 15;
+    console.log('Added +15 for no SSL, score now:', score);
+  }
+  if (currentIssues.notMobileFriendly) {
+    score += 15;
+    console.log('Added +15 for not mobile friendly, score now:', score);
+  }
+  if (currentIssues.badFonts) {
+    score += 10;
+    console.log('Added +10 for bad fonts, score now:', score);
+  }
   
   // Use Lighthouse/GTmetrix scores to influence the score
   const lighthouseScore = business.lighthouse_score || business.lighthouseScore || 0;
   const gtmetrixScore = business.gtmetrix_score || business.gtmetrixScore || 0;
+  
+  console.log(`Lighthouse score: ${lighthouseScore}, GTmetrix score: ${gtmetrixScore}`);
   
   // CRITICAL FIX: Lighthouse and GTmetrix score INVERSION logic
   // For performance scores, higher is better (90 = excellent)
   // For Shit Score, lower is better (10 = excellent)
   
   if (lighthouseScore > 0) {
+    console.log(`Checking Lighthouse score logic, current score: ${score}`);
     // Excellent Lighthouse score (90+) should lead to a good Shit Score
     if (lighthouseScore >= 90) {
       const issueCount = Object.values(currentIssues).filter(Boolean).length;
+      console.log(`Excellent Lighthouse (90+), issue count: ${issueCount}`);
       if (issueCount === 0) {
         score = Math.min(score, 10); // Almost perfect with no issues
+        console.log('No issues + excellent Lighthouse, capping score at 10');
       } else if (issueCount === 1) {
         score = Math.min(score, 20); // Very good with 1 minor issue
+        console.log('1 issue + excellent Lighthouse, capping score at 20');
       } else if (issueCount === 2) {
         score = Math.min(score, 30); // Good with 2 issues
+        console.log('2 issues + excellent Lighthouse, capping score at 30');
       } else {
         score = Math.min(score, 40); // Fair with 3+ issues but great performance
+        console.log('3+ issues + excellent Lighthouse, capping score at 40');
       }
     }
     // Good Lighthouse score (80-89) should lead to a decent Shit Score
     else if (lighthouseScore >= 80) {
       const issueCount = Object.values(currentIssues).filter(Boolean).length;
+      console.log(`Good Lighthouse (80-89), issue count: ${issueCount}`);
       if (issueCount <= 1) {
         score = Math.min(score, 30); // Good with 0-1 issues
+        console.log('0-1 issues + good Lighthouse, capping score at 30');
       } else if (issueCount <= 3) {
         score = Math.min(score, 45); // Fair with 2-3 issues
+        console.log('2-3 issues + good Lighthouse, capping score at 45');
       }
     }
     // Poor Lighthouse score (<50) should ensure a poor Shit Score
     else if (lighthouseScore < 50) {
       score = Math.max(score, 70); // Poor minimum
+      console.log('Poor Lighthouse (<50), setting minimum score to 70');
     }
     // Very poor Lighthouse score (<30) should guarantee a terrible Shit Score
     else if (lighthouseScore < 30) {
       score = Math.max(score, 85); // Very poor minimum
+      console.log('Very poor Lighthouse (<30), setting minimum score to 85');
     }
   }
   
@@ -91,13 +123,16 @@ export function calculateBusinessScore(business: any, issues?: any) {
       if (betterScore >= 85) {
         // With a good score from either test, cap the Shit Score
         const issueCount = Object.values(currentIssues).filter(Boolean).length;
+        console.log(`Scores are very different, issue count: ${issueCount}`);
         if (issueCount <= 2) {
           score = Math.min(score, 45); // Cap at 45 with 0-2 issues
+          console.log('Cap at 45 with 0-2 issues');
         }
       }
       // If one score is terrible but the other is decent, don't be too harsh
       else if (worseScore < 40 && betterScore > 70) {
         score = Math.min(score, 60); // Cap at 60
+        console.log('Cap at 60');
       }
     }
   }
@@ -105,9 +140,14 @@ export function calculateBusinessScore(business: any, issues?: any) {
   // Cap the score at 100
   score = Math.min(100, score);
   
+  console.log(`Final calculated score: ${score}`);
+  console.log(`Previous score in database: ${business.score}`);
+  console.log('------ END SCORE CALCULATION ------');
+  
   // Update the business score if it's different
   if (business.score !== score) {
     business.score = score;
+    console.log(`Updated business score to: ${score}`);
   }
   
   return score;
