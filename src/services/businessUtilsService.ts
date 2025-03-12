@@ -1,3 +1,4 @@
+
 import { Business } from '@/types/business';
 
 export function generateIssues(business: any) {
@@ -8,7 +9,7 @@ export function generateIssues(business: any) {
     speedIssues: speedScore < 50,
     outdatedCMS: isCMSOutdated(business.cms),
     noSSL: !isWebsiteSecure(business.website),
-    notMobileFriendly: !isMobileFriendly(business), // Use the new function
+    notMobileFriendly: !isMobileFriendly(business), // Use the updated function
     badFonts: Math.random() > 0.7, // Example placeholder
   };
 }
@@ -30,7 +31,7 @@ export function isWebsiteSecure(website: string): boolean {
 }
 
 export function isMobileFriendly(business: any): boolean {
-  // If we have explicit mobile-friendly data from the scan, use it
+  // If we have explicit mobile-friendly data from the scan, use it directly
   if (typeof business.is_mobile_friendly === 'boolean') {
     return business.is_mobile_friendly;
   }

@@ -15,6 +15,7 @@ export type Database = {
           gtmetrix_report_url: string | null
           gtmetrix_score: number | null
           id: string
+          is_mobile_friendly: boolean | null
           last_checked: string | null
           last_gtmetrix_scan: string | null
           last_lighthouse_scan: string | null
@@ -30,6 +31,7 @@ export type Database = {
           gtmetrix_report_url?: string | null
           gtmetrix_score?: number | null
           id?: string
+          is_mobile_friendly?: boolean | null
           last_checked?: string | null
           last_gtmetrix_scan?: string | null
           last_lighthouse_scan?: string | null
@@ -45,6 +47,7 @@ export type Database = {
           gtmetrix_report_url?: string | null
           gtmetrix_score?: number | null
           id?: string
+          is_mobile_friendly?: boolean | null
           last_checked?: string | null
           last_gtmetrix_scan?: string | null
           last_lighthouse_scan?: string | null

@@ -13,6 +13,11 @@ const IssuesList: React.FC<IssuesListProps> = ({ business }) => {
 
   if (!issues) return null;
 
+  // Get mobile-friendly status directly if available
+  const isMobileFriendly = typeof business.is_mobile_friendly === 'boolean' 
+    ? business.is_mobile_friendly 
+    : !issues.notMobileFriendly;
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
       <IssueItem 
@@ -36,6 +41,7 @@ const IssuesList: React.FC<IssuesListProps> = ({ business }) => {
         icon={Smartphone} 
         title="Not Mobile Friendly" 
         active={issues.notMobileFriendly} 
+        info={isMobileFriendly ? 'Mobile optimized' : 'Not optimized for mobile'}
       />
       <IssueItem 
         icon={Type} 

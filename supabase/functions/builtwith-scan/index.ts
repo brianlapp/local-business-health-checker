@@ -65,7 +65,7 @@ serve(async (req) => {
     }
     
     const data = await response.json();
-    console.log(`BuiltWith API response received for ${domain}`);
+    console.log(`BuiltWith API response received for ${domain}:`, JSON.stringify(data).substring(0, 200) + '...');
     
     // Extract CMS and other relevant technologies
     let cms = 'Unknown';
@@ -103,6 +103,42 @@ serve(async (req) => {
           isMobileFriendly = true;
         }
       });
+      
+      // Additional mobile-friendly indicators
+      if (
+        cms.toLowerCase().includes('wordpress') ||
+        cms.toLowerCase().includes('wix') ||
+        cms.toLowerCase().includes('squarespace') ||
+        cms.toLowerCase().includes('shopify') ||
+        cms.toLowerCase().includes('webflow')
+      ) {
+        // Modern platforms are generally mobile-friendly
+        isMobileFriendly = true;
+      }
+    }
+    
+    // Update the business record with CMS and mobile-friendly status
+    const { supabaseClient } = await import 'https://esm.sh/@supabase/supabase-js@2';
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    
+    if (supabaseUrl && supabaseServiceKey && businessId) {
+      const supabase = supabaseClient(supabaseUrl, supabaseServiceKey);
+      
+      const { error: updateError } = await supabase
+        .from('businesses')
+        .update({
+          cms: cms,
+          is_mobile_friendly: isMobileFriendly,
+          last_checked: new Date().toISOString()
+        })
+        .eq('id', businessId);
+      
+      if (updateError) {
+        console.error('Error updating business tech info:', updateError);
+      } else {
+        console.log(`Successfully updated business ${businessId} with CMS: ${cms}, Mobile friendly: ${isMobileFriendly}`);
+      }
     }
     
     const result = {
@@ -121,7 +157,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in BuiltWith scan:', error);
     
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      success: false
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

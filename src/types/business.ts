@@ -10,7 +10,7 @@ export interface Business {
   last_checked: string; // Database column name
   lastChecked: string;  // Frontend property name
   cms?: string | null;
-  is_mobile_friendly?: boolean; // New property
+  is_mobile_friendly?: boolean; // Mobile-friendly flag
   issues: {
     speedIssues: boolean;
     outdatedCMS: boolean;
