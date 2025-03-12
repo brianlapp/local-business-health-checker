@@ -15,9 +15,15 @@ serve(async (req) => {
   }
 
   try {
-    const { url, businessId } = await req.json();
+    const requestData = await req.json();
+    console.log("Request data received:", JSON.stringify(requestData));
+    
+    // Accept either url or website parameter for better compatibility
+    const url = requestData.url || requestData.website;
+    const businessId = requestData.businessId;
     
     if (!url) {
+      console.error("No URL provided in request");
       throw new Error('URL parameter is required');
     }
     
@@ -54,7 +60,7 @@ serve(async (req) => {
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`BuiltWith API error: ${errorText}`);
+      console.error(`BuiltWith API error: ${response.status} - ${errorText}`);
       throw new Error(`BuiltWith API error: ${response.status} - ${errorText}`);
     }
     
@@ -63,6 +69,7 @@ serve(async (req) => {
     
     // Extract CMS and other relevant technologies
     let cms = 'Unknown';
+    let isMobileFriendly = false;
     const technologies = [];
     
     if (data.Results && data.Results.length > 0) {
@@ -84,6 +91,17 @@ serve(async (req) => {
         ) {
           cms = tech.Name;
         }
+        
+        // Check for mobile-friendly technologies
+        if (
+          tech.Category === 'Mobile' ||
+          tech.Name.toLowerCase().includes('responsive') ||
+          tech.Name.toLowerCase().includes('mobile') ||
+          tech.Name.toLowerCase().includes('bootstrap') ||
+          tech.Name.toLowerCase().includes('foundation')
+        ) {
+          isMobileFriendly = true;
+        }
       });
     }
     
@@ -91,10 +109,11 @@ serve(async (req) => {
       cms,
       technologies,
       domain,
+      isMobileFriendly,
       analyzedAt: new Date().toISOString()
     };
     
-    console.log(`Technology scan complete for ${domain}, CMS identified: ${cms}`);
+    console.log(`Technology scan complete for ${domain}, CMS identified: ${cms}, Mobile friendly: ${isMobileFriendly}`);
     
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

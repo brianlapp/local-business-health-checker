@@ -66,22 +66,23 @@ export async function scanWithLighthouse(businessId: string, url: string): Promi
 }
 
 // BuiltWith scanning functionality to detect CMS and technology stack
-export async function scanWithBuiltWith(businessId: string, website: string): Promise<{ success: boolean; cms?: string }> {
+export async function scanWithBuiltWith(businessId: string, website: string): Promise<{ success: boolean; cms?: string; isMobileFriendly?: boolean }> {
   try {
     console.log(`Scanning website with BuiltWith: ${website}`);
     
-    // Update CMS in the database
-    const updateCms = async (cms: string) => {
+    // Update CMS and mobile-friendly status in the database
+    const updateBusinessTech = async (cms: string, isMobileFriendly: boolean) => {
       const { error } = await supabase
         .from('businesses')
         .update({
           cms: cms,
+          is_mobile_friendly: isMobileFriendly,
           last_checked: new Date().toISOString()
         })
         .eq('id', businessId);
       
       if (error) {
-        console.error('Error updating CMS:', error);
+        console.error('Error updating business tech info:', error);
         throw error;
       }
     };
@@ -102,18 +103,25 @@ export async function scanWithBuiltWith(businessId: string, website: string): Pr
       return { success: false };
     }
     
-    if (data.cms) {
-      // Update the business with the detected CMS
-      await updateCms(data.cms);
+    // Update the business with the detected CMS and mobile-friendly status
+    await updateBusinessTech(data.cms || 'Unknown', data.isMobileFriendly || false);
+    
+    if (data.cms && data.cms !== 'Unknown') {
       toast.success(`CMS detected: ${data.cms}`);
     } else {
-      await updateCms('Unknown');
       toast.info('No CMS detected');
+    }
+    
+    if (data.isMobileFriendly) {
+      toast.success('Website is mobile-friendly');
+    } else {
+      toast.warning('Website may not be mobile-friendly');
     }
     
     return { 
       success: true,
-      cms: data.cms
+      cms: data.cms,
+      isMobileFriendly: data.isMobileFriendly
     };
   } catch (error) {
     console.error('Error during BuiltWith scan:', error);
