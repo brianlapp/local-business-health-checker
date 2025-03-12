@@ -1,11 +1,16 @@
 import { Business } from '@/types/business';
 
 export function generateIssues(business: any) {
-  // Use lighthouse_score as primary, fallback to speed_score, or default to 0
-  const speedScore = business.lighthouse_score || business.speed_score || 0;
+  // Use the highest available speed score to be more generous
+  const lighthouseScore = business.lighthouse_score || business.lighthouseScore || 0;
+  const gtmetrixScore = business.gtmetrix_score || business.gtmetrixScore || 0;
+  const speedScore = Math.max(lighthouseScore, gtmetrixScore);
   
   return {
-    speedIssues: speedScore < 70, // More reasonable threshold based on industry standards
+    // Only mark speed issues if both scores are low (when available)
+    speedIssues: gtmetrixScore > 0 && lighthouseScore > 0 
+      ? (gtmetrixScore < 70 && lighthouseScore < 70)  // Both scores must be low
+      : speedScore < 70,  // Fallback to single score check
     outdatedCMS: isCMSOutdated(business.cms),
     noSSL: !isWebsiteSecure(business.website),
     notMobileFriendly: !isMobileFriendly(business),
