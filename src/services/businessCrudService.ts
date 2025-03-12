@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { Business } from '@/types/business';
 import { toast } from 'sonner';
@@ -57,8 +56,7 @@ export async function clearAllBusinesses(): Promise<boolean> {
     // This will delete all records in the table
     const { error: deleteError } = await supabase
       .from('businesses')
-      .delete()
-      .filter('id', 'neq', null);  // Using the correct filter syntax
+      .delete();
     
     if (deleteError) {
       console.error('Supabase delete error:', deleteError);
@@ -70,8 +68,7 @@ export async function clearAllBusinesses(): Promise<boolean> {
     // Reset GTmetrix usage counters
     const { error: resetError } = await supabase
       .from('gtmetrix_usage')
-      .update({ scans_used: 0 })
-      .filter('id', 'neq', null);  // Using the correct filter syntax
+      .update({ scans_used: 0 });
     
     if (resetError) {
       console.warn('Warning: Could not reset GTmetrix usage counters:', resetError);
