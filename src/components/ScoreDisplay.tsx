@@ -26,6 +26,7 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, business, cla
     fetchGTmetrixUsage();
   }, []);
 
+  // Revised color scheme - lower scores (better) get green, higher scores (worse) get red
   const getScoreColor = (score: number) => {
     if (score <= 20) return 'text-green-500 bg-green-50';
     if (score <= 40) return 'text-yellow-500 bg-yellow-50';
@@ -33,6 +34,7 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, business, cla
     return 'text-red-500 bg-red-50';
   };
 
+  // Revised text descriptions
   const getScoreText = (score: number) => {
     if (score <= 20) return 'Good';
     if (score <= 40) return 'Fair';

@@ -1,3 +1,4 @@
+
 import { Business } from '@/types/business';
 
 export function generateIssues(business: any) {
@@ -44,19 +45,39 @@ export function calculateBusinessScore(business: any, issues?: any) {
   const lighthouseScore = business.lighthouse_score || business.lighthouseScore || 0;
   const gtmetrixScore = business.gtmetrix_score || business.gtmetrixScore || 0;
   
-  // If we have both scores, use the average
-  if (lighthouseScore > 0 && gtmetrixScore > 0) {
-    const avgPerformanceScore = (lighthouseScore + gtmetrixScore) / 2;
-    
-    // If performance is good but we've still got a high Shit Score,
-    // reduce the score slightly as a correction factor
-    if (avgPerformanceScore > 80 && score > 50) {
-      score = Math.max(40, score - 20); // Cap at minimum 40 if there are other issues
+  // Apply a stronger performance-based correction
+  // If we have Lighthouse scores, they should have a major impact on the final score
+  if (lighthouseScore > 0) {
+    // If Lighthouse score is excellent (90+), cap Shit Score at 40 (unless multiple severe issues)
+    if (lighthouseScore >= 90) {
+      const issueCount = Object.values(currentIssues).filter(Boolean).length;
+      if (issueCount <= 1) {
+        score = Math.min(score, 30); // Cap at 30 with 0-1 issues
+      } else if (issueCount === 2) {
+        score = Math.min(score, 40); // Cap at 40 with 2 issues
+      } else {
+        score = Math.min(score, 50); // Cap at 50 with 3+ issues
+      }
     }
-    // If performance is bad but we've got a low Shit Score,
-    // increase the score as a correction factor
-    else if (avgPerformanceScore < 60 && score < 30) {
-      score = Math.min(60, score + 20); // Cap at maximum 60 to not overpenalize
+    // If Lighthouse score is good (80-89), cap Shit Score at 50 unless multiple issues
+    else if (lighthouseScore >= 80) {
+      const issueCount = Object.values(currentIssues).filter(Boolean).length;
+      if (issueCount <= 2) {
+        score = Math.min(score, 50);
+      }
+    }
+    // For poor performance (< 40), ensure minimum Shit Score of 60
+    else if (lighthouseScore < 40) {
+      score = Math.max(score, 60);
+    }
+  }
+  
+  // If we have both scores and they're drastically different, trust the higher one more
+  if (lighthouseScore > 0 && gtmetrixScore > 0 && Math.abs(lighthouseScore - gtmetrixScore) > 30) {
+    const betterScore = Math.max(lighthouseScore, gtmetrixScore);
+    if (betterScore >= 85) {
+      // With a good score from either test, cap the Shit Score
+      score = Math.min(score, 50);
     }
   }
   
