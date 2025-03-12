@@ -43,7 +43,7 @@ const ClearAllBusinessesDialog: React.FC<ClearAllBusinessesDialogProps> = ({
       onDataCleared();
       
       // Show success message
-      toast.success('All business data has been cleared', { id: toastId });
+      toast.success(`All business data has been cleared (${businessCount} businesses)`, { id: toastId });
     } catch (error) {
       console.error('Error clearing data:', error);
       
