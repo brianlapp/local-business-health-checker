@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const BUILTWITH_API_KEY = Deno.env.get('BUILTWITH_API_KEY');
 
@@ -118,12 +119,11 @@ serve(async (req) => {
     }
     
     // Update the business record with CMS and mobile-friendly status
-    const { supabaseClient } = await import 'https://esm.sh/@supabase/supabase-js@2';
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     
     if (supabaseUrl && supabaseServiceKey && businessId) {
-      const supabase = supabaseClient(supabaseUrl, supabaseServiceKey);
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
       
       const { error: updateError } = await supabase
         .from('businesses')
