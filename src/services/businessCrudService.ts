@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { Business } from '@/types/business';
 import { toast } from 'sonner';
@@ -27,6 +28,8 @@ export async function getBusinesses(): Promise<Business[]> {
       gtmetrixReportUrl: business.gtmetrix_report_url,
       lastLighthouseScan: business.last_lighthouse_scan,
       lastGtmetrixScan: business.last_gtmetrix_scan,
+      // Make sure we're preserving the is_mobile_friendly value from the database
+      is_mobile_friendly: business.is_mobile_friendly,
       issues: generateIssues(business),
     }));
   } catch (error) {
@@ -151,6 +154,7 @@ export async function updateBusiness(id: string, updates: Partial<Omit<Business,
       score: updates.score,
       cms: updates.cms,
       last_checked: updates.last_checked || updates.lastChecked,
+      is_mobile_friendly: updates.is_mobile_friendly,
     };
     
     // Map the new properties to the database column names

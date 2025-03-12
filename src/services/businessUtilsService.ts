@@ -31,7 +31,7 @@ export function isWebsiteSecure(website: string): boolean {
 }
 
 export function isMobileFriendly(business: any): boolean {
-  // First check if we have explicit mobile-friendly data
+  // First check if we have explicit is_mobile_friendly data from database
   if (typeof business.is_mobile_friendly === 'boolean') {
     return business.is_mobile_friendly;
   }
@@ -89,7 +89,7 @@ export function isMobileFriendly(business: any): boolean {
         business.website : 
         `https://${business.website}`
       );
-      // Add .ca TLD to the list of modern domains
+      // Check for .ca TLD
       if (url.hostname.endsWith('.ca')) {
         return true;
       }
@@ -102,4 +102,3 @@ export function isMobileFriendly(business: any): boolean {
   // Most websites today are built with mobile in mind
   return true;
 }
-

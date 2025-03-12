@@ -40,7 +40,7 @@ const IssuesList: React.FC<IssuesListProps> = ({ business }) => {
       <IssueItem 
         icon={Smartphone} 
         title="Not Mobile Friendly" 
-        active={issues.notMobileFriendly} 
+        active={!isMobileFriendly} 
         info={isMobileFriendly ? 'Mobile optimized' : 'Not optimized for mobile'}
       />
       <IssueItem 
