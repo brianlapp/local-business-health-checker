@@ -7,8 +7,11 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
 // Added rate limiting tracker for the current instance
 let scanCount = 0;
-const MAX_SCANS_PER_INSTANCE = 20;
+// Lowering max scans per instance to avoid rate limiting
+const MAX_SCANS_PER_INSTANCE = 15; 
 const RATE_LIMIT_RESET_TIME = 60000; // 1 minute in milliseconds
+const MIN_DELAY_BETWEEN_SCANS = 2000; // 2 seconds minimum delay
+let lastScanTime = 0; // Track when the last scan was performed
 
 // Create a simple rate limiter that resets periodically
 setInterval(() => {
@@ -59,7 +62,18 @@ serve(async (req) => {
       return await useFallbackMethod(formattedUrl, businessId, supabase, true);
     }
     
-    // Increment scan counter
+    // Enforce delay between scans to avoid external rate limiting
+    const currentTime = Date.now();
+    const timeSinceLastScan = currentTime - lastScanTime;
+    
+    if (timeSinceLastScan < MIN_DELAY_BETWEEN_SCANS) {
+      const delayNeeded = MIN_DELAY_BETWEEN_SCANS - timeSinceLastScan;
+      console.log(`Enforcing delay of ${delayNeeded}ms between scans to avoid rate limiting`);
+      await new Promise(resolve => setTimeout(resolve, delayNeeded));
+    }
+    
+    // Update last scan time and increment scan counter
+    lastScanTime = Date.now();
     scanCount++;
     
     try {
@@ -76,7 +90,7 @@ serve(async (req) => {
           'User-Agent': 'BizScan-LighthouseFunction/1.0',
         },
         // Set timeout to prevent long-hanging requests
-        signal: AbortSignal.timeout(10000), // 10 second timeout
+        signal: AbortSignal.timeout(15000), // 15 second timeout
       });
       
       if (!response.ok) {

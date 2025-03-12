@@ -83,10 +83,17 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
           // Counter for rate limit warnings
           let rateLimitCount = 0;
           
-          // Scan businesses sequentially to avoid rate limits
+          // Scan businesses sequentially with added delay to avoid rate limits
           for (let i = 0; i < unscannedBusinesses.length; i++) {
             const business = unscannedBusinesses[i];
             try {
+              // Add a delay between scans to reduce rate limiting
+              if (i > 0) {
+                // Wait 3-5 seconds between scans
+                const delay = 3000 + Math.random() * 2000;
+                await new Promise(resolve => setTimeout(resolve, delay));
+              }
+              
               const result = await scanWithLighthouse(business.id, business.website);
               
               // Check if response contained a rate limit note
