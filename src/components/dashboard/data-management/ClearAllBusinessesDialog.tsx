@@ -24,7 +24,15 @@ const ClearAllBusinessesDialog: React.FC<ClearAllBusinessesDialogProps> = ({
   onDataCleared
 }) => {
   const handleClearAllData = async () => {
+    if (businessCount === 0) {
+      toast.info('No businesses to clear');
+      setIsDeleteDialogOpen(false);
+      return;
+    }
+
     setIsDeleting(true);
+    const toastId = toast.loading('Clearing all business data...');
+
     try {
       console.log('Initiating clear all businesses operation');
       const result = await clearAllBusinesses();
@@ -35,13 +43,13 @@ const ClearAllBusinessesDialog: React.FC<ClearAllBusinessesDialogProps> = ({
       onDataCleared();
       
       // Show success message
-      toast.success('All business data has been cleared');
+      toast.success('All business data has been cleared', { id: toastId });
     } catch (error) {
       console.error('Error clearing data:', error);
       
       // Provide more specific error information to the user
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      toast.error(`Failed to clear data: ${errorMessage}. Please check console for details.`);
+      toast.error(`Failed to clear data: ${errorMessage}`, { id: toastId });
     } finally {
       setIsDeleting(false);
     }
@@ -54,6 +62,7 @@ const ClearAllBusinessesDialog: React.FC<ClearAllBusinessesDialogProps> = ({
           variant="destructive" 
           size="sm" 
           className="flex items-center"
+          disabled={businessCount === 0}
         >
           <Trash2 className="mr-2 h-4 w-4" />
           Clear All Data
@@ -75,13 +84,14 @@ const ClearAllBusinessesDialog: React.FC<ClearAllBusinessesDialogProps> = ({
           <Button 
             variant="outline" 
             onClick={() => setIsDeleteDialogOpen(false)}
+            disabled={isDeleting}
           >
             Cancel
           </Button>
           <Button 
             variant="destructive" 
             onClick={handleClearAllData}
-            disabled={isDeleting}
+            disabled={isDeleting || businessCount === 0}
           >
             {isDeleting ? (
               <>

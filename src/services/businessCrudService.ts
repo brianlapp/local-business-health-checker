@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { Business } from '@/types/business';
 import { toast } from 'sonner';
@@ -41,40 +40,39 @@ export async function clearAllBusinesses(): Promise<boolean> {
   try {
     console.log('Starting clearAllBusinesses function');
     
-    // Use a better approach to delete all records without relying on neq with empty string
-    console.log('Attempting to delete all businesses records');
-    const { error } = await supabase
+    // First, get count of businesses to be deleted
+    const { count: businessCount } = await supabase
+      .from('businesses')
+      .select('*', { count: 'exact', head: true });
+    
+    console.log(`Found ${businessCount} businesses to delete`);
+    
+    // Delete all businesses
+    const { error: deleteError } = await supabase
       .from('businesses')
       .delete()
-      .filter('id', 'is', 'not.null'); // Using a proper filter to get all records
+      .filter('id', 'is', 'not.null');
     
-    if (error) {
-      console.error('Supabase delete error:', error);
-      throw error;
+    if (deleteError) {
+      console.error('Supabase delete error:', deleteError);
+      throw deleteError;
     }
     
     console.log('Successfully deleted all business records');
     
-    // Reset any usage counters if needed
-    try {
-      console.log('Attempting to reset GTmetrix usage counters');
-      const resetResult = await supabase
-        .from('gtmetrix_usage')
-        .update({ scans_used: 0 })
-        .filter('id', 'is', 'not.null');
-      
-      if (resetResult.error) {
-        console.warn('Warning: Could not reset GTmetrix usage counters:', resetResult.error);
-        // Continue anyway as this is not critical
-      } else {
-        console.log('Successfully reset GTmetrix usage counters');
-      }
-    } catch (counterError) {
-      console.warn('Warning: Error while resetting counters:', counterError);
+    // Reset GTmetrix usage counters
+    const { error: resetError } = await supabase
+      .from('gtmetrix_usage')
+      .update({ scans_used: 0 })
+      .filter('id', 'is', 'not.null');
+    
+    if (resetError) {
+      console.warn('Warning: Could not reset GTmetrix usage counters:', resetError);
       // Continue anyway as this is not critical
+    } else {
+      console.log('Successfully reset GTmetrix usage counters');
     }
     
-    console.log('clearAllBusinesses completed successfully');
     return true;
   } catch (error) {
     console.error('Error clearing business data:', error);
