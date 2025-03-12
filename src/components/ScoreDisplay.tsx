@@ -26,7 +26,7 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, business, cla
     fetchGTmetrixUsage();
   }, []);
 
-  // Revised color scheme - lower scores (better) get green, higher scores (worse) get red
+  // Color scheme - lower scores (better) get green, higher scores (worse) get red
   const getScoreColor = (score: number) => {
     if (score <= 20) return 'text-green-500 bg-green-50';
     if (score <= 40) return 'text-yellow-500 bg-yellow-50';
@@ -34,12 +34,12 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, business, cla
     return 'text-red-500 bg-red-50';
   };
 
-  // Revised text descriptions
+  // Text descriptions
   const getScoreText = (score: number) => {
-    if (score <= 20) return 'Good';
-    if (score <= 40) return 'Fair';
-    if (score <= 60) return 'Poor';
-    return 'Critical';
+    if (score <= 20) return 'Excellent';
+    if (score <= 40) return 'Good';
+    if (score <= 60) return 'Fair';
+    return 'Poor';
   };
 
   const handleLighthouseScan = async () => {
@@ -87,10 +87,10 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, business, cla
           <p className="text-sm text-muted-foreground">Shit Score™</p>
           <h3 className="text-xl font-semibold">{scoreText}</h3>
           <p className="text-sm text-muted-foreground">
-            {score <= 30 ? "This site looks good!" : 
-             score <= 50 ? "This site has some issues." : 
-             score <= 70 ? "This site needs work." : 
-             "This site needs serious help!"}
+            {score <= 20 ? "This site is excellent!" : 
+             score <= 40 ? "This site looks good!" : 
+             score <= 60 ? "This site has some issues." : 
+             "This site needs serious improvement."}
           </p>
           <p className="text-sm text-muted-foreground">
             Last checked: {business.lastChecked ? new Date(business.lastChecked).toLocaleDateString() : 'N/A'}

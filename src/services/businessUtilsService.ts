@@ -1,4 +1,3 @@
-
 import { Business } from '@/types/business';
 
 export function generateIssues(business: any) {
@@ -26,7 +25,7 @@ export function generateIssues(business: any) {
   return issues;
 }
 
-// New function to calculate the business score based on issues
+// Function to calculate the business score based on issues
 export function calculateBusinessScore(business: any, issues?: any) {
   // If issues aren't provided, generate them
   const currentIssues = issues || generateIssues(business);
@@ -45,39 +44,61 @@ export function calculateBusinessScore(business: any, issues?: any) {
   const lighthouseScore = business.lighthouse_score || business.lighthouseScore || 0;
   const gtmetrixScore = business.gtmetrix_score || business.gtmetrixScore || 0;
   
-  // Apply a stronger performance-based correction
-  // If we have Lighthouse scores, they should have a major impact on the final score
+  // CRITICAL FIX: Lighthouse and GTmetrix score INVERSION logic
+  // For performance scores, higher is better (90 = excellent)
+  // For Shit Score, lower is better (10 = excellent)
+  
   if (lighthouseScore > 0) {
-    // If Lighthouse score is excellent (90+), cap Shit Score at 40 (unless multiple severe issues)
+    // Excellent Lighthouse score (90+) should lead to a good Shit Score
     if (lighthouseScore >= 90) {
       const issueCount = Object.values(currentIssues).filter(Boolean).length;
-      if (issueCount <= 1) {
-        score = Math.min(score, 30); // Cap at 30 with 0-1 issues
+      if (issueCount === 0) {
+        score = Math.min(score, 10); // Almost perfect with no issues
+      } else if (issueCount === 1) {
+        score = Math.min(score, 20); // Very good with 1 minor issue
       } else if (issueCount === 2) {
-        score = Math.min(score, 40); // Cap at 40 with 2 issues
+        score = Math.min(score, 30); // Good with 2 issues
       } else {
-        score = Math.min(score, 50); // Cap at 50 with 3+ issues
+        score = Math.min(score, 40); // Fair with 3+ issues but great performance
       }
     }
-    // If Lighthouse score is good (80-89), cap Shit Score at 50 unless multiple issues
+    // Good Lighthouse score (80-89) should lead to a decent Shit Score
     else if (lighthouseScore >= 80) {
       const issueCount = Object.values(currentIssues).filter(Boolean).length;
-      if (issueCount <= 2) {
-        score = Math.min(score, 50);
+      if (issueCount <= 1) {
+        score = Math.min(score, 30); // Good with 0-1 issues
+      } else if (issueCount <= 3) {
+        score = Math.min(score, 45); // Fair with 2-3 issues
       }
     }
-    // For poor performance (< 40), ensure minimum Shit Score of 60
-    else if (lighthouseScore < 40) {
-      score = Math.max(score, 60);
+    // Poor Lighthouse score (<50) should ensure a poor Shit Score
+    else if (lighthouseScore < 50) {
+      score = Math.max(score, 70); // Poor minimum
+    }
+    // Very poor Lighthouse score (<30) should guarantee a terrible Shit Score
+    else if (lighthouseScore < 30) {
+      score = Math.max(score, 85); // Very poor minimum
     }
   }
   
-  // If we have both scores and they're drastically different, trust the higher one more
-  if (lighthouseScore > 0 && gtmetrixScore > 0 && Math.abs(lighthouseScore - gtmetrixScore) > 30) {
+  // If we have both scores and they're drastically different, trust the better one more
+  if (lighthouseScore > 0 && gtmetrixScore > 0) {
     const betterScore = Math.max(lighthouseScore, gtmetrixScore);
-    if (betterScore >= 85) {
-      // With a good score from either test, cap the Shit Score
-      score = Math.min(score, 50);
+    const worseScore = Math.min(lighthouseScore, gtmetrixScore);
+    
+    // If scores are very different (>30 points apart)
+    if (Math.abs(lighthouseScore - gtmetrixScore) > 30) {
+      if (betterScore >= 85) {
+        // With a good score from either test, cap the Shit Score
+        const issueCount = Object.values(currentIssues).filter(Boolean).length;
+        if (issueCount <= 2) {
+          score = Math.min(score, 45); // Cap at 45 with 0-2 issues
+        }
+      }
+      // If one score is terrible but the other is decent, don't be too harsh
+      else if (worseScore < 40 && betterScore > 70) {
+        score = Math.min(score, 60); // Cap at 60
+      }
     }
   }
   
@@ -108,8 +129,6 @@ export function isWebsiteSecure(website: string): boolean {
   return website.startsWith('https://') || !website.startsWith('http://');
 }
 
-// New function to determine if a site might be using bad fonts
-// Instead of using random, we use heuristics
 export function hasBadFonts(business: any): boolean {
   // If we have technologies data, check for modern font usage
   if (business.technologies && Array.isArray(business.technologies)) {
