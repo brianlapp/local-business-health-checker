@@ -17,8 +17,8 @@ export const useBusinessFiltering = (businesses: Business[], searchQuery: string
       const query = searchQuery.toLowerCase();
       filtered = businesses.filter(business => 
         business.name.toLowerCase().includes(query) || 
-        (business.website && business.website.toLowerCase().includes(query)) ||
-        (business.address && business.address.toLowerCase().includes(query))
+        (business.website && business.website.toLowerCase().includes(query))
+        // Remove reference to address since it's not in the Business type
       );
     }
 
@@ -38,8 +38,9 @@ export const useBusinessFiltering = (businesses: Business[], searchQuery: string
           ? nameA.localeCompare(nameB)
           : nameB.localeCompare(nameA);
       } else if (sortBy === 'date') {
-        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        // Use last_checked property instead of created_at
+        const dateA = a.last_checked ? new Date(a.last_checked).getTime() : 0;
+        const dateB = b.last_checked ? new Date(b.last_checked).getTime() : 0;
         return sortOrder === 'asc'
           ? dateA - dateB
           : dateB - dateA;
