@@ -5,15 +5,16 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.31.0";
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-// Added rate limiting tracker for the current instance
+// Rate limiting configuration
 let scanCount = 0;
-// Lowering max scans per instance to avoid rate limiting
-const MAX_SCANS_PER_INSTANCE = 15; 
+const MAX_SCANS_PER_INSTANCE = 10; // Further reduced to be more conservative
 const RATE_LIMIT_RESET_TIME = 60000; // 1 minute in milliseconds
-const MIN_DELAY_BETWEEN_SCANS = 2000; // 2 seconds minimum delay
-let lastScanTime = 0; // Track when the last scan was performed
+const MIN_DELAY_BETWEEN_SCANS = 3000; // Increased to 3 seconds minimum delay
+const BACKOFF_PERIOD = 300000; // 5 minutes backoff if rate limited
+let lastScanTime = 0;
+let rateLimitedUntil = 0; // Timestamp when we can resume after hitting rate limit
 
-// Create a simple rate limiter that resets periodically
+// Reset counter periodically
 setInterval(() => {
   scanCount = Math.max(0, scanCount - 5); // Decrease counter by 5 every minute
   console.log(`Rate limit counter reset to ${scanCount}`);
@@ -56,6 +57,14 @@ serve(async (req) => {
       formattedUrl = 'https://' + formattedUrl;
     }
     
+    // Check if we're currently in a backoff period due to rate limiting
+    const currentTime = Date.now();
+    if (rateLimitedUntil > currentTime) {
+      const waitTime = Math.ceil((rateLimitedUntil - currentTime) / 60000); // minutes
+      console.log(`In rate limit backoff period. Resuming in ~${waitTime} minutes. Using fallback.`);
+      return await useFallbackMethod(formattedUrl, businessId, supabase, false, `Rate limited. Resuming in ~${waitTime} minutes.`);
+    }
+    
     // Check for internal rate limiting
     if (scanCount >= MAX_SCANS_PER_INSTANCE) {
       console.log('Internal rate limit reached, using fallback scoring method');
@@ -63,7 +72,6 @@ serve(async (req) => {
     }
     
     // Enforce delay between scans to avoid external rate limiting
-    const currentTime = Date.now();
     const timeSinceLastScan = currentTime - lastScanTime;
     
     if (timeSinceLastScan < MIN_DELAY_BETWEEN_SCANS) {
@@ -90,7 +98,7 @@ serve(async (req) => {
           'User-Agent': 'BizScan-LighthouseFunction/1.0',
         },
         // Set timeout to prevent long-hanging requests
-        signal: AbortSignal.timeout(15000), // 15 second timeout
+        signal: AbortSignal.timeout(20000), // 20 second timeout
       });
       
       if (!response.ok) {
@@ -112,7 +120,8 @@ serve(async (req) => {
         .update({
           lighthouse_score: lighthouseScore,
           lighthouse_report_url: reportUrl,
-          last_lighthouse_scan: new Date().toISOString()
+          last_lighthouse_scan: new Date().toISOString(),
+          has_real_score: true // Mark this as a real score, not estimated
         })
         .eq('id', businessId);
 
@@ -124,7 +133,8 @@ serve(async (req) => {
       const performanceData = {
         lighthouseScore,
         reportUrl,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        isRealScore: true
       };
       
       return new Response(JSON.stringify(performanceData), {
@@ -136,10 +146,27 @@ serve(async (req) => {
       
       if (error.message.includes('429') || 
           error.message.includes('RESOURCE_EXHAUSTED') || 
-          error.message.includes('Quota exceeded') ||
-          error.message.includes('timeout')) {
+          error.message.includes('Quota exceeded')) {
         
-        return await useFallbackMethod(formattedUrl, businessId, supabase, false);
+        // Set a backoff period before we try again
+        rateLimitedUntil = Date.now() + BACKOFF_PERIOD;
+        console.log(`Rate limit hit. Setting backoff until ${new Date(rateLimitedUntil).toISOString()}`);
+        
+        return await useFallbackMethod(
+          formattedUrl, 
+          businessId, 
+          supabase, 
+          false, 
+          `API rate limited. Next attempt in 5 minutes.`
+        );
+      } else if (error.message.includes('timeout')) {
+        return await useFallbackMethod(
+          formattedUrl, 
+          businessId, 
+          supabase, 
+          false, 
+          `Request timed out. Using estimated score.`
+        );
       } else {
         throw error;
       }
@@ -158,14 +185,20 @@ serve(async (req) => {
 });
 
 // Extracted fallback method to a separate function
-async function useFallbackMethod(formattedUrl: string, businessId: string, supabase: any, isInternalLimit: boolean) {
+async function useFallbackMethod(
+  formattedUrl: string, 
+  businessId: string, 
+  supabase: any, 
+  isInternalLimit: boolean,
+  customMessage?: string
+) {
   console.log(`Using fallback scoring method for ${formattedUrl}`);
   
   // Instead of random score, try to fetch from the actual website if possible
   let mockScore = 0;
-  const message = isInternalLimit 
+  const message = customMessage || (isInternalLimit 
     ? "API rate limited by internal controls. Using estimated performance score." 
-    : "Google API rate limited. Using estimated performance score.";
+    : "Google API rate limited. Using estimated performance score.");
   
   try {
     // Try a basic fetch to see if the site loads quickly
@@ -201,7 +234,8 @@ async function useFallbackMethod(formattedUrl: string, businessId: string, supab
       .update({
         lighthouse_score: mockScore,
         lighthouse_report_url: reportUrl,
-        last_lighthouse_scan: new Date().toISOString()
+        last_lighthouse_scan: new Date().toISOString(),
+        has_real_score: false // Mark this as an estimated score
       })
       .eq('id', businessId);
   } catch (dbError) {
@@ -212,7 +246,8 @@ async function useFallbackMethod(formattedUrl: string, businessId: string, supab
     lighthouseScore: mockScore,
     reportUrl,
     createdAt: new Date().toISOString(),
-    note: message
+    note: message,
+    isRealScore: false
   }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });

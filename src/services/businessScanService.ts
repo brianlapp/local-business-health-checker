@@ -163,7 +163,8 @@ async function incrementGTmetrixUsage() {
 export async function scanWithLighthouse(businessId: string, url: string): Promise<{ 
   success: boolean; 
   reportUrl?: string; 
-  note?: string; 
+  note?: string;
+  isRealScore?: boolean;
 }> {
   try {
     const { data, error } = await supabase.functions.invoke('lighthouse-scan', {
@@ -182,16 +183,24 @@ export async function scanWithLighthouse(businessId: string, url: string): Promi
       return { success: false };
     }
     
+    // Add more descriptive toasts based on scan results
     if (data.note && data.note.includes('rate limited')) {
-      toast.warning('Google API rate limited. Using estimated performance score.');
+      if (data.note.includes('Resuming in')) {
+        toast.warning(data.note);
+      } else {
+        toast.warning('Google API rate limited. Using estimated performance score.');
+      }
+    } else if (data.isRealScore) {
+      toast.success('Lighthouse scan completed with real performance data!');
     } else {
-      toast.success('Lighthouse scan completed successfully!');
+      toast.info('Used estimated performance score. Will retry for real data later.');
     }
     
     return { 
       success: true,
       reportUrl: data.reportUrl,
-      note: data.note
+      note: data.note,
+      isRealScore: data.isRealScore
     };
   } catch (error) {
     console.error('Error during Lighthouse scan:', error);
@@ -313,5 +322,27 @@ export async function getGTmetrixUsage(): Promise<{ used: number; limit: number;
   } catch (error) {
     console.error('Error fetching GTmetrix usage:', error);
     return { used: 0, limit: 3, resetDate: new Date().toISOString() };
+  }
+}
+
+// New function: Get businesses that need real scores
+export async function getBusinessesNeedingRealScores(): Promise<string[]> {
+  try {
+    const { data, error } = await supabase
+      .from('businesses')
+      .select('id')
+      .eq('has_real_score', false)
+      .order('last_lighthouse_scan', { ascending: true })
+      .limit(10);
+    
+    if (error) {
+      console.error('Error fetching businesses needing real scores:', error);
+      return [];
+    }
+    
+    return data.map(business => business.id);
+  } catch (error) {
+    console.error('Error in getBusinessesNeedingRealScores:', error);
+    return [];
   }
 }
