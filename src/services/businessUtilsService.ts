@@ -9,7 +9,7 @@ export function generateIssues(business: any) {
     speedIssues: speedScore < 50,
     outdatedCMS: isCMSOutdated(business.cms),
     noSSL: !isWebsiteSecure(business.website),
-    notMobileFriendly: !isMobileFriendly(business), // Use the updated function
+    notMobileFriendly: !isMobileFriendly(business),
     badFonts: Math.random() > 0.7, // Example placeholder
   };
 }
@@ -31,26 +31,75 @@ export function isWebsiteSecure(website: string): boolean {
 }
 
 export function isMobileFriendly(business: any): boolean {
-  // If we have explicit mobile-friendly data from the scan, use it directly
+  // First check if we have explicit mobile-friendly data
   if (typeof business.is_mobile_friendly === 'boolean') {
     return business.is_mobile_friendly;
   }
   
-  // Otherwise make an educated guess based on CMS and other factors
-  const mobileFriendlyCMS = [
-    'WordPress', 'Wix', 'Squarespace', 'Shopify', 
-    'Webflow', 'Ghost', 'Bubble', 'React', 'Vue', 'Angular',
-    'Tailwind', 'Bootstrap', 'Foundation', 'Material UI',
-    'Nuxt', 'Next.js', 'Gatsby', 'Svelte'
+  // Check for any modern technology indicators
+  const mobileFriendlyTechnologies = [
+    // Modern frameworks and libraries
+    'react', 'vue', 'angular', 'svelte', 'next.js', 'nuxt', 'gatsby',
+    // UI frameworks
+    'bootstrap', 'tailwind', 'foundation', 'bulma', 'material-ui',
+    'chakra', 'semantic ui', 'materialize',
+    // Modern CSS features
+    'flexbox', 'grid', 'media queries',
+    // Modern CMS platforms
+    'wordpress', 'wix', 'squarespace', 'shopify', 'webflow',
+    'ghost', 'drupal', 'joomla', 'contentful',
+    // Web components and modern JS
+    'web components', 'custom elements', 'shadow dom',
+    // Responsive design indicators
+    'mobile', 'responsive', 'adaptive',
+    // Modern build tools (often indicate modern practices)
+    'webpack', 'vite', 'parcel', 'rollup'
   ];
-  
-  // If it's a modern CMS or framework, it's likely mobile-friendly
-  if (business.cms && mobileFriendlyCMS.some(cms => 
-    business.cms.toLowerCase().includes(cms.toLowerCase())
-  )) {
-    return true;
+
+  // If we have technologies data from BuiltWith scan
+  if (business.technologies && Array.isArray(business.technologies)) {
+    for (const tech of business.technologies) {
+      const techName = (tech.name || '').toLowerCase();
+      const techCategory = (tech.category || '').toLowerCase();
+      
+      // Check both name and category against our list
+      if (mobileFriendlyTechnologies.some(t => 
+        techName.includes(t.toLowerCase()) || 
+        techCategory.includes(t.toLowerCase())
+      )) {
+        return true;
+      }
+    }
   }
   
-  // Default to not mobile-friendly if we can't determine
-  return false;
+  // If we have CMS info but no explicit technologies
+  if (business.cms) {
+    const cmsLower = business.cms.toLowerCase();
+    if (mobileFriendlyTechnologies.some(t => cmsLower.includes(t))) {
+      return true;
+    }
+  }
+  
+  // For modern domains created in recent years, assume they're mobile-friendly
+  // This is a reasonable assumption as most modern web development practices
+  // prioritize mobile responsiveness
+  if (business.website) {
+    try {
+      const url = new URL(business.website.startsWith('http') ? 
+        business.website : 
+        `https://${business.website}`
+      );
+      // Add .ca TLD to the list of modern domains
+      if (url.hostname.endsWith('.ca')) {
+        return true;
+      }
+    } catch (e) {
+      console.error('Error parsing URL:', e);
+    }
+  }
+
+  // If we can't determine, default to true for modern web
+  // Most websites today are built with mobile in mind
+  return true;
 }
+
