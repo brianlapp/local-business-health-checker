@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2Icon, DatabaseIcon } from 'lucide-react';
 import { scanWithBuiltWith } from '@/services/businessService';
 import { Business } from '@/types/business';
+import { toast } from 'sonner';
 
 interface CMSDetectionProps {
   business: Business;
@@ -21,14 +22,20 @@ const CMSDetection: React.FC<CMSDetectionProps> = ({
   const handleCMSScan = async () => {
     try {
       setScanning(true);
-      // Pass the website instead of url to match what the functions expect
-      await scanWithBuiltWith(business.id, business.website);
+      const result = await scanWithBuiltWith(business.id, business.website);
+      
+      if (result.success) {
+        toast.success('CMS detection completed successfully!');
+      } else {
+        toast.error('Failed to detect CMS. Please try again.');
+      }
       
       if (onScanComplete) {
         onScanComplete();
       }
     } catch (error) {
       console.error('CMS detection error:', error);
+      toast.error('CMS detection failed. Please try again later.');
     } finally {
       setScanning(false);
     }

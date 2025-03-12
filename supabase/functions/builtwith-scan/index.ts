@@ -18,11 +18,11 @@ serve(async (req) => {
     const { url, businessId } = await req.json();
     
     if (!url) {
-      throw new Error('Website parameter is required');
+      throw new Error('URL parameter is required');
     }
-
-    // Extract domain from the website URL
-    let domain = url;
+    
+    // Clean and validate the URL
+    let domain = url.toLowerCase().trim();
     try {
       // Handle URLs with or without protocol
       if (!domain.startsWith('http')) {
@@ -30,8 +30,13 @@ serve(async (req) => {
       }
       const urlObj = new URL(domain);
       domain = urlObj.hostname;
+      // Remove 'www.' if present
+      domain = domain.replace(/^www\./, '');
+      
+      console.log(`Cleaned domain for BuiltWith scan: ${domain}`);
     } catch (e) {
-      console.warn(`Could not parse URL: ${url}, using as-is`);
+      console.error(`URL parsing error: ${e.message}`);
+      throw new Error(`Invalid URL format: ${url}`);
     }
 
     console.log(`Scanning technology stack for: ${domain}`);
@@ -44,14 +49,17 @@ serve(async (req) => {
     apiUrl.searchParams.append('KEY', BUILTWITH_API_KEY);
     apiUrl.searchParams.append('LOOKUP', domain);
     
+    console.log(`Making request to BuiltWith API for: ${domain}`);
     const response = await fetch(apiUrl.toString());
     
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`BuiltWith API error: ${errorText}`);
+      console.error(`BuiltWith API error: ${errorText}`);
+      throw new Error(`BuiltWith API error: ${response.status} - ${errorText}`);
     }
     
     const data = await response.json();
+    console.log(`BuiltWith API response received for ${domain}`);
     
     // Extract CMS and other relevant technologies
     let cms = 'Unknown';
@@ -66,7 +74,14 @@ serve(async (req) => {
           category: tech.Category
         });
         
-        if (tech.Category === 'CMS' || tech.Category === 'Ecommerce') {
+        // Look for CMS in multiple categories
+        if (
+          tech.Category === 'CMS' || 
+          tech.Category === 'Ecommerce' ||
+          tech.Name.toLowerCase().includes('wordpress') ||
+          tech.Name.toLowerCase().includes('wix') ||
+          tech.Name.toLowerCase().includes('squarespace')
+        ) {
           cms = tech.Name;
         }
       });
@@ -79,7 +94,7 @@ serve(async (req) => {
       analyzedAt: new Date().toISOString()
     };
     
-    console.log(`Technology scan complete, CMS identified: ${cms}`);
+    console.log(`Technology scan complete for ${domain}, CMS identified: ${cms}`);
     
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
