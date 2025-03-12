@@ -2,56 +2,58 @@
 import { useState, useMemo } from 'react';
 import { Business } from '@/types/business';
 
-type SortField = 'score' | 'name' | 'date';
-type SortOrder = 'asc' | 'desc';
-
-export function useBusinessFiltering(businesses: Business[]) {
-  const [sortBy, setSortBy] = useState<SortField>('score');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  const [filter, setFilter] = useState<string>('');
+export const useBusinessFiltering = (businesses: Business[], searchQuery: string = '') => {
+  const [sortBy, setSortBy] = useState<'score' | 'name' | 'date'>('score');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   const toggleSortOrder = () => {
-    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
   };
 
   const filteredAndSortedBusinesses = useMemo(() => {
-    // First, filter businesses if a filter is applied
-    let result = businesses;
-    
-    if (filter) {
-      const lowerFilter = filter.toLowerCase();
-      result = result.filter(business => 
-        business.name.toLowerCase().includes(lowerFilter) || 
-        business.website.toLowerCase().includes(lowerFilter)
+    // First filter by search query if provided
+    let filtered = businesses;
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = businesses.filter(business => 
+        business.name.toLowerCase().includes(query) || 
+        (business.website && business.website.toLowerCase().includes(query)) ||
+        (business.address && business.address.toLowerCase().includes(query))
       );
     }
-    
-    // Then sort the filtered results
-    return [...result].sort((a, b) => {
+
+    // Then sort the filtered businesses
+    return [...filtered].sort((a, b) => {
       if (sortBy === 'score') {
-        return sortOrder === 'desc' ? b.score - a.score : a.score - b.score;
+        // For scores, higher is typically worse in our scoring system
+        const scoreA = a.score || 0;
+        const scoreB = b.score || 0;
+        return sortOrder === 'asc' 
+          ? scoreA - scoreB 
+          : scoreB - scoreA;
       } else if (sortBy === 'name') {
-        return sortOrder === 'desc' 
-          ? b.name.localeCompare(a.name) 
-          : a.name.localeCompare(b.name);
+        const nameA = a.name?.toLowerCase() || '';
+        const nameB = b.name?.toLowerCase() || '';
+        return sortOrder === 'asc'
+          ? nameA.localeCompare(nameB)
+          : nameB.localeCompare(nameA);
       } else if (sortBy === 'date') {
-        const dateA = a.lastChecked ? new Date(a.lastChecked) : new Date(0);
-        const dateB = b.lastChecked ? new Date(b.lastChecked) : new Date(0);
-        return sortOrder === 'desc' 
-          ? dateB.getTime() - dateA.getTime() 
-          : dateA.getTime() - dateB.getTime();
+        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return sortOrder === 'asc'
+          ? dateA - dateB
+          : dateB - dateA;
       }
       return 0;
     });
-  }, [businesses, sortBy, sortOrder, filter]);
+  }, [businesses, sortBy, sortOrder, searchQuery]);
 
   return {
     sortBy,
     setSortBy,
     sortOrder,
+    setSortOrder,
     toggleSortOrder,
-    filter,
-    setFilter,
     filteredAndSortedBusinesses
   };
-}
+};

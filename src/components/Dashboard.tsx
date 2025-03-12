@@ -9,11 +9,12 @@ import DashboardControls from './dashboard/DashboardControls';
 import DashboardList from './dashboard/DashboardList';
 import DataManagement from './dashboard/DataManagement';
 import { useLocation } from 'react-router-dom';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Search } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useBusinessSelection } from '@/hooks/useBusinessSelection';
 import { useBusinessFiltering } from '@/hooks/useBusinessFiltering';
 import { toast } from 'sonner';
+import { Input } from '@/components/ui/input';
 
 interface DashboardProps {
   className?: string;
@@ -25,6 +26,7 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [dataRefreshKey, setDataRefreshKey] = useState(0);
   const [newlyAddedBusinesses, setNewlyAddedBusinesses] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   
   const location = useLocation();
   
@@ -42,7 +44,7 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
     sortOrder,
     toggleSortOrder,
     filteredAndSortedBusinesses
-  } = useBusinessFiltering(businesses);
+  } = useBusinessFiltering(businesses, searchQuery);
 
   // Check if there are newly added businesses from the location state
   useEffect(() => {
@@ -108,11 +110,23 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
 
   return (
     <div className={cn('container py-8', className)}>
-      <DashboardHeader 
-        setBusinesses={setBusinesses} 
-        setLoading={setLoading} 
-        loading={loading} 
-      />
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <DashboardHeader 
+          setBusinesses={setBusinesses} 
+          setLoading={setLoading} 
+          loading={loading} 
+        />
+        
+        <div className="relative w-full md:w-80">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input 
+            placeholder="Search businesses..." 
+            className="pl-10 w-full"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      </div>
       
       {newlyAddedBusinesses.length > 0 && (
         <Alert className="mb-6 bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400">

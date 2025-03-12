@@ -2,9 +2,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Search, Bell, Settings, Map } from 'lucide-react';
+import { Bell, Settings, Map } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 
 interface HeaderProps {
   className?: string;
@@ -21,16 +20,6 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
             </span>
             <span className="text-xs text-muted-foreground ml-2">BETA</span>
           </h1>
-        </div>
-        
-        <div className="max-w-md w-full hidden md:block">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input 
-              placeholder="Search businesses..." 
-              className="pl-10 w-full bg-secondary border-none focus-visible:ring-1"
-            />
-          </div>
         </div>
         
         <div className="flex items-center space-x-2">
