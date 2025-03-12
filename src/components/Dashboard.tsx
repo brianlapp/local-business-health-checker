@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Business } from '@/types/business';
-import { getBusinesses } from '@/services/businessCrudService';
+import { getBusinesses, scanWithLighthouse } from '@/services/businessService';
 import DashboardHeader from './dashboard/DashboardHeader';
 import DashboardStats from './dashboard/DashboardStats';
 import DashboardControls from './dashboard/DashboardControls';
@@ -13,6 +13,7 @@ import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useBusinessSelection } from '@/hooks/useBusinessSelection';
 import { useBusinessFiltering } from '@/hooks/useBusinessFiltering';
+import { toast } from 'sonner';
 
 interface DashboardProps {
   className?: string;
@@ -59,11 +60,33 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
   }, [location.state]);
 
   useEffect(() => {
-    const fetchBusinesses = async () => {
+    const fetchAndScanBusinesses = async () => {
       setLoading(true);
       try {
         const data = await getBusinesses();
-        setBusinesses(data || []);
+        
+        // Start scanning unscanned businesses
+        const unscannedBusinesses = data.filter(b => !b.lighthouse_score && !b.lighthouseScore);
+        
+        if (unscannedBusinesses.length > 0) {
+          toast.info(`Scanning ${unscannedBusinesses.length} businesses for performance data...`);
+          
+          // Scan businesses sequentially to avoid rate limits
+          for (const business of unscannedBusinesses) {
+            try {
+              await scanWithLighthouse(business.id, business.website);
+            } catch (error) {
+              console.error(`Error scanning ${business.name}:`, error);
+            }
+          }
+          
+          // Refresh the business list after scanning
+          const updatedData = await getBusinesses();
+          setBusinesses(updatedData || []);
+          toast.success('Performance scan complete!');
+        } else {
+          setBusinesses(data || []);
+        }
       } catch (error) {
         console.error('Error fetching businesses:', error);
         setBusinesses([]);
@@ -72,7 +95,7 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
       }
     };
 
-    fetchBusinesses();
+    fetchAndScanBusinesses();
   }, [dataRefreshKey]);
 
   const handleDataRefresh = () => {
