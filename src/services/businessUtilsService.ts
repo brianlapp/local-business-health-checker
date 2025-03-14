@@ -5,6 +5,16 @@ import { Business } from '@/types/business';
  * Generate issue flags based on business data
  */
 export function generateIssues(business: Partial<Business>) {
+  // Add validation logging
+  console.log('Generating issues for business:', business.id);
+  console.log('Business score properties:', {
+    score: business.score,
+    lighthouseScore: business.lighthouseScore,
+    lighthouse_score: business.lighthouse_score,
+    gtmetrixScore: business.gtmetrixScore,
+    gtmetrix_score: business.gtmetrix_score
+  });
+  
   return {
     speedIssues: business.speedScore ? business.speedScore < 50 : false,
     outdatedCMS: isCMSOutdated(business.cms),
@@ -38,4 +48,28 @@ export function isCMSOutdated(cms?: string): boolean {
 export function isWebsiteSecure(website?: string): boolean {
   if (!website) return false;
   return website.startsWith('https://');
+}
+
+/**
+ * Log type validation information for debugging
+ */
+export function validateBusinessType(business: Business, context: string): void {
+  console.log(`[TypeValidation:${context}] Business:`, {
+    id: business.id,
+    name: business.name,
+    hasSnakeCase: {
+      lighthouse_score: business.lighthouse_score !== undefined,
+      gtmetrix_score: business.gtmetrix_score !== undefined,
+      lighthouse_report_url: business.lighthouse_report_url !== undefined,
+      gtmetrix_report_url: business.gtmetrix_report_url !== undefined,
+      last_checked: business.last_checked !== undefined
+    },
+    hasCamelCase: {
+      lighthouseScore: business.lighthouseScore !== undefined,
+      gtmetrixScore: business.gtmetrixScore !== undefined,
+      lighthouseReportUrl: business.lighthouseReportUrl !== undefined,
+      gtmetrixReportUrl: business.gtmetrixReportUrl !== undefined,
+      lastChecked: business.lastChecked !== undefined
+    }
+  });
 }

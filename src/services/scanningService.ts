@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Business, BusinessScanResponse, ScanDebugInfo } from '@/types/business';
@@ -12,7 +11,7 @@ export async function scanBusinessesInArea(
   location: string, 
   source: string = 'google',
   debugMode: boolean = false
-): Promise<BusinessScanResponse | Business[]> {
+): Promise<BusinessScanResponse> {
   try {
     console.log(`Scanning for businesses in ${location} using ${source} source`);
     
@@ -30,7 +29,8 @@ export async function scanBusinessesInArea(
         count: mockBusinesses.length,
         location,
         test_mode: true,
-        source: 'localstack'
+        source: 'localstack',
+        timestamp: new Date().toISOString()
       };
     }
     
@@ -105,12 +105,22 @@ function generateMockBusinesses(location: string, count: number): Business[] {
       location: location,
       status: 'discovered',
       score: Math.floor(Math.random() * 100),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      lastChecked: new Date().toISOString()
     });
   }
   
   return businesses;
+}
+
+// Updated stub implementation for scanWithBuiltWith
+export async function scanWithBuiltWith(businessId: string, website: string) {
+  console.warn('BuiltWith scanning is deprecated');
+  return { 
+    success: false,
+    cms: null,
+    isMobileFriendly: undefined
+  };
 }
 
 // Stub implementations for compatibility with existing code
@@ -122,11 +132,6 @@ export async function scanWithLighthouse(businessId: string, website: string) {
 export async function scanWithGTmetrix(businessId: string, website: string) {
   console.warn('GTmetrix scanning is deprecated');
   return null;
-}
-
-export async function scanWithBuiltWith(businessId: string, website: string) {
-  console.warn('BuiltWith scanning is deprecated');
-  return { success: false };
 }
 
 export async function getBusinessesNeedingRealScores() {

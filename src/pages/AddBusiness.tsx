@@ -41,6 +41,7 @@ const AddBusiness = () => {
         score: 50, // Default score
         last_checked: now,
         lastChecked: now,
+        status: 'discovered', // Added required field
       });
       
       toast.success('Business added successfully');

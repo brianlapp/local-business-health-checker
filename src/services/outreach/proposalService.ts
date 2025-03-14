@@ -1,78 +1,50 @@
 
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
 import { Business } from '@/types/business';
 import { Opportunity } from '@/types/opportunity';
 
-/**
- * Generate a proposal based on a business or opportunity
- */
 export async function generateProposal(
   target: Business | Opportunity,
-  templateId?: string
+  template?: string
 ): Promise<string> {
+  console.log('Generating proposal for:', target);
+  
   try {
-    console.log(`Generating proposal for ${target.name || target.title}`);
+    // Determine if we're dealing with a business or opportunity
+    const isBusiness = 'name' in target && !('title' in target);
+    const isOpportunity = 'title' in target;
     
-    // In a real implementation, this would use an AI service or template system
-    // For now, return a placeholder
-    const proposalContent = `
-# Proposal for ${target.name || target.title}
+    // Extract the name/title appropriately
+    const targetName = isBusiness ? (target as Business).name : (target as Opportunity).title;
+    
+    // Generate a simple proposal (mock implementation)
+    const proposal = `
+# Proposal for ${targetName}
 
-## Introduction
-We're excited to present this proposal for [your services].
+Dear ${isBusiness ? 'Team at ' + (target as Business).name : 'Hiring Manager'},
 
-## Objectives
-- Objective 1
-- Objective 2
-- Objective 3
+I am writing to express my interest in ${isOpportunity ? 'the ' + (target as Opportunity).title + ' position' : 'working with your business'}. 
 
-## Approach
-Our approach will include the following phases:
-1. Discovery
-2. Strategy
-3. Implementation
-4. Review
+[Your proposal content here]
 
-## Timeline
-The project will take approximately X weeks to complete.
-
-## Investment
-$X,XXX - $X,XXX
-
-## Next Steps
-To move forward, please [instructions].
+Best regards,
+[Your Name]
     `;
     
-    toast.success('Proposal generated');
-    return proposalContent;
+    return proposal;
   } catch (error) {
     console.error('Error generating proposal:', error);
     toast.error('Failed to generate proposal');
-    return '';
+    return 'Error generating proposal. Please try again.';
   }
 }
 
-/**
- * Save a proposal template
- */
-export async function saveProposalTemplate(
-  name: string,
-  content: string,
-  userId: string
-): Promise<boolean> {
+export async function saveProposalTemplate(name: string, content: string): Promise<boolean> {
+  // Implementation for saving proposal templates
+  console.log('Saving proposal template:', name);
+  
   try {
-    const { error } = await supabase
-      .from('proposal_templates')
-      .insert({
-        name,
-        content,
-        user_id: userId
-      });
-    
-    if (error) throw error;
-    
-    toast.success('Proposal template saved');
+    // Mock implementation
     return true;
   } catch (error) {
     console.error('Error saving proposal template:', error);

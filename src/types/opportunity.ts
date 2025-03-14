@@ -26,6 +26,7 @@ export interface Opportunity {
   created_at?: string;
   updated_at?: string;
   contact_info?: OpportunityContact;
+  name?: string; // For compatibility with Business interface in proposalService
 }
 
 export interface OpportunityContact {
@@ -50,4 +51,26 @@ export interface UserProfile {
   website?: string;
   created_at: string;
   updated_at: string;
+}
+
+// For JobSearchResults.tsx
+export interface JobListing {
+  id: string;
+  title: string;
+  company: string;
+  description: string;
+  url: string;
+  location?: string;
+  salary?: string; // Added to match usage in JobSearchResults.tsx
+  skills?: string[];
+  datePosted: string; // Added to match usage in JobSearchResults.tsx
+  source: string; // Added to match usage in JobSearchResults.tsx
+}
+
+export interface JobBoardResponse {
+  jobs: JobListing[];
+  source: string; // Added to match usage in JobSearchResults.tsx
+  count: number;
+  location?: string;
+  query?: string;
 }

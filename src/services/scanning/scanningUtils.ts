@@ -36,6 +36,12 @@ export function handleScanError(
     timestamp: new Date().toISOString(),
     test_mode: true,
     error: error.message || 'Failed to search for businesses',
-    message: 'Using sample data due to an error with the business search API'
+    message: 'Using sample data due to an error with the business search API',
+    debugInfo: {
+      errors: [error.message || 'Unknown error'],
+      warnings: ['Using fallback data'],
+      logs: ['Error occurred, using mock data'],
+      htmlSamples: []
+    }
   };
 }
