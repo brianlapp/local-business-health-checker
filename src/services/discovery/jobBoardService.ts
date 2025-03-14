@@ -10,7 +10,9 @@ export interface JobListing {
   location: string;
   description: string;
   url: string;
-  posted_date: string;
+  datePosted: string; // Updated to match usage in JobSearchResults.tsx
+  posted_date?: string; // Keep for backward compatibility
+  salary?: string; // Added to match usage in JobSearchResults.tsx
   budget_min?: number;
   budget_max?: number;
   skills?: string[];
@@ -21,6 +23,9 @@ export interface JobListing {
 export interface JobBoardResponse {
   jobs: JobListing[];
   count: number;
+  source: string; // Added to match usage in JobSearchResults.tsx
+  location?: string;
+  query?: string;
   error?: string;
   message?: string;
 }
@@ -46,7 +51,9 @@ export async function searchJobs(
         location: 'Toronto, ON',
         description: 'Looking for a skilled frontend developer with React experience...',
         url: 'https://example.com/job/1',
+        datePosted: new Date().toISOString(),
         posted_date: new Date().toISOString(),
+        salary: '$80,000 - $120,000',
         budget_min: 80000,
         budget_max: 120000,
         skills: ['React', 'TypeScript', 'CSS'],
@@ -60,7 +67,9 @@ export async function searchJobs(
         location: 'Vancouver, BC',
         description: 'Creative agency seeking talented UI/UX designer...',
         url: 'https://example.com/job/2',
+        datePosted: new Date().toISOString(),
         posted_date: new Date().toISOString(),
+        salary: '$70,000 - $90,000',
         budget_min: 70000,
         budget_max: 90000,
         skills: ['Figma', 'Adobe XD', 'UI Design'],
@@ -71,7 +80,8 @@ export async function searchJobs(
     
     return {
       jobs: mockJobs,
-      count: mockJobs.length
+      count: mockJobs.length,
+      source: 'Mock Data'
     };
   } catch (error) {
     console.error('Error searching jobs:', error);
@@ -79,6 +89,7 @@ export async function searchJobs(
     return {
       jobs: [],
       count: 0,
+      source: 'Error',
       error: 'Failed to search for jobs'
     };
   }

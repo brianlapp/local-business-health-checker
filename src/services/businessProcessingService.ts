@@ -63,6 +63,7 @@ export const processScrapedBusinesses = async (scrapedBusinesses: any[], source:
         name: business.name,
         website: business.website,
         score,
+        status: 'discovered', // Add required status field
         last_checked: new Date().toISOString(),
       };
       
@@ -81,7 +82,8 @@ export const processScrapedBusinesses = async (scrapedBusinesses: any[], source:
           ...newBusiness,
           lastChecked: newBusiness.last_checked,
           issues: generateIssues(newBusiness as Business),
-          source: source // Set source for UI display purposes
+          source: source, // Set source for UI display purposes
+          status: 'discovered' // Ensure status is set
         } as Business);
       }
     } catch (err) {
@@ -109,11 +111,12 @@ export const processMockBusinesses = (mockBusinesses: any[], location: string): 
       name: business.name,
       website: business.website,
       score,
+      status: 'discovered', // Add required status field
       last_checked: now,
       lastChecked: now,
       source: 'mock-data', // Set source for UI display purposes
       issues: {
-        speedIssues: score > 50,
+        speedIssues: score < 50,
         outdatedCMS: Math.random() > 0.5,
         noSSL: !business.website.includes('https'),
         notMobileFriendly: Math.random() > 0.6,
@@ -146,6 +149,7 @@ export function generateMockBusinessData(location: string, source: string = 'moc
       name,
       website,
       score,
+      status: 'discovered', // Add required status field
       last_checked: now,
       lastChecked: now,
       source,

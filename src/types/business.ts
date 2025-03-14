@@ -49,7 +49,7 @@ export interface ScanDebugInfo {
   errors?: string[];
   warnings?: string[];
   logs?: string[]; // Added for MapScanner.tsx
-  htmlSamples?: string[]; // Added for MapScanner.tsx
+  htmlSamples?: Array<{url: string, length: number, sample: string}>; // Updated to match usage
 }
 
 export interface BusinessScanResponse {

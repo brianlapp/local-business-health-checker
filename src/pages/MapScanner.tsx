@@ -29,24 +29,23 @@ const MapScanner = () => {
   
   const navigate = useNavigate();
   
-  // Function to format location string
   const formatLocation = (locationStr: string): string => {
-    // Remove extra spaces, normalize commas
     return locationStr.replace(/\s+/g, ' ').trim().replace(/\s*,\s*/g, ', ');
   };
   
-  // Function to validate Canadian location format
   const validateCanadianLocation = (location: string): boolean => {
     const locationParts = location.split(',').map(part => part.trim());
     
-    // Check if the country part exists and is Canada
     if (locationParts.length === 3) {
       const country = locationParts[2].toLowerCase();
       return country === 'canada' || country === 'ca';
     }
     
-    // If only two parts (city, province), we'll assume it's Canada
-    return locationParts.length === 2;
+    if (locationParts.length === 2) {
+      return true;
+    }
+    
+    return false;
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -56,24 +55,19 @@ const MapScanner = () => {
       return;
     }
     
-    // Reset the scan complete state
     setScanComplete(false);
     
-    // Format the location before validation and sending to API
     const formattedLocation = formatLocation(location);
     const locationParts = formattedLocation.split(',').map(part => part.trim());
     
-    // Check for proper Canadian location format
     if (!validateCanadianLocation(formattedLocation)) {
       toast.warning('Please enter a valid Canadian location');
       setApiTip('For best results, use the format "City, Province" or "City, Province, Canada" (e.g. "Toronto, Ontario" or "Vancouver, BC, Canada")');
-      // Continue anyway if it has at least city and province
       if (locationParts.length < 2) {
-        return; // Stop if missing province
+        return;
       }
     }
     
-    // Ensure "Canada" is added if not present
     let finalLocation = formattedLocation;
     if (locationParts.length === 2) {
       finalLocation = `${formattedLocation}, Canada`;
@@ -89,7 +83,6 @@ const MapScanner = () => {
     setDebugInfo(null);
     
     try {
-      // Start the progress animation
       const progressInterval = setInterval(() => {
         setProgress(prev => {
           if (prev >= 95) {
@@ -102,10 +95,8 @@ const MapScanner = () => {
       
       toast.info(`Scanning for businesses in ${finalLocation}...`);
       
-      // Add more detailed console logging
       console.log(`Starting business scan for ${finalLocation} with source ${source}, debug mode: ${debugMode}`);
       
-      // Use the updated function signature with debugMode parameter
       const response = await scanBusinessesInArea(finalLocation, source, debugMode);
       
       clearInterval(progressInterval);
@@ -113,34 +104,28 @@ const MapScanner = () => {
       
       console.log('Scan response:', response);
       
-      // Check if we're using mock data based on the response metadata
       let businesses: Business[] = [];
       let testMode = false;
       let hasError = false;
       
-      // Check if response is a business array or a BusinessScanResponse
       if (Array.isArray(response)) {
         businesses = response;
       } else if ('businesses' in response) {
         businesses = response.businesses;
         
-        // Check if we're in test mode
         if ('test_mode' in response) {
           testMode = response.test_mode;
         }
         
-        // Check for troubleshooting info
         if ('troubleshooting' in response && response.troubleshooting) {
           setApiTroubleshooting(response.troubleshooting);
         }
         
-        // Set debug info if present
         if (debugMode && response.debugInfo) {
           setDebugInfo(response.debugInfo as ScanDebugInfo);
           console.log('Debug info received and stored:', response.debugInfo);
         }
         
-        // Only set error if present AND no businesses were found
         if ('error' in response && response.error && businesses.length === 0) {
           setError(response.error);
           hasError = true;
@@ -150,8 +135,6 @@ const MapScanner = () => {
         }
       }
       
-      // More precise mock data detection - only set if explicitly marked as test_mode
-      // OR if all business IDs start with 'mock-'
       const isMockData = testMode || 
         (businesses.length > 0 && businesses.every(b => b.id && b.id.startsWith('mock-')));
       
@@ -174,7 +157,6 @@ const MapScanner = () => {
           toast.success(`Found ${businesses.length} businesses in ${finalLocation}`);
         }
         
-        // Auto-redirect if enabled
         if (autoRedirect) {
           setTimeout(() => {
             handleViewResults();

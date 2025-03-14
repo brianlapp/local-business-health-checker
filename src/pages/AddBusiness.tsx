@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,56 +11,49 @@ import { toast } from 'sonner';
 const AddBusiness = () => {
   const [name, setName] = useState('');
   const [website, setWebsite] = useState('');
+  const [score, setScore] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [isBatchUploading, setIsBatchUploading] = useState(false);
   const navigate = useNavigate();
   
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!name || !website) {
-      toast.error('Please fill out all fields');
-      return;
-    }
-    
-    // Basic URL validation
-    let websiteUrl = website;
-    if (!website.startsWith('http://') && !website.startsWith('https://')) {
-      websiteUrl = 'https://' + website;
-    }
-    
     setIsSubmitting(true);
     
+    const now = new Date().toISOString();
+    
     try {
-      const now = new Date().toISOString();
-      await addBusiness({
+      const newBusiness = await addBusiness({
         name,
-        website: websiteUrl.replace(/^https?:\/\//, ''),
-        score: 50, // Default score
+        website,
+        score: parseInt(score),
         last_checked: now,
         lastChecked: now,
-        status: 'discovered', // Added required field
+        status: 'discovered' // Add required status field
       });
       
-      toast.success('Business added successfully');
-      setName('');
-      setWebsite('');
-      navigate('/');
+      if (newBusiness) {
+        resetForm();
+        toast.success("Business added successfully");
+        navigate('/dashboard');
+      } else {
+        toast.error("Failed to add business");
+      }
     } catch (error) {
-      toast.error('Failed to add business');
-      console.error(error);
+      console.error("Error adding business:", error);
+      toast.error("Error adding business");
     } finally {
       setIsSubmitting(false);
     }
   };
-  
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setCsvFile(e.target.files[0]);
     }
   };
-  
+
   const handleBatchUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -87,7 +79,13 @@ const AddBusiness = () => {
       setIsBatchUploading(false);
     }
   };
-  
+
+  const resetForm = () => {
+    setName('');
+    setWebsite('');
+    setScore('');
+  };
+
   return (
     <div className="container py-8">
       <div className="flex justify-between items-center mb-8">
@@ -106,7 +104,7 @@ const AddBusiness = () => {
             <CardTitle>Add Single Business</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleFormSubmit} className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium" htmlFor="name">
                   Business Name
@@ -141,10 +139,26 @@ const AddBusiness = () => {
                 </div>
               </div>
               
+              <div className="space-y-2">
+                <label className="text-sm font-medium" htmlFor="score">
+                  Score
+                </label>
+                <div className="relative">
+                  <Input
+                    id="score"
+                    placeholder="Enter score"
+                    value={score}
+                    onChange={(e) => setScore(e.target.value)}
+                    className="pl-10"
+                    disabled={isSubmitting}
+                  />
+                </div>
+              </div>
+              
               <Button 
                 type="submit" 
                 className="w-full" 
-                disabled={isSubmitting || !name || !website}
+                disabled={isSubmitting || !name || !website || !score}
               >
                 {isSubmitting ? (
                   <>
@@ -178,7 +192,7 @@ const AddBusiness = () => {
                     Drop your CSV file here or <span className="text-primary">browse</span>
                   </p>
                   <p className="text-xs text-muted-foreground mb-4">
-                    CSV should have columns: name, website
+                    CSV should have columns: name, website, score
                   </p>
                   <Input
                     id="csv"

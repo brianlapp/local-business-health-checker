@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Business, BusinessScanResponse, ScanDebugInfo } from '@/types/business';
@@ -26,8 +27,8 @@ export async function scanBusinessesInArea(
       const mockBusinesses = generateMockBusinesses(location, 5);
       response = {
         businesses: mockBusinesses,
-        count: mockBusinesses.length,
-        location,
+        count: mockBusinesses.length, // Ensure count is not optional
+        location: location,
         test_mode: true,
         source: 'localstack',
         timestamp: new Date().toISOString()
@@ -45,7 +46,7 @@ export async function scanBusinessesInArea(
     toast.error('Failed to scan businesses');
     return {
       businesses: [],
-      count: 0,
+      count: 0, // Ensure count is not optional
       location,
       error: error.message || 'Failed to scan businesses',
       source: source
@@ -70,6 +71,7 @@ async function saveBusinessesToDatabase(businesses: Business[]): Promise<void> {
         name: business.name,
         website: business.website,
         score: business.score || 50,
+        status: business.status || 'discovered', // Ensure status is set
         last_checked: new Date().toISOString()
       }));
       
@@ -103,7 +105,7 @@ function generateMockBusinesses(location: string, count: number): Business[] {
       name: `Business ${i + 1}`,
       website: `business${i + 1}.com`,
       location: location,
-      status: 'discovered',
+      status: 'discovered', // Add required status field
       score: Math.floor(Math.random() * 100),
       updated_at: new Date().toISOString(),
       lastChecked: new Date().toISOString()
