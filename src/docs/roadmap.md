@@ -1,6 +1,8 @@
 
 # Roadmap for Freelance Opportunity Finder
 
+> **Note:** This roadmap represents our current direction after pivoting from the previous approach. The project now focuses on a more comprehensive freelance opportunity discovery and management system.
+
 ## **Phase 1: Core Infrastructure & Authentication ✅**
 - Set up Supabase schema ✅
 - Create basic UI ✅
@@ -40,4 +42,3 @@
 - [ ] Build web scraper for freelance job boards
 - [ ] Implement local business discovery
 - [ ] Create data storage for discovered opportunities
-
