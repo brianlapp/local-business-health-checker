@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,7 +8,7 @@ import { Button } from './ui/button';
 import { Menu } from 'lucide-react';
 
 const Header: React.FC = () => {
-  const { isLoggedIn, logout, user } = useAuth();
+  const { user, signOut } = useAuth();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
@@ -22,7 +23,7 @@ const Header: React.FC = () => {
           <Link to="/" className="flex items-center gap-2">
             <span className="text-xl font-bold">Freelance Finder</span>
           </Link>
-          {isLoggedIn && (
+          {user && (
             <nav className="hidden md:flex items-center gap-6">
               <Link
                 to="/dashboard"
@@ -60,8 +61,8 @@ const Header: React.FC = () => {
           )}
         </div>
         
-        {isLoggedIn ? (
-          <UserMenu user={user} logout={logout} />
+        {user ? (
+          <UserMenu user={user} logout={signOut} />
         ) : (
           <Link to="/auth">
             <Button variant="default">Login</Button>
