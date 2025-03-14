@@ -1,8 +1,9 @@
 
-import React from 'react';
-import { Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -10,6 +11,13 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, isLoading } = useAuth();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      toast.error('Please sign in to access this page');
+    }
+  }, [isLoading, user]);
 
   if (isLoading) {
     return (
@@ -20,7 +28,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   if (!user) {
-    return <Navigate to="/auth" />;
+    // Redirect to auth page with return URL
+    return <Navigate to="/auth" state={{ returnUrl: location.pathname }} replace />;
   }
 
   return <>{children}</>;
