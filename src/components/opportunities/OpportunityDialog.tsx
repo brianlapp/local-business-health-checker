@@ -99,9 +99,23 @@ const OpportunityDialog: React.FC<OpportunityDialogProps> = ({
         ? data.skills.split(',').map(skill => skill.trim()).filter(Boolean)
         : [];
       
+      // Create opportunity data object with correct structure
       const opportunityData = {
-        ...data,
+        title: data.title,
+        description: data.description || null,
+        source: data.source,
+        source_url: data.source_url || null,
+        budget_min: data.budget_min || null,
+        budget_max: data.budget_max || null,
+        currency: data.currency,
+        status: data.status,
         skills: skillsArray,
+        location: data.location || null,
+        is_remote: data.is_remote,
+        client_name: data.client_name || null,
+        client_website: data.client_website || null,
+        notes: data.notes || null,
+        is_priority: data.is_priority
       };
 
       let response;
@@ -114,7 +128,7 @@ const OpportunityDialog: React.FC<OpportunityDialogProps> = ({
       } else {
         response = await supabase
           .from('opportunities')
-          .insert([opportunityData]);
+          .insert(opportunityData);
       }
 
       if (response.error) throw response.error;
