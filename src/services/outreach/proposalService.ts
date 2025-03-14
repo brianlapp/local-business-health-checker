@@ -1,81 +1,82 @@
 
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import { Business } from '@/types/business';
+import { Opportunity } from '@/types/opportunity';
 
 /**
- * Generate a proposal based on opportunity data and template
+ * Generate a proposal based on a business or opportunity
  */
-export async function generateProposal(opportunityId: string, templateId?: string) {
+export async function generateProposal(
+  target: Business | Opportunity,
+  templateId?: string
+): Promise<string> {
   try {
-    console.log(`Generating proposal for opportunity ${opportunityId} using template ${templateId || 'default'}`);
+    console.log(`Generating proposal for ${target.name || target.title}`);
     
-    // Get opportunity details
-    const { data: opportunity, error: opportunityError } = await supabase
-      .from('opportunities')
-      .select('*')
-      .eq('id', opportunityId)
-      .single();
+    // In a real implementation, this would use an AI service or template system
+    // For now, return a placeholder
+    const proposalContent = `
+# Proposal for ${target.name || target.title}
+
+## Introduction
+We're excited to present this proposal for [your services].
+
+## Objectives
+- Objective 1
+- Objective 2
+- Objective 3
+
+## Approach
+Our approach will include the following phases:
+1. Discovery
+2. Strategy
+3. Implementation
+4. Review
+
+## Timeline
+The project will take approximately X weeks to complete.
+
+## Investment
+$X,XXX - $X,XXX
+
+## Next Steps
+To move forward, please [instructions].
+    `;
     
-    if (opportunityError) throw opportunityError;
-    
-    // Get template
-    let template: any = null;
-    
-    if (templateId) {
-      const { data: templateData, error: templateError } = await supabase
-        .from('proposal_templates')
-        .select('*')
-        .eq('id', templateId)
-        .single();
-      
-      if (templateError) throw templateError;
-      template = templateData;
-    } else {
-      // Get default template
-      const { data: defaultTemplate, error: defaultTemplateError } = await supabase
-        .from('proposal_templates')
-        .select('*')
-        .eq('is_default', true)
-        .single();
-      
-      if (!defaultTemplateError) {
-        template = defaultTemplate;
-      }
-    }
-    
-    // In a real implementation, this would use AI to generate a customized proposal
-    const proposalContent = template ? template.content : 'Default proposal content...';
-    
-    return {
-      content: proposalContent,
-      opportunity,
-      template
-    };
+    toast.success('Proposal generated');
+    return proposalContent;
   } catch (error) {
     console.error('Error generating proposal:', error);
     toast.error('Failed to generate proposal');
-    return null;
+    return '';
   }
 }
 
 /**
  * Save a proposal template
  */
-export async function saveProposalTemplate(templateData: any) {
+export async function saveProposalTemplate(
+  name: string,
+  content: string,
+  userId: string
+): Promise<boolean> {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('proposal_templates')
-      .insert(templateData)
-      .select()
-      .single();
+      .insert({
+        name,
+        content,
+        user_id: userId
+      });
     
     if (error) throw error;
     
     toast.success('Proposal template saved');
-    return data;
+    return true;
   } catch (error) {
     console.error('Error saving proposal template:', error);
     toast.error('Failed to save proposal template');
-    return null;
+    return false;
   }
 }

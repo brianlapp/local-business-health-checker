@@ -1,5 +1,5 @@
 
-export interface LocalBusiness {
+export interface Business {
   id: string;
   name: string;
   website?: string;
@@ -12,18 +12,46 @@ export interface LocalBusiness {
   };
   status: 'discovered' | 'contacted' | 'responded' | 'meeting' | 'proposal' | 'client' | 'lost';
   potential_value?: number;
-  last_contacted_at?: string;
-  follow_up_date?: string;
-  notes?: string;
-  created_at: string;
-  updated_at: string;
+  score?: number;
+  cms?: string;
+  speedScore?: number;
+  lighthouseScore?: number;
+  gtmetrixScore?: number;
+  lighthouseReportUrl?: string;
+  gtmetrixReportUrl?: string;
+  lastLighthouseScan?: string;
+  lastGtmetrixScan?: string;
+  lastChecked?: string;
+  last_checked?: string;
+  is_mobile_friendly?: boolean;
+  issues?: {
+    speedIssues?: boolean;
+    outdatedCMS?: boolean;
+    noSSL?: boolean;
+    notMobileFriendly?: boolean;
+    badFonts?: boolean;
+  };
+}
+
+export interface ScanDebugInfo {
+  requestUrl?: string;
+  responseHeaders?: Record<string, string>;
+  statusCode?: number;
+  processingTime?: number;
+  parsedElements?: number;
+  errors?: string[];
+  warnings?: string[];
 }
 
 export interface BusinessScanResponse {
-  businesses: LocalBusiness[];
+  businesses: Business[];
   count: number;
   location: string;
   industry?: string;
   error?: string;
   message?: string;
+  test_mode?: boolean;
+  troubleshooting?: string;
+  source?: string;
+  debugInfo?: ScanDebugInfo;
 }

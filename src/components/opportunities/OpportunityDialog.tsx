@@ -33,6 +33,11 @@ const OpportunityDialog: React.FC<OpportunityDialogProps> = ({
     handleSubmit 
   } = useOpportunityForm(opportunity, user?.id, onSuccess);
 
+  // Type assertion for setSource to align with the expected type
+  const setSourceTyped = (value: "job_board" | "recruiting_agency" | "direct_client" | "other") => {
+    formValues.setSource(value);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[525px]">
@@ -49,7 +54,7 @@ const OpportunityDialog: React.FC<OpportunityDialogProps> = ({
               description={formValues.description}
               setDescription={formValues.setDescription}
               source={formValues.source}
-              setSource={formValues.setSource}
+              setSource={setSourceTyped}
               sourceUrl={formValues.sourceUrl}
               setSourceUrl={formValues.setSourceUrl}
               status={formValues.status}

@@ -1,60 +1,115 @@
 
-import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { Opportunity } from '@/types/opportunity';
+import { toast } from 'sonner';
+
+export interface JobListing {
+  id: string;
+  title: string;
+  company: string;
+  location: string;
+  description: string;
+  url: string;
+  posted_date: string;
+  budget_min?: number;
+  budget_max?: number;
+  skills?: string[];
+  is_remote?: boolean;
+  source: string;
+}
+
+export interface JobBoardResponse {
+  jobs: JobListing[];
+  count: number;
+  error?: string;
+  message?: string;
+}
 
 /**
- * Search for job opportunities across various job boards
+ * Search for job listings across various platforms
  */
-export async function searchJobs(query: string, location: string = '', source: string = 'all') {
+export async function searchJobs(
+  query: string, 
+  location?: string, 
+  remote?: boolean
+): Promise<JobBoardResponse> {
   try {
-    console.log(`Searching jobs with query: ${query}, location: ${location}, source: ${source}`);
+    console.log(`Searching for jobs with query: ${query}, location: ${location}, remote: ${remote}`);
     
-    // This is a placeholder - in a real implementation, this would connect to various job board APIs
+    // This would connect to real job board APIs in production
+    // For now, return mock data
+    const mockJobs: JobListing[] = [
+      {
+        id: 'job-1',
+        title: 'Senior Frontend Developer',
+        company: 'Tech Solutions Inc.',
+        location: 'Toronto, ON',
+        description: 'Looking for a skilled frontend developer with React experience...',
+        url: 'https://example.com/job/1',
+        posted_date: new Date().toISOString(),
+        budget_min: 80000,
+        budget_max: 120000,
+        skills: ['React', 'TypeScript', 'CSS'],
+        is_remote: true,
+        source: 'LinkedIn'
+      },
+      {
+        id: 'job-2',
+        title: 'UI/UX Designer',
+        company: 'Creative Agency',
+        location: 'Vancouver, BC',
+        description: 'Creative agency seeking talented UI/UX designer...',
+        url: 'https://example.com/job/2',
+        posted_date: new Date().toISOString(),
+        budget_min: 70000,
+        budget_max: 90000,
+        skills: ['Figma', 'Adobe XD', 'UI Design'],
+        is_remote: false,
+        source: 'Indeed'
+      }
+    ];
+    
     return {
-      jobs: [],
-      count: 0,
-      query,
-      location,
-      source
+      jobs: mockJobs,
+      count: mockJobs.length
     };
   } catch (error) {
     console.error('Error searching jobs:', error);
-    toast.error('Failed to search jobs');
+    toast.error('Failed to search for jobs');
     return {
       jobs: [],
       count: 0,
-      query,
-      location,
-      source,
-      error: 'Failed to search jobs'
+      error: 'Failed to search for jobs'
     };
   }
 }
 
 /**
- * Save a job from a job board as a potential opportunity
+ * Save a job listing as an opportunity
  */
-export async function saveJobAsOpportunity(jobData: any): Promise<Opportunity | null> {
+export async function saveJobAsOpportunity(job: JobListing, userId: string): Promise<Opportunity | null> {
   try {
-    // Convert job data to opportunity format
-    const opportunityData = {
-      title: jobData.title,
-      description: jobData.description,
+    const newOpportunity: Omit<Opportunity, 'id'> = {
+      title: job.title,
+      description: job.description,
       source: 'job_board',
-      source_id: jobData.id,
-      source_url: jobData.url,
-      client_name: jobData.company,
-      location: jobData.location,
-      is_remote: jobData.remote || false,
-      skills: jobData.skills || [],
-      status: 'new'
+      source_id: job.id,
+      source_url: job.url,
+      client_name: job.company,
+      location: job.location,
+      is_remote: job.is_remote,
+      budget_min: job.budget_min,
+      budget_max: job.budget_max,
+      status: 'new',
+      skills: job.skills,
+      discovered_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
     
-    // Save to database
     const { data, error } = await supabase
       .from('opportunities')
-      .insert(opportunityData)
+      .insert(newOpportunity)
       .select()
       .single();
     

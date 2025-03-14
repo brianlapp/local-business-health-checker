@@ -2,7 +2,26 @@
 // This file serves as a facade to the underlying specialized services
 // It re-exports functions from the specialized services to maintain backward compatibility
 
-// Export from the new discovery services
+// Import from business CRUD services
+import {
+  getBusinesses,
+  clearAllBusinesses,
+  clearSelectedBusinesses,
+  addBusiness,
+  updateBusiness
+} from './businessCrudService';
+
+// Import from scanning services
+import {
+  scanBusinessesInArea,
+  scanWithLighthouse,
+  scanWithGTmetrix,
+  scanWithBuiltWith,
+  getBusinessesNeedingRealScores,
+  getGTmetrixUsage
+} from './scanningService';
+
+// Import from discovery services
 import {
   searchLocalBusinesses,
   addLocalBusiness,
@@ -19,7 +38,7 @@ import {
   saveJobAsOpportunity 
 } from './discovery/jobBoardService';
 
-// Export from the outreach services
+// Import from outreach services
 import {
   generateProposal,
   saveProposalTemplate
@@ -27,6 +46,21 @@ import {
 
 // Re-export everything
 export {
+  // Business CRUD Operations
+  getBusinesses,
+  clearAllBusinesses,
+  clearSelectedBusinesses,
+  addBusiness,
+  updateBusiness,
+  
+  // Scanning Operations
+  scanBusinessesInArea,
+  scanWithLighthouse,
+  scanWithGTmetrix,
+  scanWithBuiltWith,
+  getBusinessesNeedingRealScores,
+  getGTmetrixUsage,
+  
   // Business Discovery Operations
   searchLocalBusinesses,
   addLocalBusiness,
