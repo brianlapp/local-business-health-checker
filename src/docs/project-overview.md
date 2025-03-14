@@ -1,96 +1,107 @@
 
-# Local Business Website Scanner (Shit Score™ Generator)
+# Freelance Opportunity Finder & Outreach Automation
 
 ## 🎯 Goal
-Automate local business discovery, scan their websites for performance & tech issues, and rank them based on how badly they need a rebuild.
+Create an automated system to discover potential clients, job opportunities, and recruitment agencies, evaluate their potential, and facilitate personalized outreach.
 
-## 📌 Features
-- **Business Discovery** → Scrape business names & websites from Google Maps API.
-- **Website Analysis** → Use GTmetrix & BuiltWith APIs to analyze speed, tech stack, and UX issues.
-- **Ranking System (Shit Score™)** → Assigns a 0-100 score based on:
-  - 🚨 Slow loading times (+30 points)
-  - 🚨 Outdated CMS (Joomla, old WordPress, Wix) (+20 points)
-  - 🚨 Missing SSL (HTTP Only) (+15 points)
-  - 🚨 Non-mobile-friendly layouts (+15 points)
-  - 🎨 Comic Sans/ugly fonts (bonus +10 points)
-- **Dashboard UI** → Displays ranked businesses inside Loveable.dev.
-- **One-Click Outreach** → Generates emails for businesses needing help.
+## 📌 Core Features
+- **Multi-Source Opportunity Discovery** → Scan job boards, recruitment agencies, and local businesses.
+- **Smart Opportunity Evaluation** → Analyze and score opportunities based on match with skills, rates, and timeline.
+- **Automated Outreach Management** → Generate personalized proposals, track communications, and schedule follow-ups.
+- **Agency Competition Analysis** → Identify local agencies' clients for potential outreach.
+- **Performance Analytics** → Track outreach success rates and ROI on time invested.
 
 ## 🛠 Tech Stack
 - **Frontend:** React + Tailwind CSS + shadcn/ui
-- **Backend:** Loveable.dev (handles API calls & automation)
-- **Database:** Supabase (stores business info & scan results)
+- **Backend:** Supabase (database, edge functions, authentication)
 - **APIs Used:** 
-  - **Google Maps API** (business scraping)
-  - **GTmetrix API** (performance scanning)
-  - **BuiltWith API** (tech stack detection)
+  - **Google Maps API** (business & agency discovery)
+  - **Job Board APIs** (Indeed, Upwork, etc.)
+  - **Email API** (for automated outreach)
+  - **GPT API** (for personalized proposal generation)
 
-## 💰 Cost Constraint
-🚀 **$0 UNTIL WE LAND A CLIENT!**  
-- Staying within **free API limits**  
-- Using **Loveable.dev credits**  
-- Leveraging **existing Netlify hosting**
+## 💰 Primary Revenue Streams
+1. **Direct Client Acquisition** - Local businesses needing website improvements
+2. **Agency Placements** - Recruitment agencies finding positions
+3. **Job Board Opportunities** - Direct applications to posted positions
 
 ## 📂 Project Structure
 ```
 /src
-  ├─ components/            # React components
-  │  ├─ BusinessCard.tsx   # Individual business display
-  │  ├─ Dashboard.tsx      # Main dashboard view
-  │  ├─ ScoreDisplay.tsx   # Shit Score™ visualization
-  │  └─ Header.tsx         # App header
+  ├─ components/                 # React components
+  │  ├─ dashboard/              # Dashboard views
+  │  ├─ opportunities/          # Opportunity tracking
+  │  ├─ outreach/               # Email and proposal generation
+  │  └─ analytics/              # Performance reporting
   │
-  ├─ services/             # API integrations
-  │  ├─ gtmetrix.ts       # Speed & performance analysis
-  │  ├─ builtwith.ts      # CMS & tech detection
-  │  └─ maps.ts           # Business URL scraping
+  ├─ services/                  # API integrations
+  │  ├─ discovery/              # Opportunity discovery services
+  │  │  ├─ jobBoards.ts         # Indeed, Upwork APIs
+  │  │  ├─ agencyFinder.ts      # Google Maps integration
+  │  │  └─ businessScanner.ts   # Business website analysis
+  │  │
+  │  ├─ outreach/               # Communication services
+  │  │  ├─ emailGenerator.ts    # AI-powered email creation
+  │  │  ├─ proposalBuilder.ts   # Custom proposal generation
+  │  │  └─ followupScheduler.ts # Automated follow-ups
+  │  │
+  │  └─ analytics/              # Performance tracking
+  │     ├─ opportunityMetrics.ts # Success rate analysis
+  │     └─ timeInvestment.ts     # ROI calculation
   │
-  ├─ types/               # TypeScript definitions
-  │  └─ business.ts       # Business data types
+  ├─ types/                     # TypeScript definitions
+  │  ├─ opportunity.ts          # Opportunity data types
+  │  ├─ outreach.ts             # Communication data types
+  │  └─ analytics.ts            # Metrics data types
   │
-  └─ utils/               # Helper functions
-     ├─ score.ts         # Score calculation logic
-     └─ email.ts         # Email template generation
+  └─ utils/                     # Helper functions
+     ├─ scoring.ts              # Opportunity scoring logic
+     └─ ai.ts                   # AI integration utilities
 ```
-
-## ⚡ Shit Score™ Calculation
-Score is calculated by adding penalty points:
-1. Page Speed Issues:
-   - Load Time > 5s: +30 points
-   - Load Time 3-5s: +20 points
-   - Load Time 2-3s: +10 points
-
-2. CMS/Platform:
-   - Wix/Squarespace: +20 points
-   - Outdated WordPress (< 5.0): +20 points
-   - Joomla/Drupal (old versions): +20 points
-
-3. Technical Issues:
-   - No SSL: +15 points
-   - Not Mobile-Friendly: +15 points
-   - Default/Bad Fonts: +10 points
-
-Final score is the sum of all penalties (max 100).
-Higher score = More urgent rebuild needed.
 
 ## 🔄 Workflow
 1. **Discovery:**
-   - Daily scan of Google Maps for new businesses
-   - Store basic info in Supabase
+   - Continuous scanning of job boards
+   - Regular discovery of recruitment agencies
+   - Identification of local businesses in target areas
 
-2. **Analysis:**
-   - Run GTmetrix scan on each new site
-   - Check BuiltWith for tech stack
-   - Calculate Shit Score™
+2. **Evaluation:**
+   - Scoring opportunities against personal criteria
+   - Filtering based on skills, rates, and project timeline
+   - Prioritizing high-potential leads
 
-3. **Review & Outreach:**
-   - Manual verification of high-scoring sites
-   - One-click email generation
-   - Track outreach status
+3. **Outreach:**
+   - Generating personalized proposals and emails
+   - Managing follow-up schedule
+   - Tracking responses and engagement
 
-## 🎯 Next Steps
-1. Set up Supabase tables
-2. Implement basic UI dashboard
-3. Add API integrations
-4. Create automated scanning
-5. Add email templates
+4. **Management:**
+   - Tracking opportunity pipeline
+   - Managing active projects
+   - Analyzing success metrics
+
+## 🎯 Implementation Plan
+1. **Phase 1: Core Infrastructure**
+   - Set up Supabase schema
+   - Create basic UI
+   - Implement authentication
+
+2. **Phase 2: Job Board Integration**
+   - Connect to Indeed API
+   - Build Upwork scraper
+   - Implement opportunity scoring
+
+3. **Phase 3: Agency Discovery**
+   - Implement Google Maps integration
+   - Create agency database
+   - Build bulk outreach system
+
+4. **Phase 4: Local Business Analysis**
+   - Identify local businesses
+   - Analyze website quality
+   - Track agency relationships
+
+5. **Phase 5: AI-Powered Outreach**
+   - Integrate GPT for proposal generation
+   - Implement email automation
+   - Create follow-up scheduling
