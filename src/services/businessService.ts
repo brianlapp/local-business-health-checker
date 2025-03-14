@@ -29,6 +29,12 @@ import { scanBusinessesInArea } from './scanningService';
 import { scanWithGoogleMaps } from './scanning/googleMapsScanner';
 import { scanWithWebScraper } from './scanning/webScraperService';
 
+// Export from the new job board service
+import { 
+  searchJobs, 
+  saveJobAsOpportunity 
+} from './discovery/jobBoardService';
+
 // Re-export everything
 export {
   // CRUD Operations
@@ -49,6 +55,10 @@ export {
   scanBusinessesInArea,
   scanWithGoogleMaps,
   scanWithWebScraper,
+  
+  // Job Board Operations
+  searchJobs,
+  saveJobAsOpportunity,
   
   // Utility Functions
   generateIssues,
