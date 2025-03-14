@@ -1,40 +1,50 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { cn } from '@/lib/utils';
-import { Bell, Settings, Map } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Home, Map, Plus, Briefcase } from 'lucide-react';
 
-interface HeaderProps {
-  className?: string;
-}
+const Header: React.FC = () => {
+  const location = useLocation();
+  
+  const isActive = (path: string) => {
+    return location.pathname === path;
+  };
 
-const Header: React.FC<HeaderProps> = ({ className }) => {
   return (
-    <header className={cn('border-b bg-white sticky top-0 z-10', className)}>
-      <div className="container py-4 flex items-center justify-between">
+    <header className="bg-white border-b">
+      <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         <div className="flex items-center">
-          <h1 className="text-xl font-semibold">
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-600">
-              BizScan
-            </span>
-            <span className="text-xs text-muted-foreground ml-2">BETA</span>
-          </h1>
+          <h1 className="text-xl font-bold mr-8">Freelance Finder</h1>
+          <nav className="hidden md:flex space-x-4">
+            <Link to="/">
+              <Button variant={isActive('/') ? 'default' : 'ghost'} className="flex items-center">
+                <Home className="mr-2 h-4 w-4" />
+                Dashboard
+              </Button>
+            </Link>
+            <Link to="/opportunities">
+              <Button variant={isActive('/opportunities') ? 'default' : 'ghost'} className="flex items-center">
+                <Briefcase className="mr-2 h-4 w-4" />
+                Opportunities
+              </Button>
+            </Link>
+            <Link to="/map-scanner">
+              <Button variant={isActive('/map-scanner') ? 'default' : 'ghost'} className="flex items-center">
+                <Map className="mr-2 h-4 w-4" />
+                Map Scanner
+              </Button>
+            </Link>
+            <Link to="/add-business">
+              <Button variant={isActive('/add-business') ? 'default' : 'ghost'} className="flex items-center">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Business
+              </Button>
+            </Link>
+          </nav>
         </div>
-        
-        <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon">
-            <Bell className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon">
-            <Settings className="h-5 w-5" />
-          </Button>
-          <Link to="/map-scanner">
-            <Button className="hidden sm:flex">
-              <Map className="mr-2 h-4 w-4" />
-              Scan Area
-            </Button>
-          </Link>
+        <div className="flex items-center">
+          {/* Future auth or profile controls would go here */}
         </div>
       </div>
     </header>
