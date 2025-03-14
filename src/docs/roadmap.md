@@ -1,41 +1,43 @@
 
-# Roadmap for MVP Launch (5-Day Sprint)
+# Roadmap for Freelance Opportunity Finder
 
-## **🚀 Day 1: Supabase Setup & Business Data**
-✅ Set up **Supabase DB**
-✅ Manually collect **10-20 business websites**
-✅ Verify **Web Scraping Approach for Business Discovery**
+## **Phase 1: Core Infrastructure & Authentication ✅**
+- Set up Supabase schema ✅
+- Create basic UI ✅
+- Implement authentication ✅
 
-## **🚀 Day 2: Website Scanning APIs**
-✅ Integrate **GTmetrix API** (Performance)
-✅ Integrate **BuiltWith API** (Tech stack)
-✅ Store **scan results in Supabase**
+## **Phase 2: Opportunity Management ✅**
+- Create opportunity data model ✅
+- Implement CRUD operations ✅
+- Build opportunity listing interface ✅
+- Add filtering and sorting capabilities ✅
 
-## **🚀 Day 3: Scoring System & Dashboard**
-✅ Implement **Shit Score™ (0-100)**
-✅ Create **Loveable.dev UI for viewing businesses**
-✅ Add **"Verify Before Outreach" button**
-✅ Implement **Dual Scanning System** (Lighthouse + GTmetrix)
-✅ Refactor **UI Components** for better maintainability
+## **Phase 3: Discovery System 🔲**
+- Connect to job board APIs
+- Integrate web scraping for opportunities
+- Build agency and business discovery
 
-## **🚀 Day 4: Manual Outreach Support**
-✅ Create **personalized email template generator**
-✅ Add "**Review Website**" functionality
-✅ Improve **business data collection**
-✅ Replace **Google Maps API with web scraping** to avoid billing issues
-✅ Fix **web scraper URL formatting** and enhance error handling
+## **Phase 4: Evaluation Tools 🔲**
+- Implement smart scoring system
+- Create skills and requirements matching
+- Build rate and timeline analysis
+- Add priority ranking system
 
-## **🚀 Day 5: Automation & Testing**
-✅ Fully automate **business scraping**
-✅ Add **alternative scraping sources** for reliability
-✅ Implement **fallback mechanisms** to ensure business data
-🔲 Schedule **batch scans (10-20 per run)**
-🔲 Final debugging & outreach test
-🔲 Add **comprehensive error handling**
+## **Phase 5: Outreach Management 🔲**
+- Implement AI-powered proposal generation
+- Build automated email outreach
+- Create follow-up scheduling
+- Add response tracking
 
-## **Future Development (V2)**
-🔲 Implement **additional web scraping sources** (Chamber of Commerce, Yelp, etc.)
-🔲 Implement **automated outreach system**
-🔲 Build **follow-up scheduling system**
-🔲 Create **outreach tracking in Supabase**
-🔲 Add **outreach analytics**
+## **Phase 6: Analytics & Tracking 🔲**
+- Build success rate monitoring
+- Implement ROI calculation
+- Create time investment analysis
+- Add performance metrics dashboard
+
+## **Current Sprint Focus: Discovery System**
+- [ ] Integrate with Indeed API
+- [ ] Build web scraper for freelance job boards
+- [ ] Implement local business discovery
+- [ ] Create data storage for discovered opportunities
+
