@@ -112,6 +112,21 @@ export async function searchJobs(
  * Convert a job listing to an opportunity
  */
 export function convertJobToOpportunity(job: JobListing): Partial<Opportunity> {
+  // Parse salary string to extract budget range if possible
+  let budgetMin: number | undefined = undefined;
+  let budgetMax: number | undefined = undefined;
+  
+  if (job.salary) {
+    // Simple regex to extract numbers from salary string
+    const numbers = job.salary.match(/\d+/g);
+    if (numbers && numbers.length >= 1) {
+      budgetMin = parseInt(numbers[0]);
+    }
+    if (numbers && numbers.length >= 2) {
+      budgetMax = parseInt(numbers[1]);
+    }
+  }
+  
   return {
     title: job.title,
     client_name: job.company,
@@ -119,11 +134,13 @@ export function convertJobToOpportunity(job: JobListing): Partial<Opportunity> {
     description: job.description,
     source_url: job.url,
     source: job.source,
-    estimated_budget: job.salary,
-    skills_required: job.skills?.join(', '),
-    opportunity_type: 'job',
+    budget_min: budgetMin, // Use correct property name from Opportunity type
+    budget_max: budgetMax, // Use correct property name from Opportunity type
+    skills: job.skills || [], // Convert skills array to match Opportunity type
+    is_remote: job.location?.toLowerCase().includes('remote'),
     status: 'new',
-    priority: 'medium',
+    is_priority: false,
+    discovered_at: job.datePosted || new Date().toISOString(),
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
