@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, Save } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Card,
   CardHeader,
@@ -48,6 +49,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const { user } = useAuth();
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -69,13 +71,14 @@ const Profile = () => {
 
   useEffect(() => {
     const fetchProfile = async () => {
+      if (!user) return;
+      
       setLoading(true);
       try {
-        // In a real app, we would use the user's ID
-        // This is a placeholder until authentication is implemented
         const { data, error } = await supabase
           .from('user_profiles')
           .select('*')
+          .eq('id', user.id)
           .maybeSingle();
 
         if (error) throw error;
@@ -108,9 +111,14 @@ const Profile = () => {
     };
 
     fetchProfile();
-  }, [form]);
+  }, [user, form]);
 
   const onSubmit = async (data: ProfileFormValues) => {
+    if (!user) {
+      toast.error('You must be logged in to update your profile');
+      return;
+    }
+    
     setSaving(true);
     try {
       // Process skills into an array
@@ -140,19 +148,15 @@ const Profile = () => {
         response = await supabase
           .from('user_profiles')
           .update(profileData)
-          .eq('id', profile.id);
+          .eq('id', user.id);
       } else {
         // Create new profile
-        // In a real app, we would use the authenticated user's ID
-        // For now, generate a UUID as placeholder
         response = await supabase
           .from('user_profiles')
           .insert({
             ...profileData,
-            // We need an email since it's required in the schema
-            email: 'example@example.com',
-            // In a real app with auth, we would use auth.uid()
-            id: crypto.randomUUID()
+            id: user.id,
+            email: user.email || '',
           });
       }
 
@@ -164,6 +168,7 @@ const Profile = () => {
       const { data: updatedProfile } = await supabase
         .from('user_profiles')
         .select('*')
+        .eq('id', user.id)
         .maybeSingle();
         
       if (updatedProfile) {
