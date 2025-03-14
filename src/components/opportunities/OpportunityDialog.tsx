@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -40,7 +41,7 @@ const OpportunityDialog: React.FC<OpportunityDialogProps> = ({
   const [description, setDescription] = useState(opportunity?.description || '');
   const [source, setSource] = useState(opportunity?.source || 'job_board');
   const [sourceUrl, setSourceUrl] = useState(opportunity?.source_url || '');
-  const [status, setStatus] = useState(opportunity?.status || 'new');
+  const [status, setStatus] = useState<Opportunity['status']>(opportunity?.status || 'new');
   const [clientName, setClientName] = useState(opportunity?.client_name || '');
   const [clientWebsite, setClientWebsite] = useState(opportunity?.client_website || '');
   const [location, setLocation] = useState(opportunity?.location || '');
@@ -160,7 +161,10 @@ const OpportunityDialog: React.FC<OpportunityDialogProps> = ({
               <Label htmlFor="source" className="text-right">
                 Source
               </Label>
-              <Select value={source} onValueChange={setSource}>
+              <Select 
+                value={source} 
+                onValueChange={(value: string) => setSource(value)}
+              >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
@@ -190,7 +194,10 @@ const OpportunityDialog: React.FC<OpportunityDialogProps> = ({
               <Label htmlFor="status" className="text-right">
                 Status
               </Label>
-              <Select value={status} onValueChange={setStatus}>
+              <Select 
+                value={status} 
+                onValueChange={(value: Opportunity['status']) => setStatus(value)}
+              >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
@@ -279,7 +286,10 @@ const OpportunityDialog: React.FC<OpportunityDialogProps> = ({
                   onChange={(e) => setBudgetMax(e.target.value ? parseFloat(e.target.value) : undefined)}
                   className="w-1/2"
                 />
-                <Select value={currency} onValueChange={setCurrency}>
+                <Select 
+                  value={currency} 
+                  onValueChange={(value: string) => setCurrency(value)}
+                >
                   <SelectTrigger className="w-[100px]">
                     <SelectValue placeholder="Currency" />
                   </SelectTrigger>
