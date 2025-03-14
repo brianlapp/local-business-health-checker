@@ -7,7 +7,6 @@ import Header from './components/Header';
 import Index from './pages/Index';
 import NotFound from './pages/NotFound';
 import MapScanner from './pages/MapScanner';
-import AddBusiness from './pages/AddBusiness';
 import Opportunities from './pages/Opportunities';
 import Profile from './pages/Profile';
 import Auth from './pages/Auth';
@@ -46,12 +45,6 @@ function App() {
             <Route path="/map-scanner" element={
               <ProtectedRoute>
                 <MapScanner />
-              </ProtectedRoute>
-            } />
-            
-            <Route path="/add-business" element={
-              <ProtectedRoute>
-                <AddBusiness />
               </ProtectedRoute>
             } />
             

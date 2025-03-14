@@ -1,179 +1,70 @@
 
-import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { invokeEdgeFunction } from '../api/supabaseApiClient';
+import { supabase } from '@/lib/supabase';
 import { Opportunity } from '@/types/opportunity';
 
 /**
- * Types for job board responses
+ * Search for job opportunities across various job boards
  */
-export interface JobListing {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  description: string;
-  url: string;
-  salary?: string;
-  datePosted: string;
-  skills?: string[];
-  source: string;
-}
-
-export interface JobBoardResponse {
-  jobs: JobListing[];
-  count: number;
-  source: string;
-  query: string;
-  timestamp: string;
-  error?: string;
-  message?: string;
-}
-
-/**
- * Search for jobs from various job boards
- * @param query - Search term (e.g. "react developer")
- * @param location - Location (e.g. "remote" or "new york")
- * @param source - Job board source (e.g. "indeed", "linkedin", or "all")
- */
-export async function searchJobs(
-  query: string,
-  location: string = 'remote',
-  source: string = 'all'
-): Promise<JobBoardResponse> {
+export async function searchJobs(query: string, location: string = '', source: string = 'all') {
   try {
-    console.log(`Searching for "${query}" jobs in "${location}" from "${source}"`);
+    console.log(`Searching jobs with query: ${query}, location: ${location}, source: ${source}`);
     
-    const { data, error } = await invokeEdgeFunction('job-board-search', { 
-      query, 
-      location,
-      source 
-    });
-    
-    if (error) {
-      console.error('Job search error:', error);
-      toast.error(`Error searching for jobs: ${error.message}`);
-      return {
-        jobs: [],
-        count: 0,
-        source: source,
-        query: query,
-        timestamp: new Date().toISOString(),
-        error: error.message,
-        message: 'Failed to search for jobs'
-      };
-    }
-    
-    if (data.error) {
-      console.error('Job search API error:', data.error);
-      toast.error(data.message || 'Failed to search for jobs');
-      return {
-        jobs: [],
-        count: 0,
-        source: source,
-        query: query,
-        timestamp: new Date().toISOString(),
-        error: data.error,
-        message: data.message || 'Failed to search for jobs'
-      };
-    }
-    
-    console.log(`Found ${data.jobs?.length || 0} jobs from ${source}`);
-    
-    if (data.jobs?.length) {
-      toast.success(`Found ${data.jobs.length} job opportunities`);
-    } else {
-      toast.info('No jobs found matching your criteria');
-    }
-    
-    return {
-      jobs: data.jobs || [],
-      count: data.jobs?.length || 0,
-      source: data.source || source,
-      query: query,
-      timestamp: data.timestamp || new Date().toISOString()
-    };
-  } catch (error: any) {
-    console.error('Error searching for jobs:', error);
-    toast.error(`Error searching for jobs: ${error.message || 'Unknown error'}`);
+    // This is a placeholder - in a real implementation, this would connect to various job board APIs
     return {
       jobs: [],
       count: 0,
-      source: source,
-      query: query,
-      timestamp: new Date().toISOString(),
-      error: error.message,
-      message: 'Failed to search for jobs'
+      query,
+      location,
+      source
+    };
+  } catch (error) {
+    console.error('Error searching jobs:', error);
+    toast.error('Failed to search jobs');
+    return {
+      jobs: [],
+      count: 0,
+      query,
+      location,
+      source,
+      error: 'Failed to search jobs'
     };
   }
 }
 
 /**
- * Convert a job listing to an opportunity
+ * Save a job from a job board as a potential opportunity
  */
-export function convertJobToOpportunity(job: JobListing): Partial<Opportunity> {
-  // Parse salary string to extract budget range if possible
-  let budgetMin: number | undefined = undefined;
-  let budgetMax: number | undefined = undefined;
-  
-  if (job.salary) {
-    // Simple regex to extract numbers from salary string
-    const numbers = job.salary.match(/\d+/g);
-    if (numbers && numbers.length >= 1) {
-      budgetMin = parseInt(numbers[0]);
-    }
-    if (numbers && numbers.length >= 2) {
-      budgetMax = parseInt(numbers[1]);
-    }
-  }
-  
-  return {
-    title: job.title,
-    client_name: job.company,
-    location: job.location,
-    description: job.description,
-    source_url: job.url,
-    source: job.source,
-    budget_min: budgetMin, // Use correct property name from Opportunity type
-    budget_max: budgetMax, // Use correct property name from Opportunity type
-    skills: job.skills || [], // Convert skills array to match Opportunity type
-    is_remote: job.location?.toLowerCase().includes('remote'),
-    status: 'new',
-    is_priority: false,
-    discovered_at: job.datePosted || new Date().toISOString(),
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
-}
-
-/**
- * Save a job listing as an opportunity
- */
-export async function saveJobAsOpportunity(
-  job: JobListing, 
-  userId: string
-): Promise<{ success: boolean; opportunityId?: string; error?: string }> {
+export async function saveJobAsOpportunity(jobData: any): Promise<Opportunity | null> {
   try {
+    // Convert job data to opportunity format
     const opportunityData = {
-      ...convertJobToOpportunity(job),
-      user_id: userId
+      title: jobData.title,
+      description: jobData.description,
+      source: 'job_board',
+      source_id: jobData.id,
+      source_url: jobData.url,
+      client_name: jobData.company,
+      location: jobData.location,
+      is_remote: jobData.remote || false,
+      skills: jobData.skills || [],
+      status: 'new'
     };
     
+    // Save to database
     const { data, error } = await supabase
       .from('opportunities')
       .insert(opportunityData)
-      .select('id')
+      .select()
       .single();
     
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
     
     toast.success('Job saved as opportunity');
-    return { success: true, opportunityId: data.id };
-  } catch (error: any) {
+    return data as Opportunity;
+  } catch (error) {
     console.error('Error saving job as opportunity:', error);
-    toast.error(`Error saving opportunity: ${error.message}`);
-    return { success: false, error: error.message };
+    toast.error('Failed to save job as opportunity');
+    return null;
   }
 }

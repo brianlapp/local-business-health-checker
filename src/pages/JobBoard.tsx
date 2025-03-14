@@ -1,72 +1,60 @@
 
 import React, { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { JobListing, JobBoardResponse, searchJobs, saveJobAsOpportunity } from '@/services/discovery/jobBoardService';
-import { toast } from 'sonner';
-import JobSearchForm from '@/components/discovery/JobSearchForm';
-import JobSearchResults from '@/components/discovery/JobSearchResults';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
 
 const JobBoard: React.FC = () => {
-  const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [searchResults, setSearchResults] = useState<JobBoardResponse | null>(null);
-  const [savedJobs, setSavedJobs] = useState<Set<string>>(new Set());
-
-  const handleSearch = async (query: string, location: string, source: string) => {
-    setIsLoading(true);
-    try {
-      const results = await searchJobs(query, location, source);
-      setSearchResults(results);
-    } catch (error) {
-      console.error('Error searching for jobs:', error);
-      toast.error('Failed to search for jobs');
-    } finally {
-      setIsLoading(false);
-    }
+  const [searchQuery, setSearchQuery] = useState('');
+  const [location, setLocation] = useState('');
+  
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Implement job search functionality
+    console.log('Searching for:', searchQuery, 'in', location);
   };
-
-  const handleSaveJob = async (job: JobListing) => {
-    if (!user) {
-      toast.error('You must be logged in to save jobs');
-      return;
-    }
-
-    try {
-      const result = await saveJobAsOpportunity(job, user.id);
-      
-      if (result.success) {
-        setSavedJobs((prev) => new Set([...prev, job.id]));
-        toast.success('Job saved as opportunity');
-      } else {
-        toast.error(`Failed to save job: ${result.error}`);
-      }
-    } catch (error) {
-      console.error('Error saving job:', error);
-      toast.error('Failed to save job');
-    }
-  };
-
+  
   return (
     <div className="container py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Job Board</h1>
         <p className="text-muted-foreground">
-          Search for job opportunities across multiple platforms and save them to your opportunities list.
+          Search for freelance opportunities across multiple job platforms
         </p>
       </div>
-
-      <div className="mb-8">
-        <JobSearchForm onSearch={handleSearch} isLoading={isLoading} />
+      
+      <form onSubmit={handleSearch} className="mb-8">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1">
+            <Input
+              type="text"
+              placeholder="Skills, keywords, job titles..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          
+          <div className="flex-1">
+            <Input
+              type="text"
+              placeholder="Location (optional)"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          
+          <Button type="submit">
+            <Search className="mr-2 h-4 w-4" />
+            Search Jobs
+          </Button>
+        </div>
+      </form>
+      
+      <div className="text-center py-16 text-muted-foreground">
+        <p>Enter search terms above to find freelance opportunities</p>
       </div>
-
-      {searchResults && (
-        <JobSearchResults 
-          results={searchResults} 
-          onSaveJob={handleSaveJob}
-          savedJobs={savedJobs}
-          isLoggedIn={!!user}
-        />
-      )}
     </div>
   );
 };

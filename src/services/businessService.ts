@@ -1,67 +1,46 @@
 
-// This file serves as a facade to the underlying specialized business services
+// This file serves as a facade to the underlying specialized services
 // It re-exports functions from the specialized services to maintain backward compatibility
 
+// Export from the new discovery services
 import {
-  getBusinesses,
-  clearAllBusinesses,
-  clearSelectedBusinesses,
-  addBusiness,
-  updateBusiness
-} from './businessCrudService';
-
-import {
-  scanWithLighthouse,
-  scanWithGTmetrix,
-  scanWithBuiltWith,
-  getGTmetrixUsage,
-  getBusinessesNeedingRealScores
-} from './businessScanService';
+  searchLocalBusinesses,
+  addLocalBusiness,
+  getLocalBusinesses
+} from './discovery/businessScanService';
 
 import {
-  generateIssues,
-  isCMSOutdated,
-  isWebsiteSecure
-} from './businessUtilsService';
+  findAgencies,
+  addAgency
+} from './discovery/agencyFinderService';
 
-// Also export from the new scanning services
-import { scanBusinessesInArea } from './scanningService';
-import { scanWithGoogleMaps } from './scanning/googleMapsScanner';
-import { scanWithWebScraper } from './scanning/webScraperService';
-
-// Export from the new job board service
 import { 
   searchJobs, 
   saveJobAsOpportunity 
 } from './discovery/jobBoardService';
 
+// Export from the outreach services
+import {
+  generateProposal,
+  saveProposalTemplate
+} from './outreach/proposalService';
+
 // Re-export everything
 export {
-  // CRUD Operations
-  getBusinesses,
-  clearAllBusinesses,
-  clearSelectedBusinesses,
-  addBusiness,
-  updateBusiness,
+  // Business Discovery Operations
+  searchLocalBusinesses,
+  addLocalBusiness,
+  getLocalBusinesses,
   
-  // Scanning Operations
-  scanWithLighthouse,
-  scanWithGTmetrix,
-  scanWithBuiltWith,
-  getGTmetrixUsage,
-  getBusinessesNeedingRealScores,
-  
-  // New scanning APIs
-  scanBusinessesInArea,
-  scanWithGoogleMaps,
-  scanWithWebScraper,
+  // Agency Operations
+  findAgencies,
+  addAgency,
   
   // Job Board Operations
   searchJobs,
   saveJobAsOpportunity,
   
-  // Utility Functions
-  generateIssues,
-  isCMSOutdated,
-  isWebsiteSecure
+  // Proposal Operations
+  generateProposal,
+  saveProposalTemplate
 };
