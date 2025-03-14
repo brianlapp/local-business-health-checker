@@ -1,107 +1,84 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { 
-  Home, 
-  Map, 
-  Plus, 
-  Briefcase, 
-  User,
-  LogOut
-} from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { UserMenu } from './UserMenu';
+import { MobileNavigation } from './MobileNavigation';
+import { Button } from './ui/button';
+import { Menu } from 'lucide-react';
 
 const Header: React.FC = () => {
+  const { isLoggedIn, logout, user } = useAuth();
   const location = useLocation();
-  const { user, signOut } = useAuth();
-  
-  const isActive = (path: string) => {
-    return location.pathname === path;
-  };
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
-  const getInitials = (name: string) => {
-    if (!name) return 'U';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
   };
-
-  const userInitials = user?.user_metadata?.full_name 
-    ? getInitials(user.user_metadata.full_name) 
-    : user?.email?.charAt(0).toUpperCase() || 'U';
 
   return (
-    <header className="bg-white border-b">
-      <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-        <div className="flex items-center">
-          <h1 className="text-xl font-bold mr-8">Freelance Finder</h1>
-          {user && (
-            <nav className="hidden md:flex space-x-4">
-              <Link to="/">
-                <Button variant={isActive('/') ? 'default' : 'ghost'} className="flex items-center">
-                  <Home className="mr-2 h-4 w-4" />
-                  Dashboard
-                </Button>
+    <header className="border-b bg-background">
+      <div className="container flex h-16 items-center justify-between">
+        <div className="flex items-center gap-6">
+          <Link to="/" className="flex items-center gap-2">
+            <span className="text-xl font-bold">Freelance Finder</span>
+          </Link>
+          {isLoggedIn && (
+            <nav className="hidden md:flex items-center gap-6">
+              <Link
+                to="/dashboard"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  location.pathname === "/dashboard" ? "text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                Dashboard
               </Link>
-              <Link to="/opportunities">
-                <Button variant={isActive('/opportunities') ? 'default' : 'ghost'} className="flex items-center">
-                  <Briefcase className="mr-2 h-4 w-4" />
-                  Opportunities
-                </Button>
+              <Link
+                to="/opportunities"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  location.pathname === "/opportunities" ? "text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                Opportunities
               </Link>
-              <Link to="/map-scanner">
-                <Button variant={isActive('/map-scanner') ? 'default' : 'ghost'} className="flex items-center">
-                  <Map className="mr-2 h-4 w-4" />
-                  Map Scanner
-                </Button>
+              <Link
+                to="/job-board"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  location.pathname === "/job-board" ? "text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                Job Board
               </Link>
-              <Link to="/add-business">
-                <Button variant={isActive('/add-business') ? 'default' : 'ghost'} className="flex items-center">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Business
-                </Button>
+              <Link
+                to="/map-scanner"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  location.pathname === "/map-scanner" ? "text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                Map Scanner
               </Link>
             </nav>
           )}
         </div>
-        <div className="flex items-center">
-          {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                  <Avatar>
-                    <AvatarFallback>{userInitials}</AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                  <Link to="/profile" className="cursor-pointer">
-                    <User className="mr-2 h-4 w-4" />
-                    Profile
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={signOut} className="cursor-pointer text-red-600">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Link to="/auth">
-              <Button>Sign In</Button>
-            </Link>
-          )}
-        </div>
+        
+        {isLoggedIn ? (
+          <UserMenu user={user} logout={logout} />
+        ) : (
+          <Link to="/auth">
+            <Button variant="default">Login</Button>
+          </Link>
+        )}
+
+        <Button
+          variant="outline"
+          className="md:hidden"
+          onClick={toggleMobileMenu}
+        >
+          <Menu className="h-4 w-4" />
+        </Button>
       </div>
+      
+      <MobileNavigation isOpen={isMobileMenuOpen} onClose={toggleMobileMenu} />
+      
     </header>
   );
 };
