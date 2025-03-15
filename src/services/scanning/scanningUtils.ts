@@ -1,4 +1,3 @@
-
 import { toast } from 'sonner';
 import { Business, BusinessScanResponse, ScanDebugInfo } from '@/types/business';
 import { generateMockBusinessData } from '../businessProcessingService';
@@ -8,24 +7,17 @@ import { generateMockBusinessData } from '../businessProcessingService';
  */
 export function handleScanError(
   error: any, 
-  location: string | number, 
-  toastId?: string
+  location: string | number
 ): BusinessScanResponse {
   console.error('Scan error:', error);
   
-  if (toastId) {
-    toast.error(`Error: ${error.message || 'Failed to search for businesses'}`, {
-      id: toastId
-    });
-  } else {
-    toast.error(`Error: ${error.message || 'Failed to search for businesses'}`);
-  }
+  toast.error(`Error: ${error.message || 'Failed to search for businesses'}`);
   
   // Convert location to string to ensure type compatibility
   const locationString = String(location);
   
-  // Generate mock businesses
-  const mockBusinesses = generateMockBusinessData([], 'error-fallback', locationString);
+  // Generate mock businesses with correct argument count
+  const mockBusinesses = generateMockBusinessData(locationString);
   
   // Return mock data as a fallback with proper BusinessScanResponse type
   return {

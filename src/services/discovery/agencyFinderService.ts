@@ -37,10 +37,11 @@ export async function findAgencies(location: string): Promise<Business[]> {
     console.log(`Found ${potentialAgencies.length} potential agencies`);
     
     // Mark these businesses as potential agencies in their metadata
+    // Fix: Explicitly cast status to the allowed union type values
     const enhancedAgencies = potentialAgencies.map(agency => ({
       ...agency,
       industry: agency.industry || 'Digital Agency',
-      status: 'discovered',
+      status: 'discovered' as const, // Explicitly use a valid status value with const assertion
       isAgency: true,
       source: 'agency-finder'
     }));
