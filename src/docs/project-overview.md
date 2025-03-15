@@ -10,6 +10,7 @@ Create an automated system to discover potential clients, job opportunities, and
 - **Automated Outreach Management** → Generate personalized proposals, track communications, and schedule follow-ups.
 - **Agency Competition Analysis** → Identify local agencies' clients for potential outreach.
 - **Performance Analytics** → Track outreach success rates and ROI on time invested.
+- **Professional Profile Management** → Maintain detailed freelancer profile for improved opportunity matching and proposal generation.
 
 ## 🛠 Tech Stack
 - **Frontend:** React + Tailwind CSS + shadcn/ui
@@ -34,6 +35,7 @@ Create an automated system to discover potential clients, job opportunities, and
   │  ├─ opportunities/          # Opportunity tracking
   │  ├─ discovery/              # Job and business discovery
   │  ├─ business/               # Business management
+  │  ├─ profile/                # User profile management
   │  └─ outreach/               # Email and proposal generation
   │
   ├─ services/                  # API integrations
@@ -92,6 +94,15 @@ Create an automated system to discover potential clients, job opportunities, and
   - HTML parsing utilities
   - Debug and mock data generation
 
+- **Professional Profile Management**
+  - Comprehensive profile form with sections for:
+    - Basic information (name, headline, bio)
+    - Skills input
+    - Rates and experience
+    - Professional links (portfolio, LinkedIn, GitHub)
+  - Supabase integration for profile persistence
+  - Profile data validation with Zod schema
+
 ### 🔄 In Progress Features
 - **Advanced Opportunity Evaluation**
   - Enhanced scoring algorithm
@@ -129,3 +140,8 @@ Create an automated system to discover potential clients, job opportunities, and
    - Create email template system
    - Implement proposal generator
    - Build follow-up scheduler
+   
+4. **Enhance Profile-Opportunity Integration**
+   - Use profile skills for opportunity matching
+   - Incorporate experience level in opportunity scoring
+   - Leverage profile data in proposal generation
