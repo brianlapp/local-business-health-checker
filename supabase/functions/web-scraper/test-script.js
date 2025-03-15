@@ -6,7 +6,8 @@ const mockRequest = {
   method: 'POST',
   json: async () => ({
     location: 'Carleton Place, Ontario, Canada',
-    source: 'auto'
+    source: 'auto',
+    debug: true
   })
 };
 
