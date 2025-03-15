@@ -121,12 +121,17 @@ Create an automated system to discover potential clients, job opportunities, and
   - Bulk portfolio client mapping
 
 ### 🔄 In Progress Features
+- **Automated Scanning & Batch Processing**
+  - Scheduled scans infrastructure
+  - Queue management for handling multiple scans
+  - Progress tracking for large batches
+
+### ⏳ Upcoming Features
 - **Advanced Opportunity Evaluation**
   - Enhanced scoring algorithm
   - Skills and requirements matching
   - Timeline compatibility analysis
 
-### ⏳ Upcoming Features
 - **Outreach Automation**
   - Proposal generation
   - Email templates and scheduling
@@ -136,24 +141,19 @@ Create an automated system to discover potential clients, job opportunities, and
   - Success rate tracking
   - ROI calculation
   - Time investment analysis
-  
-- **Automated Scanning & Batch Processing**
-  - Scheduled scans
-  - Queue management
-  - Progress tracking
 
 ## 🎯 Next Steps
-1. **Complete Advanced Evaluation System**
+1. **Implement Automated Scanning & Batch Processing**
+   - Create scheduled scan infrastructure
+   - Build queue management system
+   - Implement progress tracking for large batches
+   
+2. **Develop Advanced Opportunity Evaluation**
    - Finish skills matching algorithm
    - Implement timeline compatibility analysis
    - Enhance opportunity scoring with more factors
    
-2. **Begin Outreach System Development**
+3. **Begin Outreach System Development**
    - Create email template system
    - Implement proposal generator
    - Build follow-up scheduler
-   
-3. **Implement Automated Scanning**
-   - Create scheduled scan infrastructure
-   - Build queue management system
-   - Implement progress tracking for large batches

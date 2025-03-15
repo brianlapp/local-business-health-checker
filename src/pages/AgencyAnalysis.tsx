@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AgencyPortfolioAnalyzer from '@/components/agency/AgencyPortfolioAnalyzer';
 import AgencyRelationshipMap from '@/components/agency/AgencyRelationshipMap';
-import { findAgencies, addAgency, getAgencies } from '@/services/businessService';
+import { findAgencies, addAgency } from '@/services/businessService';
+import { getAgenciesFromDatabase } from '@/services/discovery/agency/agencyDatabaseService';
 import { Business } from '@/types/business';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,7 +30,7 @@ const AgencyAnalysis = () => {
   const loadSavedAgencies = async () => {
     setIsLoading(true);
     try {
-      const agencies = await getAgencies();
+      const agencies = await getAgenciesFromDatabase();
       setSavedAgencies(agencies);
     } catch (error) {
       console.error('Error loading saved agencies:', error);
@@ -72,7 +72,6 @@ const AgencyAnalysis = () => {
       const success = await addAgency(agency);
       if (success) {
         setAddedAgencyIds(prev => new Set(prev).add(agency.id));
-        // Refresh the saved agencies list
         loadSavedAgencies();
         toast.success(`Added ${agency.name} to database`);
       } else {
@@ -86,20 +85,17 @@ const AgencyAnalysis = () => {
 
   const handleSelectAgency = (agency: Business) => {
     setSelectedAgency(agency);
-    // Switch to the analyze tab
     setActiveTab('analyze');
   };
 
   const handleSelectSavedAgency = (agency: Business) => {
     setSelectedAgency(agency);
-    // Switch to the analyze tab
     setActiveTab('analyze');
   };
 
   const handleAddOpportunity = (client: Business) => {
     console.log('Adding client to opportunities:', client);
     toast.success(`Added ${client.name} as opportunity`);
-    // Here you would typically save this to your opportunities database
   };
 
   return (

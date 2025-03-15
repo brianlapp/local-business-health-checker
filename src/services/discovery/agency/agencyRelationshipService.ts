@@ -1,49 +1,174 @@
 
 import { supabase } from '@/lib/supabase';
-import { toast } from 'sonner';
 import { Business } from '@/types/business';
+import { toast } from 'sonner';
 
-interface AgencyClientRelationship {
+export interface AgencyClientRelationship {
   id?: string;
   agency_id: string;
   client_id: string;
   relationship_type?: string;
   source?: string;
+  discovered_at?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface RelationshipMapData {
+  agencies: Business[];
+  clients: Business[];
+  relationships: AgencyClientRelationship[];
 }
 
 /**
- * Store a relationship between an agency and a client
+ * Add a client to an agency's portfolio
  */
-export async function addAgencyClientRelationship(
-  agencyId: string, 
+export async function addClientToAgencyPortfolio(
+  agencyId: string,
   clientId: string,
   relationshipType: string = 'portfolio',
-  source: string = 'portfolio-analysis'
+  source: string = 'manual'
 ): Promise<boolean> {
   try {
-    console.log(`Adding relationship: Agency ${agencyId} -> Client ${clientId}`);
-    
-    const { data, error } = await supabase
+    // First check if this relationship already exists
+    const { data: existingRelationship, error: checkError } = await supabase
       .from('agency_client_relationships')
-      .upsert({
+      .select('id')
+      .eq('agency_id', agencyId)
+      .eq('client_id', clientId)
+      .single();
+
+    if (checkError && !checkError.message.includes('No rows found')) {
+      console.error('Error checking for existing relationship:', checkError);
+      return false;
+    }
+
+    if (existingRelationship) {
+      console.log('Relationship already exists');
+      return true; // Already exists, no need to add
+    }
+
+    // Add the new relationship
+    const { error } = await supabase
+      .from('agency_client_relationships')
+      .insert({
         agency_id: agencyId,
         client_id: clientId,
         relationship_type: relationshipType,
-        source: source
-      }, {
-        onConflict: 'agency_id,client_id',
-        ignoreDuplicates: false
+        source: source,
+        discovered_at: new Date().toISOString()
       });
-    
+
     if (error) {
-      console.error('Error adding agency-client relationship:', error);
+      console.error('Error adding client to agency portfolio:', error);
       return false;
     }
-    
+
     return true;
   } catch (error) {
-    console.error('Error in addAgencyClientRelationship:', error);
+    console.error('Error in addClientToAgencyPortfolio:', error);
     return false;
+  }
+}
+
+/**
+ * Add multiple clients to an agency's portfolio
+ */
+export async function addBulkClientsToAgencyPortfolio(
+  agencyId: string,
+  clientIds: string[],
+  relationshipType: string = 'portfolio',
+  source: string = 'portfolio-analysis'
+): Promise<{ success: number; failed: number }> {
+  if (!clientIds.length) {
+    return { success: 0, failed: 0 };
+  }
+
+  let successCount = 0;
+  let failedCount = 0;
+
+  try {
+    // Create an array of relationship objects
+    const relationships = clientIds.map(clientId => ({
+      agency_id: agencyId,
+      client_id: clientId,
+      relationship_type: relationshipType,
+      source: source,
+      discovered_at: new Date().toISOString()
+    }));
+
+    // Insert all relationships in one operation
+    const { data, error } = await supabase
+      .from('agency_client_relationships')
+      .upsert(relationships, { 
+        onConflict: 'agency_id,client_id',
+        ignoreDuplicates: true 
+      });
+
+    if (error) {
+      console.error('Error adding bulk clients to agency portfolio:', error);
+      failedCount = clientIds.length;
+    } else {
+      // Count successful inserts (this might not be accurate if some were ignored)
+      successCount = clientIds.length;
+    }
+
+    return { success: successCount, failed: failedCount };
+  } catch (error) {
+    console.error('Error in addBulkClientsToAgencyPortfolio:', error);
+    return { success: successCount, failed: clientIds.length - successCount };
+  }
+}
+
+/**
+ * Get all relationships for the relationship map
+ */
+export async function getRelationshipMapData(): Promise<RelationshipMapData> {
+  try {
+    // Get all agencies
+    const { data: agencies, error: agencyError } = await supabase
+      .from('businesses')
+      .select('*')
+      .eq('is_agency', true);
+
+    if (agencyError) {
+      console.error('Error fetching agencies:', agencyError);
+      throw agencyError;
+    }
+
+    // Get all relationships
+    const { data: relationships, error: relationshipError } = await supabase
+      .from('agency_client_relationships')
+      .select('*');
+
+    if (relationshipError) {
+      console.error('Error fetching relationships:', relationshipError);
+      throw relationshipError;
+    }
+
+    // Get all client IDs from relationships
+    const clientIds = [...new Set(relationships.map(rel => rel.client_id))];
+
+    // Fetch all clients in one query
+    const { data: clients, error: clientError } = await supabase
+      .from('businesses')
+      .select('*')
+      .in('id', clientIds);
+
+    if (clientError) {
+      console.error('Error fetching clients:', clientError);
+      throw clientError;
+    }
+
+    return {
+      agencies: agencies || [],
+      clients: clients || [],
+      relationships: relationships || []
+    };
+  } catch (error) {
+    console.error('Error getting relationship map data:', error);
+    toast.error('Failed to load relationship data');
+    return { agencies: [], clients: [], relationships: [] };
   }
 }
 
@@ -52,156 +177,91 @@ export async function addAgencyClientRelationship(
  */
 export async function getAgencyClients(agencyId: string): Promise<Business[]> {
   try {
-    const { data, error } = await supabase
-      .rpc('get_agency_clients', { agency_id: agencyId });
-    
-    if (error) {
-      console.error('Error getting agency clients:', error);
-      return [];
-    }
-    
-    return data || [];
-  } catch (error) {
-    console.error('Error in getAgencyClients:', error);
-    return [];
-  }
-}
-
-/**
- * Get all agencies for a specific client
- */
-export async function getClientAgencies(clientId: string): Promise<Business[]> {
-  try {
-    const { data, error } = await supabase
-      .rpc('get_client_agencies', { client_id: clientId });
-    
-    if (error) {
-      console.error('Error getting client agencies:', error);
-      return [];
-    }
-    
-    return data || [];
-  } catch (error) {
-    console.error('Error in getClientAgencies:', error);
-    return [];
-  }
-}
-
-/**
- * Gets agencies that share clients (competitors)
- */
-export async function getCompetitorAgencies(agencyId: string): Promise<{
-  agency: Business;
-  sharedClients: number;
-}[]> {
-  try {
-    const { data, error } = await supabase
-      .rpc('get_competitor_agencies', { agency_id: agencyId });
-    
-    if (error) {
-      console.error('Error getting competitor agencies:', error);
-      return [];
-    }
-    
-    return data || [];
-  } catch (error) {
-    console.error('Error in getCompetitorAgencies:', error);
-    return [];
-  }
-}
-
-/**
- * Add multiple client relationships to an agency
- */
-export async function addAgencyClientsRelationships(
-  agencyId: string,
-  clientIds: string[],
-  relationshipType: string = 'portfolio',
-  source: string = 'portfolio-analysis'
-): Promise<{success: number, failed: number}> {
-  let success = 0;
-  let failed = 0;
-  
-  for (const clientId of clientIds) {
-    const result = await addAgencyClientRelationship(
-      agencyId, 
-      clientId, 
-      relationshipType, 
-      source
-    );
-    
-    if (result) {
-      success++;
-    } else {
-      failed++;
-    }
-  }
-  
-  return { success, failed };
-}
-
-/**
- * Get all agency-client relationships
- */
-export async function getAllRelationships(): Promise<{
-  agencies: Business[];
-  clients: Business[];
-  relationships: AgencyClientRelationship[];
-}> {
-  try {
-    // Get all relationships
-    const { data: relationshipsData, error: relationshipsError } = await supabase
+    // Get all relationships for this agency
+    const { data: relationships, error: relationshipError } = await supabase
       .from('agency_client_relationships')
-      .select('*');
-    
-    if (relationshipsError) {
-      console.error('Error getting relationships:', relationshipsError);
-      return { agencies: [], clients: [], relationships: [] };
+      .select('client_id')
+      .eq('agency_id', agencyId);
+
+    if (relationshipError) {
+      console.error('Error fetching relationships:', relationshipError);
+      throw relationshipError;
     }
-    
-    // Get all agencies
-    const { data: agenciesData, error: agenciesError } = await supabase
-      .from('businesses')
-      .select('*')
-      .eq('is_agency', true);
-    
-    if (agenciesError) {
-      console.error('Error getting agencies:', agenciesError);
-      return { agencies: [], clients: [], relationships: relationshipsData || [] };
+
+    if (!relationships.length) {
+      return [];
     }
-    
-    // Get all businesses that are clients (have relationships)
-    const clientIds = [...new Set(relationshipsData?.map(r => r.client_id) || [])];
-    
-    if (clientIds.length === 0) {
-      return { 
-        agencies: agenciesData || [], 
-        clients: [], 
-        relationships: relationshipsData || [] 
-      };
-    }
-    
-    const { data: clientsData, error: clientsError } = await supabase
+
+    // Get all client IDs from relationships
+    const clientIds = relationships.map(rel => rel.client_id);
+
+    // Fetch all clients in one query
+    const { data: clients, error: clientError } = await supabase
       .from('businesses')
       .select('*')
       .in('id', clientIds);
-    
-    if (clientsError) {
-      console.error('Error getting clients:', clientsError);
-      return { 
-        agencies: agenciesData || [], 
-        clients: [], 
-        relationships: relationshipsData || [] 
-      };
+
+    if (clientError) {
+      console.error('Error fetching clients:', clientError);
+      throw clientError;
     }
-    
-    return {
-      agencies: agenciesData || [],
-      clients: clientsData || [],
-      relationships: relationshipsData || []
-    };
+
+    return clients || [];
   } catch (error) {
-    console.error('Error in getAllRelationships:', error);
-    return { agencies: [], clients: [], relationships: [] };
+    console.error('Error getting agency clients:', error);
+    toast.error('Failed to load agency clients');
+    return [];
+  }
+}
+
+/**
+ * Find all agencies that share clients with the given agency
+ */
+export async function findCompetitorAgencies(agencyId: string): Promise<Business[]> {
+  try {
+    // Get clients of this agency
+    const agency1Clients = await getAgencyClients(agencyId);
+    
+    if (!agency1Clients.length) {
+      return [];
+    }
+
+    const clientIds = agency1Clients.map(client => client.id);
+
+    // Find relationships where these clients are linked to other agencies
+    const { data: competitorRelationships, error: relError } = await supabase
+      .from('agency_client_relationships')
+      .select('agency_id')
+      .in('client_id', clientIds)
+      .neq('agency_id', agencyId);
+
+    if (relError) {
+      console.error('Error finding competitor relationships:', relError);
+      throw relError;
+    }
+
+    if (!competitorRelationships.length) {
+      return [];
+    }
+
+    // Get unique competitor agency IDs
+    const competitorIds = [...new Set(competitorRelationships.map(rel => rel.agency_id))];
+
+    // Fetch competitor agency details
+    const { data: competitors, error: compError } = await supabase
+      .from('businesses')
+      .select('*')
+      .in('id', competitorIds);
+
+    if (compError) {
+      console.error('Error fetching competitor details:', compError);
+      throw compError;
+    }
+
+    return competitors || [];
+  } catch (error) {
+    console.error('Error finding competitor agencies:', error);
+    toast.error('Failed to find competitor agencies');
+    return [];
   }
 }
