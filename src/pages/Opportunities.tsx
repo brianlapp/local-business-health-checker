@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, RefreshCw, SlidersHorizontal, Calculator } from 'lucide-react';
@@ -33,7 +32,6 @@ const Opportunities: React.FC = () => {
     isEvaluating
   } = useOpportunityEvaluation();
 
-  // Fetch opportunities when component mounts
   useEffect(() => {
     fetchOpportunities();
     loadUserCriteria();
@@ -67,7 +65,6 @@ const Opportunities: React.FC = () => {
       return opportunities.filter(opp => opp.is_priority);
     }
     
-    // Filter by status
     return opportunities.filter(opp => opp.status === activeTab);
   };
 
@@ -77,14 +74,13 @@ const Opportunities: React.FC = () => {
     try {
       await evaluateMultipleOpportunities(opportunities);
       toast.success('Opportunities evaluated successfully');
-      await fetchOpportunities(); // Reload with updated scores
+      await fetchOpportunities();
     } catch (error) {
       console.error('Error evaluating opportunities:', error);
       toast.error('Failed to evaluate opportunities');
     }
   };
 
-  // If user is not logged in or still loading, show loading state
   if (!user) {
     return <OpportunityLoadingState />;
   }
