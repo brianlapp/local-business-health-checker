@@ -30,7 +30,8 @@ export async function scanBusinessesInArea(
         test_mode: googleResponse.test_mode,
         source: googleResponse.source,
         timestamp: googleResponse.timestamp,
-        debugInfo: googleResponse.debugInfo
+        // Only include debugInfo if it exists in the googleResponse
+        ...(googleResponse.debugInfo && { debugInfo: googleResponse.debugInfo })
       };
     } else if (source === 'yellowpages') {
       const scraperResponse = await scanWithWebScraper(location, 'yellowpages', debugMode);

@@ -1,5 +1,5 @@
 
-import { Business, BusinessScanResponse } from '@/types/business';
+import { Business, BusinessScanResponse, ScanDebugInfo } from '@/types/business';
 import { invokeEdgeFunction } from '../api/supabaseApiClient';
 import { processScrapedBusinesses } from '../businessProcessingService';
 
@@ -17,7 +17,8 @@ export async function scanWithGoogleMaps(location: string, radius: number = 10):
   count?: number,
   location?: string,
   source?: string,
-  timestamp?: string
+  timestamp?: string,
+  debugInfo?: ScanDebugInfo // Added to match usage in scanningService.ts
 }> {
   try {
     console.log(`Scanning with Google Maps API: ${location}, radius: ${radius}km`);
@@ -52,7 +53,8 @@ export async function scanWithGoogleMaps(location: string, radius: number = 10):
         count: processedBusinesses.length,
         location,
         source: 'google-maps',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        debugInfo: data.debugInfo
       };
     }
     
@@ -79,7 +81,8 @@ export async function scanWithGoogleMaps(location: string, radius: number = 10):
       count: processedBusinesses.length,
       location,
       source: 'google-maps',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      debugInfo: data.debugInfo
     };
   } catch (error: any) {
     console.error('Error in Google Maps scan:', error);

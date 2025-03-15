@@ -48,8 +48,8 @@ export interface ScanDebugInfo {
   parsedElements?: number;
   errors?: string[];
   warnings?: string[];
-  logs?: string[]; // Added for MapScanner.tsx
-  htmlSamples?: Array<{url: string, length: number, sample: string}>; // Updated to match usage
+  logs?: string[]; // For logging in MapScanner.tsx
+  htmlSamples?: Array<{url: string, length: number, sample: string}>; // Updated structure
 }
 
 export interface BusinessScanResponse {
@@ -63,5 +63,5 @@ export interface BusinessScanResponse {
   test_mode?: boolean;
   source?: string; // Added for compatibility
   timestamp?: string; // Added for compatibility
-  debugInfo?: ScanDebugInfo;
+  debugInfo?: ScanDebugInfo; // Added to match usage in scanningService.ts
 }
