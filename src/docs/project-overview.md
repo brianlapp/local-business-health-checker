@@ -36,6 +36,7 @@ Create an automated system to discover potential clients, job opportunities, and
   │  ├─ discovery/              # Job and business discovery
   │  ├─ business/               # Business management
   │  ├─ profile/                # User profile management
+  │  ├─ agency/                 # Agency analysis components
   │  └─ outreach/               # Email and proposal generation
   │
   ├─ services/                  # API integrations
@@ -46,7 +47,10 @@ Create an automated system to discover potential clients, job opportunities, and
   │  │
   │  ├─ discovery/              # Opportunity discovery
   │  │  ├─ jobBoardService.ts   # Job board API integration
-  │  │  ├─ agencyFinderService.ts # Agency discovery
+  │  │  ├─ agency/              # Agency-related services
+  │  │  │  ├─ agencyFinderService.ts   # Agency discovery
+  │  │  │  ├─ agencyDatabaseService.ts # Agency data management
+  │  │  │  └─ agencyPortfolioService.ts # Portfolio analysis
   │  │  └─ businessScanService.ts # Business website analysis
   │  │
   │  ├─ outreach/               # Communication services
@@ -102,6 +106,12 @@ Create an automated system to discover potential clients, job opportunities, and
     - Professional links (portfolio, LinkedIn, GitHub)
   - Supabase integration for profile persistence
   - Profile data validation with Zod schema
+  
+- **Portfolio Analysis Framework**
+  - Client list extraction from agency websites
+  - Portfolio page detection and scraping
+  - Analysis of portfolio case studies
+  - Client information extraction from HTML
 
 ### 🔄 In Progress Features
 - **Advanced Opportunity Evaluation**
@@ -110,9 +120,9 @@ Create an automated system to discover potential clients, job opportunities, and
   - Timeline compatibility analysis
   
 - **Agency Portfolio Analysis**
-  - Portfolio scanning framework
-  - Client list extraction capabilities
-  - Analyzing agency-business relationships
+  - Relationship mapping between agencies and businesses
+  - Agency competition analysis
+  - Client acquisition potential scoring
 
 ### 🔲 Upcoming Features
 - **Outreach Automation**
@@ -124,12 +134,17 @@ Create an automated system to discover potential clients, job opportunities, and
   - Success rate tracking
   - ROI calculation
   - Time investment analysis
+  
+- **Automated Scanning & Batch Processing**
+  - Scheduled scans
+  - Queue management
+  - Progress tracking
 
 ## 🎯 Next Steps
-1. **Complete Agency Portfolio Analysis**
-   - Implement client list extraction from agency websites
-   - Build portfolio page detection and scraping
-   - Create relationship mapping between agencies and businesses
+1. **Complete Relationship Mapping**
+   - Implement relationship mapping between agencies and businesses
+   - Create visualization of agency-client relationships
+   - Build competition analysis dashboard
    
 2. **Finalize Evaluation System**
    - Complete skills matching algorithm
@@ -141,7 +156,7 @@ Create an automated system to discover potential clients, job opportunities, and
    - Implement proposal generator
    - Build follow-up scheduler
    
-4. **Enhance Profile-Opportunity Integration**
-   - Use profile skills for opportunity matching
-   - Incorporate experience level in opportunity scoring
-   - Leverage profile data in proposal generation
+4. **Implement Automated Scanning**
+   - Create scheduled scan infrastructure
+   - Build queue management system
+   - Implement progress tracking for large batches
