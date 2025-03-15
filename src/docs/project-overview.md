@@ -80,14 +80,27 @@ Create an automated system to discover potential clients, job opportunities, and
   - Business scoring system
   - Issue detection for business websites
 
+- **Agency Discovery Enhancement**
+  - Finding and tracking local agencies
+  - Keyword-based agency identification
+  - Agency-specific database storage
+  - Agency discovery via Google Maps and directories
+
+- **Web Scraper Architecture**
+  - Modular design with separated concerns
+  - Specialized directory scrapers
+  - HTML parsing utilities
+  - Debug and mock data generation
+
 ### 🔄 In Progress Features
 - **Advanced Opportunity Evaluation**
   - Enhanced scoring algorithm
   - Skills and requirements matching
   - Timeline compatibility analysis
   
-- **Agency Discovery Enhancement**
-  - Finding and tracking local agencies
+- **Agency Portfolio Analysis**
+  - Portfolio scanning framework
+  - Client list extraction capabilities
   - Analyzing agency-business relationships
 
 ### 🔲 Upcoming Features
@@ -102,15 +115,15 @@ Create an automated system to discover potential clients, job opportunities, and
   - Time investment analysis
 
 ## 🎯 Next Steps
-1. **Complete Evaluation System**
-   - Finalize scoring algorithm
-   - Implement skills matching
-   - Add timeline compatibility analysis
+1. **Complete Agency Portfolio Analysis**
+   - Implement client list extraction from agency websites
+   - Build portfolio page detection and scraping
+   - Create relationship mapping between agencies and businesses
    
-2. **Enhance Agency Discovery**
-   - Improve agency detection accuracy
-   - Implement portfolio analysis
-   - Add client list extraction
+2. **Finalize Evaluation System**
+   - Complete skills matching algorithm
+   - Implement timeline compatibility analysis
+   - Enhance opportunity scoring with more factors
    
 3. **Begin Outreach System Development**
    - Create email template system
