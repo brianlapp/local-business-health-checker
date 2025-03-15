@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { analyzeAgencyPortfolio } from '@/services/businessService';
-import { addAgencyClientsRelationships } from '@/services/discovery/agency/agencyRelationshipService';
+import { addBulkClientsToAgencyPortfolio } from '@/services/discovery/agency/agencyRelationshipService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
@@ -111,7 +111,7 @@ const AgencyPortfolioAnalyzer: React.FC<AgencyPortfolioAnalyzerProps> = ({
     }
     
     try {
-      const { success, failed } = await addAgencyClientsRelationships(
+      const { success, failed } = await addBulkClientsToAgencyPortfolio(
         agencyId,
         clientIds,
         'portfolio',
