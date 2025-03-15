@@ -1,6 +1,6 @@
 
 import { toast } from 'sonner';
-import { Business, BusinessScanResponse } from '@/types/business';
+import { Business, BusinessScanResponse, ScanDebugInfo } from '@/types/business';
 import { generateMockBusinessData } from '../businessProcessingService';
 
 /**
@@ -24,8 +24,8 @@ export function handleScanError(
   // Convert location to string to ensure type compatibility
   const locationString = String(location);
   
-  // Generate mock data synchronously to avoid Promise issues
-  const mockBusinesses = generateMockBusinessData(locationString, 'error-fallback');
+  // Generate mock businesses
+  const mockBusinesses = generateMockBusinessData([], 'error-fallback', locationString);
   
   // Return mock data as a fallback with proper BusinessScanResponse type
   return {
@@ -43,5 +43,56 @@ export function handleScanError(
       logs: ['Error occurred, using mock data'],
       htmlSamples: []
     }
+  };
+}
+
+/**
+ * Extracts clean business data from HTML
+ * (Placeholder for a future implementation)
+ */
+export function extractBusinessFromHtml(
+  html: string, 
+  selectors: {
+    container: string,
+    name: string,
+    website: string,
+    phone?: string
+  }
+): Business[] {
+  // This function would use DOM parsing to extract business information
+  // For now, it's just a placeholder for future implementation
+  console.log(`HTML extraction not yet implemented - received ${html.length} bytes`);
+  return [];
+}
+
+/**
+ * Formats a business website URL consistently
+ */
+export function normalizeWebsiteUrl(url: string): string {
+  if (!url) return '';
+  
+  // Remove protocol
+  let normalized = url.replace(/^https?:\/\//, '');
+  
+  // Remove trailing slash
+  normalized = normalized.replace(/\/$/, '');
+  
+  // Remove www. prefix
+  normalized = normalized.replace(/^www\./, '');
+  
+  return normalized.toLowerCase();
+}
+
+/**
+ * Generates a debug info object with current scan details
+ */
+export function createDebugInfo(details: Partial<ScanDebugInfo> = {}): ScanDebugInfo {
+  return {
+    processingTime: Date.now(),
+    errors: [],
+    warnings: [],
+    logs: [],
+    htmlSamples: [],
+    ...details
   };
 }

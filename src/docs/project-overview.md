@@ -68,6 +68,7 @@ Create an automated system to discover potential clients, job opportunities, and
 - **Multi-Source Business Discovery**
   - Google Maps integration for local business discovery
   - YellowPages web scraping implementation
+  - Agency finder for detecting digital agencies
   - Debug information for troubleshooting scans
   
 - **Job Board Integration**
@@ -106,13 +107,12 @@ Create an automated system to discover potential clients, job opportunities, and
    - Implement skills matching
    - Add timeline compatibility analysis
    
-2. **Enhance Business Discovery**
-   - Add more web scraping sources
-   - Improve data extraction quality
-   - Implement batch discovery operations
+2. **Enhance Agency Discovery**
+   - Improve agency detection accuracy
+   - Implement portfolio analysis
+   - Add client list extraction
    
 3. **Begin Outreach System Development**
    - Create email template system
    - Implement proposal generator
    - Build follow-up scheduler
-
