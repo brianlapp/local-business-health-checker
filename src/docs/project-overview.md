@@ -48,9 +48,10 @@ Create an automated system to discover potential clients, job opportunities, and
   │  ├─ discovery/              # Opportunity discovery
   │  │  ├─ jobBoardService.ts   # Job board API integration
   │  │  ├─ agency/              # Agency-related services
-  │  │  │  ├─ agencyFinderService.ts   # Agency discovery
-  │  │  │  ├─ agencyDatabaseService.ts # Agency data management
-  │  │  │  └─ agencyPortfolioService.ts # Portfolio analysis
+  │  │  │  ├─ agencyFinderService.ts       # Agency discovery
+  │  │  │  ├─ agencyDatabaseService.ts     # Agency data management
+  │  │  │  ├─ agencyPortfolioService.ts    # Portfolio analysis
+  │  │  │  └─ agencyRelationshipService.ts # Client relationship mapping
   │  │  └─ businessScanService.ts # Business website analysis
   │  │
   │  ├─ outreach/               # Communication services
@@ -112,19 +113,20 @@ Create an automated system to discover potential clients, job opportunities, and
   - Portfolio page detection and scraping
   - Analysis of portfolio case studies
   - Client information extraction from HTML
+  
+- **Agency-Client Relationship Mapping**
+  - Client-agency relationship database structure
+  - Relationship visualization interface
+  - Competitor analysis based on shared clients
+  - Bulk portfolio client mapping
 
 ### 🔄 In Progress Features
 - **Advanced Opportunity Evaluation**
   - Enhanced scoring algorithm
   - Skills and requirements matching
   - Timeline compatibility analysis
-  
-- **Agency Portfolio Analysis**
-  - Relationship mapping between agencies and businesses
-  - Agency competition analysis
-  - Client acquisition potential scoring
 
-### 🔲 Upcoming Features
+### ⏳ Upcoming Features
 - **Outreach Automation**
   - Proposal generation
   - Email templates and scheduling
@@ -141,22 +143,17 @@ Create an automated system to discover potential clients, job opportunities, and
   - Progress tracking
 
 ## 🎯 Next Steps
-1. **Complete Relationship Mapping**
-   - Implement relationship mapping between agencies and businesses
-   - Create visualization of agency-client relationships
-   - Build competition analysis dashboard
-   
-2. **Finalize Evaluation System**
-   - Complete skills matching algorithm
+1. **Complete Advanced Evaluation System**
+   - Finish skills matching algorithm
    - Implement timeline compatibility analysis
    - Enhance opportunity scoring with more factors
    
-3. **Begin Outreach System Development**
+2. **Begin Outreach System Development**
    - Create email template system
    - Implement proposal generator
    - Build follow-up scheduler
    
-4. **Implement Automated Scanning**
+3. **Implement Automated Scanning**
    - Create scheduled scan infrastructure
    - Build queue management system
    - Implement progress tracking for large batches

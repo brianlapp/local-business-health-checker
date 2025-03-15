@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
 import { analyzeAgencyPortfolio } from '@/services/businessService';
+import { addAgencyClientsRelationships } from '@/services/discovery/agency/agencyRelationshipService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +16,8 @@ import {
   Globe, 
   AlertCircle, 
   Check, 
-  Info 
+  Info,
+  Network
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -24,11 +25,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 interface AgencyPortfolioAnalyzerProps {
   onAddClient?: (client: Business) => void;
   agencyWebsite?: string;
+  agencyId?: string;
 }
 
 const AgencyPortfolioAnalyzer: React.FC<AgencyPortfolioAnalyzerProps> = ({ 
   onAddClient, 
-  agencyWebsite = '' 
+  agencyWebsite = '',
+  agencyId
 }) => {
   const [websiteUrl, setWebsiteUrl] = useState(agencyWebsite);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -39,6 +42,7 @@ const AgencyPortfolioAnalyzer: React.FC<AgencyPortfolioAnalyzerProps> = ({
     error?: string;
   } | null>(null);
   const [addedClients, setAddedClients] = useState<Set<string>>(new Set());
+  const [addedToRelationships, setAddedToRelationships] = useState<Set<string>>(new Set());
 
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,6 +95,46 @@ const AgencyPortfolioAnalyzer: React.FC<AgencyPortfolioAnalyzerProps> = ({
     toast.success(`Added ${results.clients.length} clients to opportunities`);
   };
 
+  const handleMapRelationships = async () => {
+    if (!agencyId || !results?.clients.length) {
+      toast.error('Agency ID is required to map relationships');
+      return;
+    }
+    
+    const clientIds = results.clients
+      .filter(client => !addedToRelationships.has(client.id))
+      .map(client => client.id);
+    
+    if (clientIds.length === 0) {
+      toast.info('All clients are already mapped to this agency');
+      return;
+    }
+    
+    try {
+      const { success, failed } = await addAgencyClientsRelationships(
+        agencyId,
+        clientIds,
+        'portfolio',
+        'portfolio-analysis'
+      );
+      
+      if (success > 0) {
+        const newAddedSet = new Set(addedToRelationships);
+        clientIds.forEach(id => newAddedSet.add(id));
+        setAddedToRelationships(newAddedSet);
+        
+        toast.success(`Mapped ${success} clients to this agency`);
+      }
+      
+      if (failed > 0) {
+        toast.warning(`Failed to map ${failed} clients`);
+      }
+    } catch (error) {
+      console.error('Error mapping relationships:', error);
+      toast.error('Failed to map client relationships');
+    }
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -136,17 +180,31 @@ const AgencyPortfolioAnalyzer: React.FC<AgencyPortfolioAnalyzerProps> = ({
                 )}
               </div>
               
-              {results.clients.length > 0 && onAddClient && (
-                <Button 
-                  size="sm" 
-                  variant="secondary" 
-                  onClick={handleAddAllClients}
-                  disabled={results.clients.every(client => addedClients.has(client.id))}
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add All Clients
-                </Button>
-              )}
+              <div className="flex gap-2">
+                {results.clients.length > 0 && agencyId && (
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={handleMapRelationships}
+                    disabled={results.clients.every(client => addedToRelationships.has(client.id))}
+                  >
+                    <Network className="w-4 h-4 mr-1" />
+                    Map Relationships
+                  </Button>
+                )}
+                
+                {results.clients.length > 0 && onAddClient && (
+                  <Button 
+                    size="sm" 
+                    variant="secondary" 
+                    onClick={handleAddAllClients}
+                    disabled={results.clients.every(client => addedClients.has(client.id))}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add All Clients
+                  </Button>
+                )}
+              </div>
             </div>
             
             <Tabs defaultValue="clients">
@@ -191,32 +249,62 @@ const AgencyPortfolioAnalyzer: React.FC<AgencyPortfolioAnalyzerProps> = ({
                                   <ExternalLink className="w-3 h-3 ml-1" />
                                 </a>
                               )}
-                              <div className="mt-2">
+                              <div className="mt-2 flex flex-wrap gap-2">
                                 <Badge variant="outline" className="text-xs">
                                   {client.source?.replace('agency-portfolio', 'portfolio')}
                                 </Badge>
+                                
+                                {agencyId && addedToRelationships.has(client.id) && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    <Network className="w-3 h-3 mr-1" />
+                                    Relationship Mapped
+                                  </Badge>
+                                )}
                               </div>
                             </div>
-                            {onAddClient && (
-                              <Button 
-                                size="sm" 
-                                variant={addedClients.has(client.id) ? "outline" : "default"}
-                                onClick={() => handleAddClient(client)}
-                                disabled={addedClients.has(client.id)}
-                              >
-                                {addedClients.has(client.id) ? (
-                                  <>
-                                    <Check className="w-3 h-3 mr-1" />
-                                    Added
-                                  </>
-                                ) : (
-                                  <>
-                                    <Plus className="w-3 h-3 mr-1" />
-                                    Add as Opportunity
-                                  </>
-                                )}
-                              </Button>
-                            )}
+                            <div className="flex gap-2">
+                              {agencyId && (
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => handleMapRelationships()}
+                                  disabled={addedToRelationships.has(client.id)}
+                                >
+                                  {addedToRelationships.has(client.id) ? (
+                                    <>
+                                      <Check className="w-3 h-3 mr-1" />
+                                      Mapped
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Network className="w-3 h-3 mr-1" />
+                                      Map
+                                    </>
+                                  )}
+                                </Button>
+                              )}
+                              
+                              {onAddClient && (
+                                <Button 
+                                  size="sm"
+                                  variant={addedClients.has(client.id) ? "outline" : "default"}
+                                  onClick={() => handleAddClient(client)}
+                                  disabled={addedClients.has(client.id)}
+                                >
+                                  {addedClients.has(client.id) ? (
+                                    <>
+                                      <Check className="w-3 h-3 mr-1" />
+                                      Added
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Plus className="w-3 h-3 mr-1" />
+                                      Add
+                                    </>
+                                  )}
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </Card>
                       ))}
