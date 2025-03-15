@@ -30,7 +30,8 @@ import {
 
 import {
   findAgencies,
-  addAgency
+  addAgency,
+  analyzeAgencyPortfolio
 } from './discovery/agency'; // Updated import path
 
 import { 
@@ -43,6 +44,14 @@ import {
   generateProposal,
   saveProposalTemplate
 } from './outreach/proposalService';
+
+// Import from evaluation services
+import {
+  evaluateOpportunity,
+  evaluateOpportunities,
+  saveOpportunityScore,
+  getUserEvaluationCriteria
+} from './evaluation/opportunityEvaluationService';
 
 // Re-export everything
 export {
@@ -69,6 +78,7 @@ export {
   // Agency Operations
   findAgencies,
   addAgency,
+  analyzeAgencyPortfolio,
   
   // Job Board Operations
   searchJobs,
@@ -76,5 +86,11 @@ export {
   
   // Proposal Operations
   generateProposal,
-  saveProposalTemplate
+  saveProposalTemplate,
+  
+  // Opportunity Evaluation Operations
+  evaluateOpportunity,
+  evaluateOpportunities,
+  saveOpportunityScore,
+  getUserEvaluationCriteria
 };

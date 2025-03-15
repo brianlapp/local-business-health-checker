@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import OpportunityDialog from './OpportunityDialog';
 import OpportunityDeleteDialog from './OpportunityDeleteDialog';
+import OpportunityScore from './OpportunityScore';
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
@@ -88,6 +89,10 @@ const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, onUpdate
               )}
             </div>
           )}
+
+          <div className="mt-4">
+            <OpportunityScore opportunity={opportunity} />
+          </div>
         </div>
       </CardContent>
       <CardFooter className="flex justify-between pt-2 border-t">
