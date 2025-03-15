@@ -3,7 +3,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserMenu } from './UserMenu';
-import { MobileNavigation } from './MobileNavigation';
+import MobileNavigation from './MobileNavigation';
 import { Button } from './ui/button';
 import { Menu } from 'lucide-react';
 
