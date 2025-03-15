@@ -19,15 +19,43 @@ export async function scanBusinessesInArea(
     let response: BusinessScanResponse;
     
     if (source === 'google') {
-      response = await scanWithGoogleMaps(location, debugMode);
+      const googleResponse = await scanWithGoogleMaps(location, 10); // Fixed: Passing 10 as a number instead of boolean
+      response = {
+        businesses: googleResponse.businesses,
+        count: googleResponse.businesses.length, // Ensure count is set and non-optional
+        location: location,
+        error: googleResponse.error,
+        message: googleResponse.message,
+        troubleshooting: googleResponse.troubleshooting,
+        test_mode: googleResponse.test_mode,
+        source: googleResponse.source,
+        timestamp: googleResponse.timestamp,
+        debugInfo: googleResponse.debugInfo
+      };
     } else if (source === 'yellowpages') {
-      response = await scanWithWebScraper(location, 'yellowpages', debugMode);
+      const scraperResponse = await scanWithWebScraper(location, 'yellowpages', debugMode);
+      
+      // Check if we received a BusinessScanResponse or just Business[] array
+      if (Array.isArray(scraperResponse)) {
+        response = {
+          businesses: scraperResponse,
+          count: scraperResponse.length, // Ensure count is set and non-optional
+          location: location,
+          source: 'yellowpages'
+        };
+      } else {
+        // Ensure count is always set
+        response = {
+          ...scraperResponse,
+          count: scraperResponse.businesses.length
+        };
+      }
     } else {
       // For local testing with mock data
       const mockBusinesses = generateMockBusinesses(location, 5);
       response = {
         businesses: mockBusinesses,
-        count: mockBusinesses.length, // Ensure count is not optional
+        count: mockBusinesses.length, // Ensure count is non-optional
         location: location,
         test_mode: true,
         source: 'localstack',
@@ -44,9 +72,11 @@ export async function scanBusinessesInArea(
   } catch (error: any) {
     console.error('Error scanning businesses:', error);
     toast.error('Failed to scan businesses');
+    
+    // Return a valid BusinessScanResponse with required fields
     return {
       businesses: [],
-      count: 0, // Ensure count is not optional
+      count: 0, // Ensure count is non-optional
       location,
       error: error.message || 'Failed to scan businesses',
       source: source
@@ -105,7 +135,7 @@ function generateMockBusinesses(location: string, count: number): Business[] {
       name: `Business ${i + 1}`,
       website: `business${i + 1}.com`,
       location: location,
-      status: 'discovered', // Add required status field
+      status: 'discovered', // Required status field
       score: Math.floor(Math.random() * 100),
       updated_at: new Date().toISOString(),
       lastChecked: new Date().toISOString()

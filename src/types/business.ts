@@ -54,7 +54,7 @@ export interface ScanDebugInfo {
 
 export interface BusinessScanResponse {
   businesses: Business[];
-  count: number;
+  count: number; // Marked as required
   location: string;
   industry?: string;
   error?: string;
