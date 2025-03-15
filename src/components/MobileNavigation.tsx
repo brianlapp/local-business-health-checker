@@ -5,7 +5,12 @@ import { Home, PlusCircle, MapPin, Briefcase, Folder, Settings, Users } from 'lu
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
-const MobileNavigation = () => {
+export interface MobileNavigationProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+const MobileNavigation: React.FC<MobileNavigationProps> = ({ isOpen, onClose }) => {
   const { user } = useAuth();
   const location = useLocation();
   

@@ -1,34 +1,35 @@
+
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { Header } from '@/components/Header';
-import { MobileNavigation } from '@/components/MobileNavigation';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { Index } from '@/pages/Index';
-import { Auth } from '@/pages/Auth';
-import { Dashboard } from '@/pages/Dashboard';
-import { AddBusiness } from '@/pages/AddBusiness';
-import { MapScanner } from '@/pages/MapScanner';
-import { JobBoard } from '@/pages/JobBoard';
-import { Opportunities } from '@/pages/Opportunities';
-import { Profile } from '@/pages/Profile';
-import { NotFound } from '@/pages/NotFound';
+import Header from '@/components/Header';
+import MobileNavigation from '@/components/MobileNavigation';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import Index from '@/pages/Index';
+import Auth from '@/pages/Auth';
+import Dashboard from '@/pages/Dashboard';
+import AddBusiness from '@/pages/AddBusiness';
+import MapScanner from '@/pages/MapScanner';
+import JobBoard from '@/pages/JobBoard';
+import Opportunities from '@/pages/Opportunities';
+import Profile from '@/pages/Profile';
+import NotFound from '@/pages/NotFound';
 import AgencyAnalysis from '@/pages/AgencyAnalysis';
 import ScanManager from '@/pages/ScanManager';
 
 const App = () => {
-  const { checkAuth } = useAuth();
+  const { user, isLoading } = useAuth();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const authenticate = async () => {
-      await checkAuth();
+      // No need to check auth here as the useAuth hook handles it
       setLoading(false);
     };
 
     authenticate();
-  }, [checkAuth]);
+  }, []);
   
   return (
     <div className="min-h-screen">
