@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import AgencyPortfolioAnalyzer from '@/components/agency/AgencyPortfolioAnalyzer';
+import AgencyPortfolioAnalyzer from '@/components/agency/portfolio-analyzer';
 import AgencyRelationshipMap from '@/components/agency/AgencyRelationshipMap';
 import { findAgencies, addAgency } from '@/services/businessService';
 import { getAgenciesFromDatabase } from '@/services/discovery/agency/agencyDatabaseService';
