@@ -31,7 +31,7 @@ import {
 import {
   findAgencies,
   addAgency
-} from './discovery/agencyFinderService';
+} from './discovery/agency'; // Updated import path
 
 import { 
   searchJobs, 
