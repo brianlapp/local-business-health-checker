@@ -15,6 +15,7 @@ import { Opportunities } from '@/pages/Opportunities';
 import { Profile } from '@/pages/Profile';
 import { NotFound } from '@/pages/NotFound';
 import AgencyAnalysis from '@/pages/AgencyAnalysis';
+import ScanManager from '@/pages/ScanManager';
 
 const App = () => {
   const { checkAuth } = useAuth();
@@ -102,6 +103,12 @@ const App = () => {
                 </ProtectedRoute>
               }
             />
+            
+            <Route path="/scan-manager" element={
+              <ProtectedRoute>
+                <ScanManager />
+              </ProtectedRoute>
+            } />
             
             <Route path="*" element={<NotFound />} />
           </Routes>

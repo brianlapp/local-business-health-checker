@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, RefreshCw } from 'lucide-react';
+import { Plus, RefreshCw, ScanLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { getBusinesses } from '@/services/businessService';
@@ -43,6 +43,12 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           <Button variant="outline">
             <Plus className="mr-2 h-4 w-4" />
             Add Business
+          </Button>
+        </Link>
+        <Link to="/scan-manager">
+          <Button variant="outline">
+            <ScanLine className="mr-2 h-4 w-4" />
+            Scan Manager
           </Button>
         </Link>
         <Button variant="outline" onClick={handleRefresh} disabled={loading}>

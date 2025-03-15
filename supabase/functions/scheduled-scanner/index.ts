@@ -41,6 +41,39 @@ serve(async (req) => {
     const mode = (requestData as any).mode || 'auto';
     console.log(`Scanner mode: ${mode}`);
     
+    // If this is an automatic scan, check if automation is enabled
+    if (mode === 'auto') {
+      const { data: automationSettings, error: automationError } = await supabase
+        .from('automation_settings')
+        .select('scanning_enabled')
+        .single();
+      
+      if (automationError) {
+        console.error('Error getting automation settings:', automationError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to check automation settings' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        );
+      }
+      
+      if (!automationSettings?.scanning_enabled) {
+        console.log('Automated scanning is disabled. Skipping scan.');
+        return new Response(
+          JSON.stringify({ message: 'Automated scanning is disabled' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // Update the last run time
+      await supabase
+        .from('automation_settings')
+        .update({ last_scan_run: new Date().toISOString() })
+        .is('id', 'not.null');
+        
+      // Schedule the next run
+      await supabase.rpc('update_next_scan_time');
+    }
+    
     // Get businesses that need to be scanned
     // Prioritize businesses that:
     // 1. Have never been scanned (null last_checked)

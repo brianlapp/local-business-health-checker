@@ -42,6 +42,36 @@ export type Database = {
         }
         Relationships: []
       }
+      automation_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_scan_run: string | null
+          next_scheduled_scan: string | null
+          scan_interval: string | null
+          scanning_enabled: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          last_scan_run?: string | null
+          next_scheduled_scan?: string | null
+          scan_interval?: string | null
+          scanning_enabled?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_scan_run?: string | null
+          next_scheduled_scan?: string | null
+          scan_interval?: string | null
+          scanning_enabled?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       businesses: {
         Row: {
           cms: string | null
@@ -631,6 +661,16 @@ export type Database = {
     }
     Functions: {
       delete_all_businesses: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      toggle_scanning_schedule: {
+        Args: {
+          enabled_param: boolean
+        }
+        Returns: boolean
+      }
+      update_next_scan_time: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }

@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Search, ArrowRight, Calendar, Clock, Users, BriefcaseIcon } from 'lucide-react';
+import { Plus, Search, ArrowRight, Calendar, Clock, Users, BriefcaseIcon, ScanLine } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -111,7 +111,7 @@ const Dashboard: React.FC = () => {
             <CardDescription>Find potential clients and opportunities</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Link to="/job-board">
                 <Card className="hover:bg-muted/50 transition-colors">
                   <CardContent className="p-4 flex flex-col items-center text-center">
@@ -138,6 +138,16 @@ const Dashboard: React.FC = () => {
                     <BriefcaseIcon className="h-8 w-8 mb-2 mt-2" />
                     <h3 className="font-medium">Local Business Scanner</h3>
                     <p className="text-sm text-muted-foreground">Find potential clients in your area</p>
+                  </CardContent>
+                </Card>
+              </Link>
+              
+              <Link to="/scan-manager">
+                <Card className="hover:bg-muted/50 transition-colors">
+                  <CardContent className="p-4 flex flex-col items-center text-center">
+                    <ScanLine className="h-8 w-8 mb-2 mt-2" />
+                    <h3 className="font-medium">Scan Manager</h3>
+                    <p className="text-sm text-muted-foreground">Automate website scanning</p>
                   </CardContent>
                 </Card>
               </Link>
