@@ -1,93 +1,84 @@
 
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
+import { Home, PlusCircle, MapPin, Briefcase, Folder, Settings, Users } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-interface MobileNavigationProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-export const MobileNavigation: React.FC<MobileNavigationProps> = ({ isOpen, onClose }) => {
+const MobileNavigation = () => {
   const { user } = useAuth();
   const location = useLocation();
-
-  if (!isOpen) return null;
-
+  
+  if (!user) return null;
+  
   return (
-    <div className="fixed inset-0 z-50 bg-background md:hidden">
-      <div className="container flex h-16 items-center justify-between">
-        <Link to="/" className="flex items-center gap-2" onClick={onClose}>
-          <span className="text-xl font-bold">Freelance Finder</span>
-        </Link>
-        <button
-          onClick={onClose}
-          className="rounded-full p-2 text-muted-foreground hover:bg-muted"
-        >
-          <X className="h-6 w-6" />
-        </button>
-      </div>
-      <nav className="container grid gap-6 pb-8">
-        {user && (
-          <>
-            <Link
-              to="/dashboard"
-              onClick={onClose}
-              className={`flex items-center gap-2 text-lg font-medium ${
-                location.pathname === "/dashboard" ? "text-foreground" : "text-muted-foreground"
-              }`}
-            >
-              Dashboard
-            </Link>
-            <Link
-              to="/opportunities"
-              onClick={onClose}
-              className={`flex items-center gap-2 text-lg font-medium ${
-                location.pathname === "/opportunities" ? "text-foreground" : "text-muted-foreground"
-              }`}
-            >
-              Opportunities
-            </Link>
-            <Link
-              to="/job-board"
-              onClick={onClose}
-              className={`flex items-center gap-2 text-lg font-medium ${
-                location.pathname === "/job-board" ? "text-foreground" : "text-muted-foreground"
-              }`}
-            >
-              Job Board
-            </Link>
-            <Link
-              to="/map-scanner"
-              onClick={onClose}
-              className={`flex items-center gap-2 text-lg font-medium ${
-                location.pathname === "/map-scanner" ? "text-foreground" : "text-muted-foreground"
-              }`}
-            >
-              Map Scanner
-            </Link>
-            <Link
-              to="/profile"
-              onClick={onClose}
-              className={`flex items-center gap-2 text-lg font-medium ${
-                location.pathname === "/profile" ? "text-foreground" : "text-muted-foreground"
-              }`}
-            >
-              Profile
-            </Link>
-          </>
-        )}
-        {!user && (
-          <Link
-            to="/auth"
-            onClick={onClose}
-            className="flex items-center gap-2 text-lg font-medium"
-          >
-            Login / Register
-          </Link>
-        )}
+    <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border md:hidden z-50">
+      <nav className="container mx-auto">
+        <ul className="flex justify-around p-2">
+          <NavItem 
+            to="/dashboard" 
+            icon={<Home className="w-5 h-5" />} 
+            label="Dashboard" 
+            isActive={location.pathname === '/dashboard'} 
+          />
+          <NavItem 
+            to="/add-business" 
+            icon={<PlusCircle className="w-5 h-5" />} 
+            label="Add" 
+            isActive={location.pathname === '/add-business'} 
+          />
+          <NavItem 
+            to="/map-scanner" 
+            icon={<MapPin className="w-5 h-5" />} 
+            label="Map" 
+            isActive={location.pathname === '/map-scanner'} 
+          />
+          <NavItem 
+            to="/jobs" 
+            icon={<Briefcase className="w-5 h-5" />} 
+            label="Jobs" 
+            isActive={location.pathname === '/jobs'} 
+          />
+          <NavItem 
+            to="/opportunities" 
+            icon={<Folder className="w-5 h-5" />} 
+            label="Leads" 
+            isActive={location.pathname === '/opportunities'} 
+          />
+          <NavItem 
+            to="/agency-analysis" 
+            icon={<Users className="w-5 h-5" />} 
+            label="Agencies" 
+            isActive={location.pathname === '/agency-analysis'} 
+          />
+        </ul>
       </nav>
     </div>
   );
 };
+
+interface NavItemProps {
+  to: string;
+  icon: React.ReactNode;
+  label: string;
+  isActive: boolean;
+}
+
+const NavItem: React.FC<NavItemProps> = ({ to, icon, label, isActive }) => {
+  return (
+    <li>
+      <NavLink 
+        to={to} 
+        className={({ isActive }) => cn(
+          "flex flex-col items-center text-center py-1 px-2 rounded-md",
+          isActive ? "text-primary" : "text-muted-foreground"
+        )}
+      >
+        {icon}
+        <span className="text-xs mt-1">{label}</span>
+      </NavLink>
+    </li>
+  );
+};
+
+export default MobileNavigation;
