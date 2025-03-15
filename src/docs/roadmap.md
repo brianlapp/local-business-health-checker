@@ -25,6 +25,8 @@
 ## **Phase 4: Evaluation Tools 🔄**
 - Implement smart scoring system ✅
 - Create skills and requirements matching 🔄
+- Add agency portfolio analysis 🔄
+- Build business-agency relationship mapping 🔄
 - Build rate and timeline analysis 🔲
 - Add priority ranking system 🔲
 
@@ -49,6 +51,10 @@
 - [x] Create YellowPages integration for business scraping
 - [x] Implement initial business scoring system
 - [x] Enhance business discovery with agency detection
+- [✓] Enhance agency finder capabilities
+- [✓] Add agency portfolio analysis framework
 - [ ] Improve scoring algorithm with more factors
 - [ ] Add skill matching to opportunity evaluation
 - [ ] Implement timeline compatibility analysis
+- [ ] Add agency-business relationship mapping
+

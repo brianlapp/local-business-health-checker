@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Business } from '@/types/business';
 import { scanBusinessesInArea } from '../scanningService';
 import { processScrapedBusinesses } from '../businessProcessingService';
+import { handleScanError } from '../scanning/scanningUtils';
 
 /**
  * Find potential agencies in a specific area
@@ -24,7 +25,8 @@ export async function findAgencies(location: string): Promise<Business[]> {
     const agencyKeywords = [
       'agency', 'digital', 'marketing', 'web', 'design', 'media', 
       'creative', 'studios', 'consulting', 'solutions', 'development',
-      'tech', 'software', 'systems', 'IT', 'technology'
+      'tech', 'software', 'systems', 'IT', 'technology', 'interactive',
+      'studio', 'partners', 'group', 'collective', 'innovation'
     ];
     
     const potentialAgencies = response.businesses.filter(business => {
@@ -89,7 +91,7 @@ export async function addAgency(agency: Business): Promise<boolean> {
         website: agency.website,
         contact_email: agency.contact_info?.email || null,
         contact_phone: agency.contact_info?.phone || null,
-        status: 'discovered',
+        status: 'new',
         notes: `Auto-discovered agency in ${agency.location || 'unknown location'}`
       }, {
         onConflict: 'website',
@@ -136,18 +138,74 @@ export async function getAgencies(): Promise<Business[]> {
 /**
  * Analyze an agency's client list by examining their portfolio
  */
-export async function analyzeAgencyPortfolio(agencyId: string, website: string): Promise<string[]> {
+export async function analyzeAgencyPortfolio(website: string): Promise<{
+  clients: Business[];
+  portfolioLinks: string[];
+  requestUrl?: string;
+  error?: string;
+}> {
   try {
     console.log(`Analyzing portfolio for agency website: ${website}`);
+
+    // Format the website URL properly 
+    const websiteUrl = website.startsWith('http') ? website : `https://${website}`;
     
-    // In a future implementation, this would use web scraping to find client logos or case studies
-    // For now, we'll return a placeholder response
+    // Check common portfolio page patterns
+    const portfolioUrls = [
+      `${websiteUrl}/portfolio`,
+      `${websiteUrl}/clients`,
+      `${websiteUrl}/work`,
+      `${websiteUrl}/case-studies`,
+      `${websiteUrl}/projects`
+    ];
     
-    toast.info('Agency portfolio analysis is not yet implemented');
-    return [];
-  } catch (error) {
+    // We'll track any portfolio links we find
+    const portfolioLinks: string[] = [];
+    const clients: Business[] = [];
+    
+    // For now, return basic response - this would use web scraping in a full implementation
+    // In the future, this would actually crawl the agency site to find client logos or mentions
+    
+    return {
+      clients,
+      portfolioLinks,
+      requestUrl: portfolioUrls[0],
+      error: 'Full portfolio analysis not yet implemented'
+    };
+  } catch (error: any) {
     console.error('Error analyzing agency portfolio:', error);
     toast.error('Failed to analyze agency portfolio');
+    return {
+      clients: [],
+      portfolioLinks: [],
+      error: error.message || 'Unknown error occurred'
+    };
+  }
+}
+
+/**
+ * Get agencies that might be competitors in a specific location
+ */
+export async function findCompetitorAgencies(location: string, specialties: string[] = []): Promise<Business[]> {
+  try {
+    // Find agencies in the specified location
+    const agencies = await findAgencies(location);
+    
+    // If specialties are provided, filter agencies by those that match
+    if (specialties.length > 0) {
+      return agencies.filter(agency => {
+        // Check if agency name or industry contains any of the specialties
+        const agencyText = `${agency.name} ${agency.industry || ''}`.toLowerCase();
+        return specialties.some(specialty => 
+          agencyText.includes(specialty.toLowerCase())
+        );
+      });
+    }
+    
+    return agencies;
+  } catch (error) {
+    console.error('Error finding competitor agencies:', error);
+    toast.error('Failed to find competitor agencies');
     return [];
   }
 }

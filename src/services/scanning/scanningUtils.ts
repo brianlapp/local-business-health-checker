@@ -1,3 +1,4 @@
+
 import { toast } from 'sonner';
 import { Business, BusinessScanResponse, ScanDebugInfo } from '@/types/business';
 import { generateMockBusinessData } from '../businessProcessingService';
@@ -87,4 +88,42 @@ export function createDebugInfo(details: Partial<ScanDebugInfo> = {}): ScanDebug
     htmlSamples: [],
     ...details
   };
+}
+
+/**
+ * Determines if a business is an agency based on its name and website content
+ */
+export function isLikelyAgency(business: Business): boolean {
+  if (!business.name) return false;
+  
+  const agencyKeywords = [
+    'agency', 'digital', 'marketing', 'web', 'design', 'media', 
+    'creative', 'studios', 'consulting', 'solutions', 'development',
+    'tech', 'software', 'systems', 'IT', 'technology', 'interactive'
+  ];
+  
+  const lowerName = business.name.toLowerCase();
+  return agencyKeywords.some(keyword => lowerName.includes(keyword.toLowerCase()));
+}
+
+/**
+ * Calculates a score for how much an agency specializes in web development
+ * Higher score = more likely to be a web development focused agency
+ */
+export function calculateAgencyWebDevScore(business: Business): number {
+  if (!business.name) return 0;
+  
+  const webDevKeywords = [
+    'web', 'development', 'design', 'frontend', 'backend', 
+    'fullstack', 'react', 'angular', 'vue', 'node', 'developer'
+  ];
+  
+  // Count how many web dev keywords appear in the name
+  const lowerName = business.name.toLowerCase();
+  const matchCount = webDevKeywords.filter(keyword => 
+    lowerName.includes(keyword.toLowerCase())
+  ).length;
+  
+  // Calculate a score from 0-100
+  return Math.min(matchCount * 20, 100);
 }
