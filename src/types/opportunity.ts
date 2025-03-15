@@ -41,16 +41,23 @@ export interface UserProfile {
   id: string;
   email: string;
   display_name?: string;
-  first_name?: string;
-  last_name?: string;
-  role?: string;
-  profile_image_url?: string;
-  skills?: string[];
+  full_name?: string;
+  headline?: string;
   bio?: string;
   location?: string;
   website?: string;
+  skills?: string[];
   created_at: string;
   updated_at: string;
+  
+  // Adding the missing fields that are used in ProfileForm
+  hourly_rate?: number;
+  availability?: string;
+  years_experience?: number;
+  portfolio_url?: string;
+  linkedin_url?: string;
+  github_url?: string;
+  timezone?: string;
 }
 
 // For JobSearchResults.tsx
