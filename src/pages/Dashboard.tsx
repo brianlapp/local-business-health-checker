@@ -147,7 +147,7 @@ const Dashboard: React.FC = () => {
                   <CardContent className="p-4 flex flex-col items-center text-center">
                     <ScanLine className="h-8 w-8 mb-2 mt-2" />
                     <h3 className="font-medium">Scan Manager</h3>
-                    <p className="text-sm text-muted-foreground">Automate website scanning</p>
+                    <p className="text-sm text-muted-foreground">Website scanning & scoring</p>
                   </CardContent>
                 </Card>
               </Link>

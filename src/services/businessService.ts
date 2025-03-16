@@ -14,12 +14,16 @@ import {
 // Import from scanning services
 import {
   scanBusinessesInArea,
+} from './scanningService';
+
+// Import from scan services
+import {
   scanWithLighthouse,
   scanWithGTmetrix,
   scanWithBuiltWith,
   getBusinessesNeedingRealScores,
   getGTmetrixUsage
-} from './scanningService';
+} from './businessScanService';
 
 // Import from discovery services
 import {

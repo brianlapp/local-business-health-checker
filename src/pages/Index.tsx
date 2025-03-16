@@ -1,22 +1,32 @@
 
 import React, { useEffect } from 'react';
-import Dashboard from '@/components/Dashboard';
+import { useAuth } from '@/contexts/AuthContext';
+import { Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 
 const Index = () => {
+  const { user, isLoading } = useAuth();
+
   useEffect(() => {
     console.log('Index page mounted');
-    // This will help us track if the index page is rendering at all
   }, []);
 
-  return (
-    <div className="min-h-screen flex flex-col bg-[#f5f8fa]">
-      <main className="flex-1">
-        <Dashboard />
-      </main>
-      <Toaster position="top-right" />
-    </div>
-  );
+  // If user is authenticated, redirect to dashboard
+  if (user && !isLoading) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Show a loading state while authentication is being checked
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // If not authenticated and not loading, redirect to login
+  return <Navigate to="/login" replace />;
 };
 
 export default Index;

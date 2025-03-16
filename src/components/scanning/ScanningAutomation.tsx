@@ -13,13 +13,7 @@ import {
   getAutomationStatus,
   getScanQueueStatus
 } from '@/services/scheduling/scanSchedulingService';
-
-interface ScanStats {
-  pendingScans: number;
-  inProgressScans: number;
-  completedToday: number;
-  failedToday: number;
-}
+import { toast } from 'sonner';
 
 const ScanningAutomation: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -27,7 +21,7 @@ const ScanningAutomation: React.FC = () => {
   const [automationEnabled, setAutomationEnabled] = useState(false);
   const [nextRunTime, setNextRunTime] = useState<string | null>(null);
   const [lastRunTime, setLastRunTime] = useState<string | null>(null);
-  const [scanStats, setScanStats] = useState<ScanStats>({
+  const [scanStats, setScanStats] = useState({
     pendingScans: 0,
     inProgressScans: 0,
     completedToday: 0,
@@ -48,6 +42,7 @@ const ScanningAutomation: React.FC = () => {
       setScanStats(queueStatus);
     } catch (error) {
       console.error('Error fetching automation status:', error);
+      toast.error('Failed to fetch scanning status');
     } finally {
       setLoading(false);
     }
@@ -55,17 +50,26 @@ const ScanningAutomation: React.FC = () => {
 
   useEffect(() => {
     fetchStatus();
+    
+    // Set up regular refresh
+    const intervalId = setInterval(() => {
+      fetchStatus();
+    }, 60000); // Refresh every minute
+    
+    return () => clearInterval(intervalId);
   }, []);
 
   const handleManualScan = async () => {
     setScanning(true);
     try {
       await triggerManualScan();
-      // Refetch status after scan is triggered
-      await fetchStatus();
+      // Wait a moment then refetch status after scan is triggered
+      setTimeout(async () => {
+        await fetchStatus();
+        setScanning(false);
+      }, 2000);
     } catch (error) {
       console.error('Error triggering scan:', error);
-    } finally {
       setScanning(false);
     }
   };
@@ -131,7 +135,9 @@ const ScanningAutomation: React.FC = () => {
                 <div className="space-y-1">
                   <p className="text-sm font-medium">Next Scheduled Run</p>
                   <p className="text-sm text-muted-foreground">
-                    {nextRunTime ? formatDateTime(nextRunTime) : 'Not scheduled'}
+                    {automationEnabled 
+                      ? (nextRunTime ? formatDateTime(nextRunTime) : 'Calculating...') 
+                      : 'Not scheduled'}
                   </p>
                 </div>
                 <div className="space-y-1">

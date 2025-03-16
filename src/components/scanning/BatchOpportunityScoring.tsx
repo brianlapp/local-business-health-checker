@@ -1,131 +1,165 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { AlertCircle, Calculator, LightbulbIcon } from 'lucide-react';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Progress } from '@/components/ui/progress';
-import { getBusinessesNeedingScoring, processBusinessOpportunityScores } from '@/services/websiteAnalysisService';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { PlayIcon, PauseIcon, RefreshCw } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Business } from '@/types/business';
+import { getBusinesses, evaluateOpportunities } from '@/services/businessService';
 import { toast } from 'sonner';
 
 const BatchOpportunityScoring: React.FC = () => {
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
   const [businesses, setBusinesses] = useState<Business[]>([]);
-  const [processedCount, setProcessedCount] = useState(0);
-  const [totalToProcess, setTotalToProcess] = useState(0);
-  
-  const handleFetchBusinesses = async () => {
+  const [scoredCount, setScoredCount] = useState(0);
+  const [needScoringCount, setNeedScoringCount] = useState(0);
+
+  const fetchBusinesses = async () => {
+    setLoading(true);
     try {
-      setIsProcessing(true);
-      const needsScoring = await getBusinessesNeedingScoring();
-      setBusinesses(needsScoring);
-      setTotalToProcess(needsScoring.length);
+      const data = await getBusinesses();
+      setBusinesses(data || []);
       
-      if (needsScoring.length === 0) {
-        toast.info('No businesses found that need opportunity scoring');
-      } else {
-        toast.success(`Found ${needsScoring.length} businesses that need opportunity scoring`);
-      }
+      // Count businesses without opportunity scores
+      const needScoring = data.filter(b => 
+        b.website && 
+        (!b.opportunityScore || b.lighthouseScore || b.lighthouse_score)
+      );
+      setNeedScoringCount(needScoring.length);
+      
+      // Count already scored businesses
+      const scored = data.filter(b => b.opportunityScore !== undefined && b.opportunityScore !== null);
+      setScoredCount(scored.length);
     } catch (error) {
-      console.error('Error fetching businesses for scoring:', error);
-      toast.error('Failed to fetch businesses for scoring');
+      console.error('Error fetching businesses:', error);
+      toast.error('Failed to load businesses');
     } finally {
-      setIsProcessing(false);
+      setLoading(false);
     }
   };
-  
-  const handleProcessBusinesses = async () => {
-    if (businesses.length === 0) {
-      toast.error('No businesses to process');
-      return;
-    }
-    
+
+  useEffect(() => {
+    fetchBusinesses();
+  }, []);
+
+  const handleBatchScore = async () => {
+    setProcessing(true);
     try {
-      setIsProcessing(true);
-      setProgress(0);
-      setProcessedCount(0);
+      // Find businesses that need scoring
+      const businessesToScore = businesses.filter(b => 
+        b.website && 
+        (!b.opportunityScore || b.lighthouseScore || b.lighthouse_score)
+      );
       
-      // Process businesses in batches of 5
+      if (businessesToScore.length === 0) {
+        toast.info('No businesses need scoring');
+        return;
+      }
+      
+      toast.info(`Scoring ${businessesToScore.length} businesses...`);
+      
+      // Process in batches of 5 to avoid overwhelming the system
       const batchSize = 5;
-      for (let i = 0; i < businesses.length; i += batchSize) {
-        const batch = businesses.slice(i, Math.min(i + batchSize, businesses.length));
-        await processBusinessOpportunityScores(batch);
+      let processed = 0;
+      
+      for (let i = 0; i < businessesToScore.length; i += batchSize) {
+        const batch = businessesToScore.slice(i, i + batchSize);
+        await evaluateOpportunities(batch.map(b => b.id));
+        processed += batch.length;
         
         // Update progress
-        const newProcessedCount = Math.min(i + batchSize, businesses.length);
-        setProcessedCount(newProcessedCount);
-        setProgress((newProcessedCount / businesses.length) * 100);
+        toast.success(`Processed ${processed} of ${businessesToScore.length} businesses`);
+        
+        // Add small delay between batches
+        if (i + batchSize < businessesToScore.length) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
       }
       
-      toast.success(`Successfully processed opportunity scores for ${businesses.length} businesses`);
+      // Refresh business data after scoring
+      await fetchBusinesses();
       
-      // Clear the list after processing
-      setBusinesses([]);
+      toast.success('Batch scoring complete!');
     } catch (error) {
-      console.error('Error processing business opportunity scores:', error);
-      toast.error('Failed to process business opportunity scores');
+      console.error('Error scoring businesses:', error);
+      toast.error('Failed to complete batch scoring');
     } finally {
-      setIsProcessing(false);
+      setProcessing(false);
     }
   };
-  
+
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
-        <CardTitle className="flex items-center">
-          <Calculator className="h-5 w-5 mr-2" />
-          Opportunity Score Processing
-        </CardTitle>
+        <CardTitle>Opportunity Scoring</CardTitle>
         <CardDescription>
-          Calculate opportunity scores for businesses based on website quality
+          Score businesses based on their website quality and potential opportunity
         </CardDescription>
       </CardHeader>
-      
-      <CardContent className="space-y-4">
-        {businesses.length > 0 ? (
-          <div className="space-y-4">
-            <p className="text-sm">
-              Found {businesses.length} businesses that need opportunity scoring.
-            </p>
-            
-            {isProcessing && (
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Processing: {processedCount} of {totalToProcess}</span>
-                  <span>{Math.round(progress)}%</span>
-                </div>
-                <Progress value={progress} className="h-2" />
-              </div>
-            )}
+      <CardContent>
+        {loading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-5 w-[250px]" />
+            <Skeleton className="h-5 w-[200px]" />
+            <Skeleton className="h-5 w-[300px]" />
+            <Skeleton className="h-10 w-[150px]" />
           </div>
         ) : (
-          <Alert>
-            <LightbulbIcon className="h-4 w-4" />
-            <AlertTitle>Opportunity Scoring</AlertTitle>
-            <AlertDescription>
-              This tool will find businesses that need opportunity scores and calculate them based on
-              website quality factors like performance, mobile-friendliness, and CMS status.
-            </AlertDescription>
-          </Alert>
+          <>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-muted rounded-md p-4 text-center">
+                  <p className="text-2xl font-bold">{needScoringCount}</p>
+                  <p className="text-sm text-muted-foreground">Need Scoring</p>
+                </div>
+                <div className="bg-muted rounded-md p-4 text-center">
+                  <p className="text-2xl font-bold">{scoredCount}</p>
+                  <p className="text-sm text-muted-foreground">Scored</p>
+                </div>
+              </div>
+              
+              <div className="pt-4">
+                <h3 className="text-sm font-medium mb-2">Requirements for Opportunity Scoring</h3>
+                <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+                  <li>Businesses must have a valid website URL</li>
+                  <li>Performance data (Lighthouse score) must be available</li>
+                  <li>At least one scan must have been completed</li>
+                </ul>
+              </div>
+              
+              <div className="pt-4">
+                <h3 className="text-sm font-medium mb-2">Scoring Process</h3>
+                <p className="text-sm text-muted-foreground">
+                  The system evaluates each business based on their website performance,
+                  mobile-friendliness, CMS, and other factors to determine
+                  potential improvement opportunities.
+                </p>
+              </div>
+            </div>
+          </>
         )}
       </CardContent>
-      
-      <CardFooter className="flex justify-between">
+      <CardFooter>
         <Button 
-          variant="outline" 
-          onClick={handleFetchBusinesses} 
-          disabled={isProcessing}
+          onClick={handleBatchScore} 
+          disabled={processing || loading || needScoringCount === 0}
+          className="w-full"
         >
-          Find Businesses
-        </Button>
-        
-        <Button 
-          onClick={handleProcessBusinesses} 
-          disabled={isProcessing || businesses.length === 0}
-        >
-          Process Scores
+          {processing ? (
+            <>
+              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            <>
+              <PlayIcon className="mr-2 h-4 w-4" />
+              Score {needScoringCount} Businesses
+            </>
+          )}
         </Button>
       </CardFooter>
     </Card>

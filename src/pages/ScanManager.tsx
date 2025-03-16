@@ -3,8 +3,9 @@ import React from 'react';
 import ScanningAutomation from '@/components/scanning/ScanningAutomation';
 import BatchOpportunityScoring from '@/components/scanning/BatchOpportunityScoring';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { InfoIcon } from 'lucide-react';
+import { InfoIcon, AlertCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const ScanManager: React.FC = () => {
   return (
@@ -15,6 +16,16 @@ const ScanManager: React.FC = () => {
           Configure and monitor automated scanning and opportunity scoring
         </p>
       </div>
+      
+      <Alert className="mb-6 bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Scan Manager</AlertTitle>
+        <AlertDescription>
+          This centralized scanning control center helps prevent API rate limiting by properly
+          scheduling and queuing scans. All automated scanning is now managed from this page instead
+          of running automatically on dashboard load.
+        </AlertDescription>
+      </Alert>
       
       <Tabs defaultValue="scanning" className="w-full">
         <TabsList className="mb-6">
@@ -53,7 +64,12 @@ const ScanManager: React.FC = () => {
                   </p>
                   <p>
                     Manual scans can be triggered at any time, but keep in mind that
-                    some scanning services like GTmetrix have daily usage limits.
+                    some scanning services like Lighthouse have API rate limits that 
+                    will be respected by the system.
+                  </p>
+                  <p className="font-medium text-blue-600 dark:text-blue-400">
+                    Important: Scanning has been moved from the dashboard to this dedicated
+                    page to prevent rate limiting issues.
                   </p>
                 </CardContent>
               </Card>

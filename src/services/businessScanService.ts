@@ -1,6 +1,9 @@
 
+// This file contains all the scanning functionality for businesses
+
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { Business } from '@/types/business';
 import { invokeEdgeFunction } from './api/supabaseApiClient';
 
 // GTmetrix scanning functionality
@@ -75,7 +78,7 @@ async function incrementGTmetrixUsage() {
   }
 }
 
-// Lighthouse scanning functionality
+// Lighthouse scanning functionality - with proper rate limit handling
 export async function scanWithLighthouse(businessId: string, url: string): Promise<{ 
   success: boolean; 
   reportUrl?: string; 
@@ -83,63 +86,75 @@ export async function scanWithLighthouse(businessId: string, url: string): Promi
   isRealScore?: boolean;
 }> {
   try {
-    const { data, error } = await supabase.functions.invoke('lighthouse-scan', {
-      body: { url, businessId }
-    });
+    // Add the business to the scan queue instead of scanning directly
+    const { data: queueData, error: queueError } = await supabase
+      .from('scan_queue')
+      .insert({
+        business_id: businessId,
+        scan_type: 'lighthouse',
+        url: url,
+        status: 'pending',
+        priority: 'medium'
+      })
+      .select('id')
+      .single();
+    
+    if (queueError) {
+      console.error('Error adding to scan queue:', queueError);
+      
+      // Fall back to direct scanning for backward compatibility
+      const { data, error } = await supabase.functions.invoke('lighthouse-scan', {
+        body: { url, businessId }
+      });
 
-    if (error) {
-      console.error('Lighthouse invoke error:', error);
-      
-      // Check if it's a rate limit error
-      if (error.message.includes('429') || (data && data.status === 429)) {
-        const note = data?.note || "Rate limited. Please try again later.";
-        toast.warning(note);
-        return { 
-          success: false,
-          note: note
-        };
+      if (error) {
+        console.error('Lighthouse invoke error:', error);
+        
+        // Check if it's a rate limit error
+        if (error.message.includes('429') || (data && data.status === 429)) {
+          const note = data?.note || "Rate limited. Please try again later.";
+          toast.warning(note);
+          return { 
+            success: false,
+            note: note
+          };
+        }
+        
+        toast.error(`Lighthouse scan failed: ${error.message}`);
+        return { success: false };
       }
       
-      toast.error(`Lighthouse scan failed: ${error.message}`);
-      return { success: false };
-    }
-    
-    if (data.error) {
-      console.error('Lighthouse scan error:', data.error);
-      
-      // Check if it's a rate limit error
-      if (data.note && data.note.includes('rate limited')) {
-        toast.warning(data.note);
-        return { 
-          success: false,
-          note: data.note
-        };
+      if (data.error) {
+        console.error('Lighthouse scan error:', data.error);
+        
+        // Check if it's a rate limit error
+        if (data.note && data.note.includes('rate limited')) {
+          toast.warning(data.note);
+          return { 
+            success: false,
+            note: data.note
+          };
+        }
+        
+        toast.error(`Lighthouse scan failed: ${data.error}`);
+        return { success: false };
       }
       
-      toast.error(`Lighthouse scan failed: ${data.error}`);
-      return { success: false };
-    }
-    
-    // Add more descriptive toasts based on scan results
-    if (data.note && data.note.includes('rate limited')) {
-      if (data.note.includes('Resuming in')) {
-        toast.warning(data.note);
-      } else {
-        toast.warning('Google API rate limited. Please try again later.');
-      }
+      toast.success('Lighthouse scan completed!');
       
       return { 
-        success: false,
+        success: true,
+        reportUrl: data.reportUrl,
         note: data.note
       };
     }
     
-    toast.success('Lighthouse scan completed!');
+    // Successfully added to queue
+    toast.success('Scan added to queue and will process shortly');
     
-    return { 
+    return {
       success: true,
-      reportUrl: data.reportUrl,
-      note: data.note
+      note: 'Scan queued for processing'
     };
   } catch (error) {
     console.error('Error during Lighthouse scan:', error);
@@ -264,7 +279,7 @@ export async function getGTmetrixUsage(): Promise<{ used: number; limit: number;
   }
 }
 
-// Get businesses that need score updates
+// Get businesses that need score updates - for the Scan Manager
 export async function getBusinessesNeedingRealScores(): Promise<string[]> {
   try {
     // Get businesses that have no lighthouse score or outdated scores
