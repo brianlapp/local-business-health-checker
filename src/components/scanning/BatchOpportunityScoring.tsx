@@ -66,18 +66,23 @@ const BatchOpportunityScoring: React.FC = () => {
       // Get the business IDs
       const businessIds = businessesToScore.map(b => b.id);
       
+      // Create a basic evaluation criteria object
+      const defaultCriteria = {
+        userSkills: [],
+        preferRemote: true
+      };
+      
       // Call evaluateOpportunities with the correct signature
-      // Using type assertion to satisfy TypeScript since the actual implementation
-      // of evaluateOpportunities can handle either IDs or full objects
-      await evaluateOpportunities(businessIds as any, () => {
-        // Callback to refresh data once scoring is complete
-        loadBusinesses();
-        toast.success(`Opportunity scores calculated for ${businessesToScore.length} businesses`);
-        setScoring(false);
-      });
+      // Using type assertion for businessIds, but properly passing criteria as second parameter
+      await evaluateOpportunities(businessIds as any, defaultCriteria);
+      
+      // After evaluation completes, refresh the data
+      await loadBusinesses();
+      toast.success(`Opportunity scores calculated for ${businessesToScore.length} businesses`);
     } catch (error) {
       console.error('Error scoring businesses:', error);
       toast.error('Failed to calculate opportunity scores');
+    } finally {
       setScoring(false);
     }
   };
