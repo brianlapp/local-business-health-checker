@@ -32,9 +32,15 @@ export async function getBusinesses(): Promise<Business[]> {
  */
 export async function addBusiness(businessData: Partial<Business>): Promise<Business | null> {
   try {
+    // Ensure required fields are present before passing to addBusinessImpl
+    if (!businessData.name) {
+      console.error('Business name is required');
+      return null;
+    }
+    
     // Import dynamically to avoid circular dependencies
     const { addBusiness: addBusinessImpl } = await import('./businessService');
-    return await addBusinessImpl(businessData);
+    return await addBusinessImpl(businessData as Omit<Business, "id" | "issues">);
   } catch (error) {
     console.error('Error in apiService.addBusiness:', error);
     return null;
@@ -45,11 +51,16 @@ export async function addBusiness(businessData: Partial<Business>): Promise<Busi
  * Scan businesses in a specific area
  * This is a temporary re-export to fix import errors
  */
-export async function scanBusinessesInArea(location: string, radius: number = 5, maxResults: number = 20) {
+export async function scanBusinessesInArea(
+  location: string, 
+  radius: number = 5, 
+  maxResults: number = 20
+) {
   try {
     // Import dynamically to avoid circular dependencies
     const { scanBusinessesInArea: scanImpl } = await import('./businessService');
-    return await scanImpl(location, radius, maxResults);
+    // Pass the radius as string to match the expected parameter type
+    return await scanImpl(location, radius.toString(), maxResults);
   } catch (error) {
     console.error('Error in apiService.scanBusinessesInArea:', error);
     return { businesses: [], count: 0, location };

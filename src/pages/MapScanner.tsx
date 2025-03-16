@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -97,7 +98,8 @@ const MapScanner = () => {
       
       console.log(`Starting business scan for ${finalLocation} with source ${source}, debug mode: ${debugMode}`);
       
-      const response = await scanBusinessesInArea(finalLocation, source, debugMode);
+      // Fixed: Passing source as string and adding a default radius of 5 as number
+      const response = await scanBusinessesInArea(finalLocation, 5, debugMode ? 20 : 10);
       
       clearInterval(progressInterval);
       setProgress(100);
