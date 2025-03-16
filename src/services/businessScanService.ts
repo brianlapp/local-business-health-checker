@@ -1,6 +1,8 @@
+
 import { supabase } from '@/lib/supabase';
 import { Business } from '@/types/business';
 import { toast } from 'sonner';
+import { ensureBusinessStatus } from './businessUtilsService';
 
 /**
  * Get businesses that need to be rescanned based on their last checked date
@@ -30,7 +32,7 @@ export async function getBusinessesNeedingRealScores(): Promise<Business[]> {
 /**
  * Get GTmetrix usage statistics
  */
-export async function getGTmetrixUsage(): Promise<{ scans_used: number; scan_limit: number } | null> {
+export async function getGTmetrixUsage(): Promise<{ scans_used: number; scan_limit: number; } | null> {
   try {
     const { data, error } = await supabase
       .from('gtmetrix_usage')
@@ -43,7 +45,11 @@ export async function getGTmetrixUsage(): Promise<{ scans_used: number; scan_lim
       return null;
     }
     
-    return data || null;
+    // Map the database column names to our client-expected names
+    return data ? {
+      scans_used: data.scans_used,
+      scan_limit: data.scans_limit
+    } : null;
   } catch (error) {
     console.error('Error in getGTmetrixUsage:', error);
     toast.error('An unexpected error occurred');
@@ -69,13 +75,16 @@ export async function scanWithLighthouse(businessId: string): Promise<boolean> {
       return false;
     }
     
-    // Add to scan queue using custom RPC function
-    const { data, error } = await supabase.rpc('add_to_scan_queue', {
-      business_id_param: businessId,
-      scan_type_param: 'lighthouse',
-      url_param: business.website,
-      priority_param: 'high'
-    });
+    // Use a direct SQL query to call the RPC since TypeScript doesn't know about our custom functions
+    const { data, error } = await supabase.rpc(
+      'add_to_scan_queue' as any,
+      {
+        business_id_param: businessId,
+        scan_type_param: 'lighthouse',
+        url_param: business.website,
+        priority_param: 'high'
+      }
+    );
     
     if (error) {
       console.error('Error queuing Lighthouse scan:', error);
@@ -110,13 +119,16 @@ export async function scanWithGTmetrix(businessId: string): Promise<boolean> {
       return false;
     }
     
-    // Add to scan queue using custom RPC function
-    const { data, error } = await supabase.rpc('add_to_scan_queue', {
-      business_id_param: businessId,
-      scan_type_param: 'gtmetrix',
-      url_param: business.website,
-      priority_param: 'high'
-    });
+    // Use a direct SQL query to call the RPC since TypeScript doesn't know about our custom functions
+    const { data, error } = await supabase.rpc(
+      'add_to_scan_queue' as any,
+      {
+        business_id_param: businessId,
+        scan_type_param: 'gtmetrix',
+        url_param: business.website,
+        priority_param: 'high'
+      }
+    );
     
     if (error) {
       console.error('Error queuing GTmetrix scan:', error);
@@ -151,13 +163,16 @@ export async function scanWithBuiltWith(businessId: string): Promise<boolean> {
       return false;
     }
     
-    // Add to scan queue using custom RPC function
-    const { data, error } = await supabase.rpc('add_to_scan_queue', {
-      business_id_param: businessId,
-      scan_type_param: 'builtwith',
-      url_param: business.website,
-      priority_param: 'high'
-    });
+    // Use a direct SQL query to call the RPC since TypeScript doesn't know about our custom functions
+    const { data, error } = await supabase.rpc(
+      'add_to_scan_queue' as any,
+      {
+        business_id_param: businessId,
+        scan_type_param: 'builtwith',
+        url_param: business.website,
+        priority_param: 'high'
+      }
+    );
     
     if (error) {
       console.error('Error queuing BuiltWith scan:', error);

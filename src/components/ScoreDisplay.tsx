@@ -2,7 +2,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { Business } from '@/types/business';
-import { scanWithGTmetrix, scanWithLighthouse, scanWithBuiltWith, getGTmetrixUsage } from '@/services/businessService';
+import { scanWithGTmetrix, scanWithLighthouse, scanWithBuiltWith } from '@/services/businessScanService';
 import PerformanceScores from './score/PerformanceScores';
 import IssuesList from './score/IssuesList';
 
@@ -20,7 +20,12 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, business, cla
   React.useEffect(() => {
     const fetchGTmetrixUsage = async () => {
       const usage = await getGTmetrixUsage();
-      setGtmetrixUsage(usage);
+      if (usage) {
+        setGtmetrixUsage({
+          used: usage.scans_used,
+          limit: usage.scan_limit
+        });
+      }
     };
     
     fetchGTmetrixUsage();
@@ -45,7 +50,7 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, business, cla
   const handleLighthouseScan = async () => {
     try {
       setIsScanning(true);
-      await scanWithLighthouse(business.id, business.website);
+      await scanWithLighthouse(business.id);
       if (onScanComplete) {
         onScanComplete();
       }
@@ -59,10 +64,15 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, business, cla
   const handleGTmetrixScan = async () => {
     try {
       setIsScanning(true);
-      await scanWithGTmetrix(business.id, business.website);
+      await scanWithGTmetrix(business.id);
       
       const usage = await getGTmetrixUsage();
-      setGtmetrixUsage(usage);
+      if (usage) {
+        setGtmetrixUsage({
+          used: usage.scans_used,
+          limit: usage.scan_limit
+        });
+      }
       
       if (onScanComplete) {
         onScanComplete();
@@ -113,3 +123,18 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, business, cla
 };
 
 export default ScoreDisplay;
+
+// Helper function to get GTmetrix usage
+async function getGTmetrixUsage() {
+  try {
+    const response = await fetch('/api/gtmetrix-usage');
+    if (!response.ok) {
+      return null;
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching GTmetrix usage:', error);
+    return null;
+  }
+}

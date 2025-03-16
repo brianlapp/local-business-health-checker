@@ -1,127 +1,90 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2Icon, DatabaseIcon, SmartphoneIcon, AlertTriangleIcon } from 'lucide-react';
-import { scanWithBuiltWith } from '@/services/businessService';
+import { Icons } from '@/components/ui/icons';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { scanWithBuiltWith } from '@/services/businessScanService';
 import { Business } from '@/types/business';
-import { toast } from 'sonner';
 
 interface CMSDetectionProps {
   business: Business;
-  isScanning: boolean;
   onScanComplete?: () => void;
 }
 
-const CMSDetection: React.FC<CMSDetectionProps> = ({ 
-  business, 
-  isScanning, 
-  onScanComplete 
-}) => {
-  const [scanning, setScanning] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+const CMSDetection: React.FC<CMSDetectionProps> = ({ business, onScanComplete }) => {
+  const [isLoading, setIsLoading] = useState(false);
   
-  const handleCMSScan = async () => {
+  // Get CMS name from the business object
+  const cmsName = business.cms || 'Unknown';
+  
+  // Get mobile friendly status
+  const isMobileFriendly = business.is_mobile_friendly;
+  
+  const handleDetectTech = async () => {
+    if (!business.id) return;
+    
+    setIsLoading(true);
     try {
-      setScanning(true);
-      setError(null);
-      
-      console.log(`Starting BuiltWith scan for: ${business.website}`);
-      const result = await scanWithBuiltWith(business.id, business.website);
-      
-      if (result.success) {
-        console.log('CMS detection completed successfully', result);
-        toast.success(`CMS detected: ${result.cms || 'Unknown'}`);
-        
-        if (result.isMobileFriendly !== undefined) {
-          toast.success(result.isMobileFriendly ? 
-            'Website is mobile-friendly' : 
-            'Website is not mobile-friendly'
-          );
-        }
-      } else {
-        console.error('Failed to detect CMS', result);
-        setError('Technology detection failed. Please try again later.');
-        toast.error('Technology detection failed.');
-      }
+      await scanWithBuiltWith(business.id);
       
       if (onScanComplete) {
         onScanComplete();
       }
     } catch (error) {
-      console.error('CMS detection error:', error);
-      setError('Technology detection failed. Please try again later.');
-      toast.error('CMS detection failed. Please try again later.');
+      console.error('Error detecting technology:', error);
     } finally {
-      setScanning(false);
+      setIsLoading(false);
     }
   };
-  
-  const getMobileFriendlyStatus = () => {
-    // Check if we have explicit mobile-friendly status from database
-    if (typeof business.is_mobile_friendly === 'boolean') {
-      return business.is_mobile_friendly;
-    }
-    
-    // Check issues object as fallback
-    if (business.issues && business.issues.notMobileFriendly === false) {
-      return true;
-    }
-    
-    // Default to unknown if not specified
-    return null;
-  };
-  
-  const mobileFriendlyStatus = getMobileFriendlyStatus();
   
   return (
-    <div className="mt-4 border rounded-lg p-4">
+    <div className="mb-4">
       <div className="flex items-center justify-between mb-2">
-        <div>
-          <h4 className="text-sm font-medium">CMS & Technology</h4>
-          <p className="text-xs text-muted-foreground">
-            {business.cms ? business.cms : 'Not detected yet'}
-          </p>
-          {mobileFriendlyStatus !== null && (
-            <div className="flex items-center mt-1">
-              <SmartphoneIcon className={`h-3 w-3 mr-1 ${mobileFriendlyStatus ? 'text-green-500' : 'text-red-500'}`} />
-              <p className="text-xs text-muted-foreground">
-                {mobileFriendlyStatus ? 'Mobile Friendly' : 'Not Mobile Friendly'}
-              </p>
-            </div>
-          )}
-        </div>
+        <h3 className="text-sm font-medium">Technology</h3>
         <Button 
+          variant="outline" 
           size="sm" 
-          variant="outline"
-          disabled={scanning || isScanning}
-          onClick={handleCMSScan}
+          onClick={handleDetectTech}
+          disabled={isLoading}
         >
-          {scanning ? (
+          {isLoading ? (
             <>
-              <Loader2Icon className="h-3 w-3 mr-1 animate-spin" />
-              Detecting
+              <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+              Detecting...
             </>
           ) : (
-            <>
-              <DatabaseIcon className="h-3 w-3 mr-1" />
-              Detect CMS
-            </>
+            'Detect Tech'
           )}
         </Button>
       </div>
       
-      {error && (
-        <div className="mt-2 p-2 bg-red-50 text-red-700 rounded-md text-xs flex items-center">
-          <AlertTriangleIcon className="h-3 w-3 mr-1" />
-          {error}
+      <div className="grid grid-cols-2 gap-2 text-sm">
+        <div className="p-2 bg-muted rounded">
+          <span className="text-muted-foreground">CMS:</span> {cmsName}
         </div>
-      )}
-      
-      {business.lastChecked && (
-        <p className="text-xs text-muted-foreground mt-2">
-          Last checked: {new Date(business.lastChecked).toLocaleDateString()}
-        </p>
-      )}
+        
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="p-2 bg-muted rounded">
+                <span className="text-muted-foreground">Mobile:</span>{' '}
+                {isMobileFriendly !== undefined ? (
+                  isMobileFriendly ? (
+                    <span className="text-green-600">✓ Friendly</span>
+                  ) : (
+                    <span className="text-red-600">✗ Not Friendly</span>
+                  )
+                ) : (
+                  'Unknown'
+                )}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Mobile-friendly assessment</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
     </div>
   );
 };

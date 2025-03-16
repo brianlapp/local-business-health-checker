@@ -66,10 +66,12 @@ const BatchOpportunityScoring: React.FC = () => {
       // Convert to business IDs for the evaluation service
       const businessIds = businessesToScore.map(b => b.id);
       
+      // Call evaluateOpportunities with the correct signature
       await evaluateOpportunities(businessIds, () => {
         // Callback to refresh data once scoring is complete
         loadBusinesses();
         toast.success(`Opportunity scores calculated for ${businessesToScore.length} businesses`);
+        setScoring(false);
       });
     } catch (error) {
       console.error('Error scoring businesses:', error);
