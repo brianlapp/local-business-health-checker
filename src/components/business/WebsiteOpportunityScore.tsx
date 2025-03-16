@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -6,6 +7,7 @@ import { CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
 
 interface WebsiteOpportunityScoreProps {
   business: any; // Replace 'any' with your actual Business type
+  onScoreUpdated?: () => Promise<void>; // Make this prop optional
 }
 
 interface SEOIssuesResult {
@@ -14,7 +16,7 @@ interface SEOIssuesResult {
   specificIssues: string[];
 }
 
-const WebsiteOpportunityScore: React.FC<WebsiteOpportunityScoreProps> = ({ business }) => {
+const WebsiteOpportunityScore: React.FC<WebsiteOpportunityScoreProps> = ({ business, onScoreUpdated }) => {
   const [score, setScore] = useState<number>(business?.opportunity_score || 0);
   const [seoIssues, setSeoIssues] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -67,6 +69,28 @@ const WebsiteOpportunityScore: React.FC<WebsiteOpportunityScoreProps> = ({ busin
     calculateSEOIssues();
   }, [business?.id]);
 
+  const handleAnalyzeWebsite = async () => {
+    setLoading(true);
+    
+    try {
+      // Simulate analysis
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Update score with a new random value
+      const newScore = Math.floor(Math.random() * 100);
+      setScore(newScore);
+      
+      // Call the callback if provided
+      if (onScoreUpdated) {
+        await onScoreUpdated();
+      }
+    } catch (error) {
+      console.error('Error analyzing website:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -94,7 +118,16 @@ const WebsiteOpportunityScore: React.FC<WebsiteOpportunityScoreProps> = ({ busin
         </div>
       </CardContent>
       <CardFooter className="flex justify-end">
-        <Button>Analyze Website</Button>
+        <Button onClick={handleAnalyzeWebsite} disabled={loading}>
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Analyzing...
+            </>
+          ) : (
+            'Analyze Website'
+          )}
+        </Button>
       </CardFooter>
     </Card>
   );

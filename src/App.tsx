@@ -24,15 +24,34 @@ const App = () => {
 
   useEffect(() => {
     const authenticate = async () => {
-      // No need to check auth here as the useAuth hook handles it
-      setLoading(false);
+      console.log('App: Starting authentication check');
+      try {
+        // No need to check auth here as the useAuth hook handles it
+        console.log('App: Auth check completed, user:', user ? 'authenticated' : 'not authenticated');
+      } catch (error) {
+        console.error('App: Auth check error:', error);
+      } finally {
+        setLoading(false);
+        console.log('App: Loading state set to false');
+      }
     };
 
     authenticate();
-  }, []);
+  }, [user]);
+  
+  console.log('App: Rendering with loading states:', { appLoading: loading, authLoading: isLoading });
+  
+  // Add an early return with loading indicator to prevent white screen
+  if (loading || isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
   
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <Router>
         <Toaster />
         <Header />

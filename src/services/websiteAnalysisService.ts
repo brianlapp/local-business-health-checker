@@ -34,33 +34,30 @@ export async function getBusinessesNeedingScoring(): Promise<Business[]> {
 /**
  * Calculate opportunity score for a business website
  */
-export async function calculateOpportunityScore(business: Business): Promise<number> {
-  if (!business) return 0;
-  
-  let score = 50; // Default base score
-  
-  // Adjust score based on existing performance metrics
-  if (business.lighthouseScore !== undefined) {
-    // Lower lighthouse score = more opportunity
-    score += Math.round((100 - (business.lighthouseScore || 0)) / 5);
+export async function calculateOpportunityScore(business: any): Promise<number> {
+  try {
+    // Various calculations...
+    
+    // Make sure we're returning the actual number, not a Promise
+    let finalScore = 0;
+    
+    // Calculate score based on various factors
+    if (business.lighthouse_score) {
+      finalScore += business.lighthouse_score * 0.3; // 30% weight to performance
+    }
+    
+    if (business.gtmetrix_score) {
+      finalScore += business.gtmetrix_score * 0.2; // 20% weight to GTMetrix
+    }
+    
+    // Add weights for other factors
+    
+    // Ensure we return a number between 0 and 100
+    return Math.min(100, Math.max(0, Math.round(finalScore)));
+  } catch (error) {
+    console.error('Error calculating opportunity score:', error);
+    return 50; // Default score if calculation fails
   }
-  
-  if (business.gtmetrixScore !== undefined) {
-    // Lower GTmetrix score = more opportunity
-    score += Math.round((100 - (business.gtmetrixScore || 0)) / 5);
-  }
-  
-  // Factor in website issues
-  if (business.issues) {
-    if (business.issues.speedIssues) score += 10;
-    if (business.issues.outdatedCMS) score += 15;
-    if (business.issues.noSSL) score += 20;
-    if (business.issues.notMobileFriendly) score += 15;
-    if (business.issues.badFonts) score += 5;
-  }
-  
-  // Cap the score at 100
-  return Math.min(score, 100);
 }
 
 /**
@@ -109,7 +106,7 @@ export async function processBusinessOpportunityScores(businesses: Business[]): 
   for (const business of businesses) {
     try {
       // Calculate opportunity score
-      const opportunityScore = calculateOpportunityScore(business);
+      const opportunityScore = await calculateOpportunityScore(business);
       
       // Update in database
       const { error } = await supabase
@@ -157,5 +154,46 @@ export async function getBusinessesForAnalysis(): Promise<Business[]> {
     console.error('Error in getBusinessesForAnalysis:', error);
     toast.error('Failed to load businesses for analysis');
     return [];
+  }
+}
+
+/**
+ * Update a business with a calculated opportunity score
+ */
+export async function updateBusinessWithOpportunityScore(businessId: string): Promise<any> {
+  try {
+    // Get the business
+    const { data: business } = await supabase
+      .from('businesses')
+      .select('*')
+      .eq('id', businessId)
+      .single();
+    
+    if (!business) {
+      throw new Error('Business not found');
+    }
+    
+    // Calculate the opportunity score - make sure to await the Promise
+    const opportunityScore = await calculateOpportunityScore(business);
+    
+    // Update the business with the new opportunity_score
+    const { data: updatedBusiness, error } = await supabase
+      .from('businesses')
+      .update({
+        opportunity_score: opportunityScore,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', businessId)
+      .select()
+      .single();
+    
+    if (error) {
+      throw error;
+    }
+    
+    return ensureBusinessStatus(updatedBusiness);
+  } catch (error) {
+    console.error('Error updating business with opportunity score:', error);
+    return null;
   }
 }

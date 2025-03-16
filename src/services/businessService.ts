@@ -53,6 +53,9 @@ import {
   getUserEvaluationCriteria
 } from './evaluation/opportunityEvaluationService';
 
+// Make sure we also have the function from apiService
+import { getBusinesses as getBusinessesFromApi } from './apiService';
+
 // Re-export everything
 export {
   // Business CRUD Operations
@@ -92,5 +95,8 @@ export {
   evaluateOpportunity,
   evaluateOpportunities,
   saveOpportunityScore,
-  getUserEvaluationCriteria
+  getUserEvaluationCriteria,
+  
+  // Alternative implementations
+  getBusinessesFromApi
 };
