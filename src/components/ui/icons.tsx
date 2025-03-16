@@ -8,7 +8,6 @@ import {
   Clock, 
   RefreshCw,
   CheckCircle2,
-  XCircle2,
   AlertTriangle
 } from 'lucide-react';
 
@@ -17,7 +16,7 @@ export const Icons = {
   check: CheckCircle,
   checkCircle: CheckCircle2,
   error: XCircle,
-  errorCircle: XCircle2,
+  errorCircle: XCircle, // Changed from XCircle2 to XCircle
   alert: AlertCircle,
   warning: AlertTriangle,
   clock: Clock,
