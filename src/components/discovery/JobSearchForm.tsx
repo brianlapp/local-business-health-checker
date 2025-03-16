@@ -4,26 +4,31 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
-import { Search, Briefcase } from 'lucide-react';
+import { Search, Briefcase, Filter } from 'lucide-react';
 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Slider } from '@/components/ui/slider';
 
 const formSchema = z.object({
   query: z.string().min(2, { message: 'Search term must be at least 2 characters' }),
   location: z.string().optional(),
   source: z.string().optional(),
-  remote: z.boolean().optional()
+  remote: z.boolean().optional(),
+  experienceLevel: z.string().optional(),
+  datePosted: z.string().optional(),
+  minBudget: z.number().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
 interface JobSearchFormProps {
-  onSearch: (query: string, location: string, source: string) => void;
+  onSearch: (query: string, location: string, source: string, filters?: any) => void;
   isLoading?: boolean;
 }
 
@@ -34,7 +39,10 @@ const JobSearchForm: React.FC<JobSearchFormProps> = ({ onSearch, isLoading = fal
       query: '',
       location: 'remote',
       source: 'all',
-      remote: true
+      remote: true,
+      experienceLevel: 'any',
+      datePosted: 'any',
+      minBudget: 0,
     }
   });
 
@@ -42,10 +50,18 @@ const JobSearchForm: React.FC<JobSearchFormProps> = ({ onSearch, isLoading = fal
     if (isLoading) return;
     
     try {
+      // Extract additional filters
+      const filters = {
+        experienceLevel: data.experienceLevel,
+        datePosted: data.datePosted,
+        minBudget: data.minBudget,
+      };
+      
       onSearch(
         data.query, 
         data.remote ? 'remote' : (data.location || ''), 
-        data.source || 'all'
+        data.source || 'all',
+        filters
       );
     } catch (error) {
       console.error('Error in search form:', error);
@@ -150,6 +166,92 @@ const JobSearchForm: React.FC<JobSearchFormProps> = ({ onSearch, isLoading = fal
               />
             </div>
           </div>
+          
+          <Accordion type="single" collapsible className="w-full border rounded-md">
+            <AccordionItem value="advanced-filters">
+              <AccordionTrigger className="px-4">
+                <div className="flex items-center">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Advanced Filters
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="experienceLevel"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Experience Level</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Any experience level" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="any">Any experience level</SelectItem>
+                            <SelectItem value="entry">Entry level</SelectItem>
+                            <SelectItem value="intermediate">Intermediate</SelectItem>
+                            <SelectItem value="expert">Expert</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="datePosted"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Date Posted</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Any time" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="any">Any time</SelectItem>
+                            <SelectItem value="today">Last 24 hours</SelectItem>
+                            <SelectItem value="week">Last 7 days</SelectItem>
+                            <SelectItem value="month">Last 30 days</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="minBudget"
+                    render={({ field }) => (
+                      <FormItem className="col-span-1 md:col-span-2">
+                        <FormLabel>Minimum Budget (${field.value})</FormLabel>
+                        <FormControl>
+                          <Slider
+                            value={[field.value]}
+                            min={0}
+                            max={10000}
+                            step={500}
+                            onValueChange={(values) => field.onChange(values[0])}
+                            className="py-4"
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
           
           <Button 
             type="submit" 
