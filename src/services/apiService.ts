@@ -38,9 +38,21 @@ export async function addBusiness(businessData: Partial<Business>): Promise<Busi
       return null;
     }
     
+    // Create a properly typed business object with required fields
+    const businessToAdd = {
+      name: businessData.name,
+      website: businessData.website || '',
+      location: businessData.location || '',
+      industry: businessData.industry || '',
+      status: businessData.status || 'discovered',
+      source: businessData.source || 'manual',
+      // Add other optional fields
+      ...businessData
+    };
+    
     // Import dynamically to avoid circular dependencies
     const { addBusiness: addBusinessImpl } = await import('./businessService');
-    return await addBusinessImpl(businessData as Omit<Business, "id" | "issues">);
+    return await addBusinessImpl(businessToAdd as Omit<Business, "id" | "issues">);
   } catch (error) {
     console.error('Error in apiService.addBusiness:', error);
     return null;

@@ -20,7 +20,8 @@ export async function findAgencies(location: string): Promise<Business[]> {
     console.log(`Finding agencies in ${location}`);
     
     // Use existing scanner but with specialized keywords for agencies
-    const response = await scanBusinessesInArea(location, 'google', true);
+    // Pass true as the last parameter to use Google, and convert "google" to a radius value of 10
+    const response = await scanBusinessesInArea(location, "10", 20, true);
     
     if (!response.businesses || response.businesses.length === 0) {
       console.log('No potential agencies found');
