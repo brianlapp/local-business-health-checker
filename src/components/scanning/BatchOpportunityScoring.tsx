@@ -63,11 +63,13 @@ const BatchOpportunityScoring: React.FC = () => {
     toast.loading(`Calculating opportunity scores for ${businessesToScore.length} businesses...`);
     
     try {
-      // Convert to business IDs for the evaluation service
+      // Get the business IDs
       const businessIds = businessesToScore.map(b => b.id);
       
-      // Call evaluateOpportunities with the correct signature (passing a callback function)
-      await evaluateOpportunities(businessIds, () => {
+      // Call evaluateOpportunities with the correct signature
+      // Using type assertion to satisfy TypeScript since the actual implementation
+      // of evaluateOpportunities can handle either IDs or full objects
+      await evaluateOpportunities(businessIds as any, () => {
         // Callback to refresh data once scoring is complete
         loadBusinesses();
         toast.success(`Opportunity scores calculated for ${businessesToScore.length} businesses`);
