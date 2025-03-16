@@ -2,6 +2,7 @@
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Business } from '@/types/business';
+import { ensureBusinessStatus, ensureBusinessesStatus } from '../../businessUtilsService';
 
 /**
  * Filter businesses that might be agencies based on name
@@ -93,12 +94,8 @@ export async function getAgenciesFromDatabase(): Promise<Business[]> {
       throw error;
     }
     
-    // Make sure each agency has the required fields
-    return data.map(agency => ({
-      ...agency,
-      status: agency.status || 'discovered',
-      // Add other fields as needed
-    })) as Business[];
+    // Use our utility function to ensure all agencies have the required fields
+    return ensureBusinessesStatus(data);
   } catch (error) {
     console.error('Error getting agencies:', error);
     toast.error('Failed to load agencies');

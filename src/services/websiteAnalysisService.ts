@@ -2,7 +2,7 @@
 import { supabase } from '@/lib/supabase';
 import { Business } from '@/types/business';
 import { toast } from 'sonner';
-import { generateIssues } from './businessUtilsService';
+import { generateIssues, ensureBusinessStatus, ensureBusinessesStatus } from './businessUtilsService';
 
 /**
  * Get businesses that need to have their opportunity score calculated
@@ -24,20 +24,8 @@ export async function getBusinessesNeedingScoring(): Promise<Business[]> {
     
     console.log(`Found ${data.length} businesses needing scoring`);
     
-    // Map database fields to Business type with proper aliasing
-    return data.map(business => ({
-      ...business,
-      status: business.status || 'discovered',
-      lastChecked: business.last_checked,
-      speedScore: business.speed_score,
-      lighthouseScore: business.lighthouse_score,
-      gtmetrixScore: business.gtmetrix_score,
-      lighthouseReportUrl: business.lighthouse_report_url,
-      gtmetrixReportUrl: business.gtmetrix_report_url,
-      lastLighthouseScan: business.last_lighthouse_scan,
-      lastGtmetrixScan: business.last_gtmetrix_scan,
-      issues: generateIssues(business as unknown as Business)
-    })) as Business[];
+    // Use the utility function to ensure all businesses have proper status
+    return ensureBusinessesStatus(data);
   } catch (error) {
     console.error('Error in getBusinessesNeedingScoring:', error);
     return [];
@@ -162,20 +150,8 @@ export async function getBusinessesForAnalysis(): Promise<Business[]> {
       throw error;
     }
     
-    // Map database fields to Business type with proper aliasing
-    return data.map(business => ({
-      ...business,
-      status: business.status || 'discovered',
-      lastChecked: business.last_checked,
-      speedScore: business.speed_score,
-      lighthouseScore: business.lighthouse_score,
-      gtmetrixScore: business.gtmetrix_score,
-      lighthouseReportUrl: business.lighthouse_report_url,
-      gtmetrixReportUrl: business.gtmetrix_report_url,
-      lastLighthouseScan: business.last_lighthouse_scan,
-      lastGtmetrixScan: business.last_gtmetrix_scan,
-      issues: generateIssues(business as unknown as Business)
-    })) as Business[];
+    // Use the utility function to ensure all businesses have proper status and shape
+    return ensureBusinessesStatus(data);
   } catch (error) {
     console.error('Error in getBusinessesForAnalysis:', error);
     toast.error('Failed to load businesses for analysis');

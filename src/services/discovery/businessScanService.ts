@@ -2,6 +2,7 @@
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { Business, BusinessScanResponse } from '@/types/business';
+import { ensureBusinessStatus } from '../businessUtilsService';
 
 /**
  * Search for local businesses in a specific location
@@ -74,11 +75,8 @@ export async function addLocalBusiness(businessData: Partial<Business>): Promise
     
     toast.success('Business added successfully');
     
-    // Ensure the returned business has the required status field
-    return {
-      ...data,
-      status: data.status || 'discovered',
-    } as Business;
+    // Use our utility function to ensure the business has the correct shape
+    return ensureBusinessStatus(data);
   } catch (error) {
     console.error('Error adding business:', error);
     toast.error('Failed to add business');
@@ -98,7 +96,7 @@ export async function getLocalBusinesses(): Promise<Business[]> {
     
     if (error) throw error;
     
-    // Ensure all businesses have the required status field
+    // Map database fields to Business type with proper status field
     return data.map(business => ({
       ...business,
       status: business.status || 'discovered',

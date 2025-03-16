@@ -1,7 +1,7 @@
-
 import { supabase } from '@/lib/supabase';
 import { Business } from '@/types/business';
 import { toast } from 'sonner';
+import { ensureBusinessesStatus } from '../../businessUtilsService';
 
 export interface AgencyClientRelationship {
   id?: string;
@@ -137,10 +137,7 @@ export async function getRelationshipMapData(): Promise<RelationshipMapData> {
     }
 
     // Transform agency data to include required fields
-    const agencies = agenciesData.map(agency => ({
-      ...agency,
-      status: agency.status || 'discovered'
-    })) as Business[];
+    const agencies = ensureBusinessesStatus(agenciesData);
 
     // Get all relationships
     const { data: relationships, error: relationshipError } = await supabase
@@ -167,10 +164,7 @@ export async function getRelationshipMapData(): Promise<RelationshipMapData> {
     }
 
     // Transform client data to include required fields
-    const clients = clientsData.map(client => ({
-      ...client,
-      status: client.status || 'discovered'
-    })) as Business[];
+    const clients = ensureBusinessesStatus(clientsData);
 
     return {
       agencies,
@@ -219,10 +213,7 @@ export async function getAgencyClients(agencyId: string): Promise<Business[]> {
     }
 
     // Transform client data to include required fields
-    return clientsData.map(client => ({
-      ...client,
-      status: client.status || 'discovered'
-    })) as Business[];
+    return ensureBusinessesStatus(clientsData);
   } catch (error) {
     console.error('Error getting agency clients:', error);
     toast.error('Failed to load agency clients');
@@ -274,11 +265,8 @@ export async function findCompetitorAgencies(agencyId: string): Promise<Business
       throw compError;
     }
 
-    // Transform competitor data to include required fields
-    return competitorsData.map(competitor => ({
-      ...competitor,
-      status: competitor.status || 'discovered'
-    })) as Business[];
+    // Transform competitor data to include required fields using our utility function
+    return ensureBusinessesStatus(competitorsData);
   } catch (error) {
     console.error('Error finding competitor agencies:', error);
     toast.error('Failed to find competitor agencies');

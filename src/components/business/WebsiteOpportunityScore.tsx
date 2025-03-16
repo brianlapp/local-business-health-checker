@@ -15,7 +15,10 @@ interface WebsiteOpportunityScoreProps {
 const WebsiteOpportunityScore: React.FC<WebsiteOpportunityScoreProps> = ({ business, onScoreUpdated }) => {
   const [isCalculating, setIsCalculating] = useState(false);
   const [currentScore, setCurrentScore] = useState(business.score || 0);
-  const [seoIssues, setSeoIssues] = useState<string[]>(calculateSEOIssues(business));
+  const [seoIssues, setSeoIssues] = useState<string[]>(() => {
+    const issues = calculateSEOIssues(business);
+    return issues.specificIssues;
+  });
   
   // Determine if we have enough data to calculate a meaningful score
   const hasEnoughData = Boolean(
@@ -35,11 +38,12 @@ const WebsiteOpportunityScore: React.FC<WebsiteOpportunityScoreProps> = ({ busin
     
     try {
       setIsCalculating(true);
-      const newScore = await calculateWebsiteOpportunityScore(business);
+      const newScore = calculateWebsiteOpportunityScore(business);
       setCurrentScore(newScore);
       
       // Recalculate SEO issues
-      setSeoIssues(calculateSEOIssues(business));
+      const issues = calculateSEOIssues(business);
+      setSeoIssues(issues.specificIssues);
       
       if (onScoreUpdated) {
         onScoreUpdated(newScore);

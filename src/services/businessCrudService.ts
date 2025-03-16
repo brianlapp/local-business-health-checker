@@ -1,7 +1,7 @@
-
 import { supabase } from '@/lib/supabase';
 import { Business } from '@/types/business';
 import { toast } from 'sonner';
+import { generateIssues, ensureBusinessStatus, ensureBusinessesStatus } from './businessUtilsService';
 
 export async function getBusinesses(): Promise<Business[]> {
   try {
@@ -18,23 +18,8 @@ export async function getBusinesses(): Promise<Business[]> {
     
     console.log(`Retrieved ${data?.length || 0} businesses`);
     
-    // Ensure every business has a status field
-    return data.map(business => ({
-      ...business,
-      // If status doesn't exist in the database, set a default value
-      status: business.status || 'discovered',
-      lastChecked: business.last_checked,
-      speedScore: business.speed_score,
-      lighthouseScore: business.lighthouse_score,
-      gtmetrixScore: business.gtmetrix_score,
-      lighthouseReportUrl: business.lighthouse_report_url,
-      gtmetrixReportUrl: business.gtmetrix_report_url,
-      lastLighthouseScan: business.last_lighthouse_scan,
-      lastGtmetrixScan: business.last_gtmetrix_scan,
-      // Make sure we're preserving the is_mobile_friendly value from the database
-      is_mobile_friendly: business.is_mobile_friendly,
-      issues: generateIssues(business),
-    }) as Business);
+    // Use our utility function to ensure all businesses have the correct shape
+    return ensureBusinessesStatus(data);
   } catch (error) {
     console.error('Error fetching businesses:', error);
     toast.error('Failed to load businesses');
@@ -132,20 +117,8 @@ export async function addBusiness(business: Omit<Business, 'id' | 'issues'>): Pr
     
     toast.success('Business added successfully');
     
-    // Ensure the returned business has the required status field
-    return {
-      ...data,
-      status: data.status || 'discovered', // Ensure status is set
-      lastChecked: data.last_checked,
-      speedScore: data.speed_score,
-      lighthouseScore: data.lighthouse_score,
-      gtmetrixScore: data.gtmetrix_score,
-      lighthouseReportUrl: data.lighthouse_report_url,
-      gtmetrixReportUrl: data.gtmetrix_report_url,
-      lastLighthouseScan: data.last_lighthouse_scan,
-      lastGtmetrixScan: data.last_gtmetrix_scan,
-      issues: generateIssues(data),
-    } as Business;
+    // Use our utility function to ensure the business has the correct shape
+    return ensureBusinessStatus(data);
   } catch (error) {
     console.error('Error adding business:', error);
     toast.error('Failed to add business');
@@ -205,6 +178,3 @@ export async function updateBusiness(id: string, updates: Partial<Omit<Business,
     return false;
   }
 }
-
-// Import these utilities from businessUtilsService
-import { generateIssues } from './businessUtilsService';
