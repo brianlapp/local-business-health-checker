@@ -159,6 +159,7 @@ export async function updateBusiness(id: string, updates: Partial<Omit<Business,
       cms: updates.cms,
       last_checked: updates.last_checked || updates.lastChecked,
       is_mobile_friendly: updates.is_mobile_friendly,
+      status: updates.status || 'discovered', // Ensure status is set
     };
     
     // Map the new properties to the database column names
@@ -204,3 +205,4 @@ export async function updateBusiness(id: string, updates: Partial<Omit<Business,
 
 // Import these utilities from businessUtilsService
 import { generateIssues } from './businessUtilsService';
+

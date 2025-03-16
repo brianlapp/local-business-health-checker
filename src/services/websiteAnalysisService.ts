@@ -1,141 +1,156 @@
-import { Business } from '@/types/business';
+
+// File: src/services/websiteAnalysisService.ts
+// Analyze websites for issues and technical insights
+
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { Business } from '@/types/business';
+import { generateIssues } from './businessUtilsService';
 
-/**
- * Calculate an opportunity score based on website quality factors
- */
-export async function calculateWebsiteOpportunityScore(business: Business): Promise<number> {
+// Update the database with new website analysis results
+export async function updateWebsiteAnalysis(businessId: string, analysisData: {
+  lighthouseScore?: number;
+  speedScore?: number;
+  gtmetrixScore?: number;
+  lighthouseReportUrl?: string;
+  gtmetrixReportUrl?: string;
+  cms?: string;
+  is_mobile_friendly?: boolean;
+}): Promise<boolean> {
   try {
-    // Start with a base score
-    let score = 50;
+    const now = new Date().toISOString();
     
-    // Factor 1: Performance issues
-    if (business.lighthouse_score !== undefined || business.lighthouseScore !== undefined) {
-      const lighthouseScore = business.lighthouse_score || business.lighthouseScore || 0;
-      
-      // Poor performance means more opportunity to help
-      if (lighthouseScore < 50) {
-        score += 20;
-      } else if (lighthouseScore < 70) {
-        score += 10;
-      }
+    const updateData: any = {};
+    
+    // Add fields to update data if they exist
+    if (analysisData.lighthouseScore !== undefined) {
+      updateData.lighthouse_score = analysisData.lighthouseScore;
+      updateData.last_lighthouse_scan = now;
     }
     
-    // Factor 2: CMS status
-    if (business.cms) {
-      const outdatedCms = isOutdatedCMS(business.cms);
-      if (outdatedCms) {
-        score += 15; // Outdated CMS = opportunity
-      }
+    if (analysisData.speedScore !== undefined) {
+      updateData.speed_score = analysisData.speedScore;
     }
     
-    // Factor 3: Mobile friendliness
-    if (business.is_mobile_friendly === false) {
-      score += 25; // Not mobile friendly = big opportunity
+    if (analysisData.gtmetrixScore !== undefined) {
+      updateData.gtmetrix_score = analysisData.gtmetrixScore;
+      updateData.last_gtmetrix_scan = now;
     }
     
-    // Factor 4: Website speed
-    if (business.gtmetrix_score !== undefined || business.gtmetrixScore !== undefined) {
-      const speedScore = business.gtmetrix_score || business.gtmetrixScore || 0;
-      
-      if (speedScore < 40) {
-        score += 20; // Very slow site = opportunity
-      } else if (speedScore < 60) {
-        score += 10; // Somewhat slow site = some opportunity
-      }
+    if (analysisData.lighthouseReportUrl) {
+      updateData.lighthouse_report_url = analysisData.lighthouseReportUrl;
     }
     
-    // Cap the score at 100
-    score = Math.min(score, 100);
+    if (analysisData.gtmetrixReportUrl) {
+      updateData.gtmetrix_report_url = analysisData.gtmetrixReportUrl;
+    }
     
-    // Update the business with the calculated score
-    await updateBusinessScore(business.id, score);
+    if (analysisData.cms) {
+      updateData.cms = analysisData.cms;
+    }
     
-    return score;
-  } catch (error) {
-    console.error('Error calculating website opportunity score:', error);
-    return 50; // Default score on error
-  }
-}
-
-/**
- * Update a business's opportunity score in the database
- */
-async function updateBusinessScore(businessId: string, score: number): Promise<void> {
-  try {
+    if (analysisData.is_mobile_friendly !== undefined) {
+      updateData.is_mobile_friendly = analysisData.is_mobile_friendly;
+    }
+    
+    // Always update last_checked timestamp
+    updateData.last_checked = now;
+    
     const { error } = await supabase
       .from('businesses')
-      .update({ score })
+      .update(updateData)
       .eq('id', businessId);
     
     if (error) {
-      throw error;
+      console.error('Error updating website analysis:', error);
+      return false;
     }
+    
+    return true;
   } catch (error) {
-    console.error('Error updating business score:', error);
-    toast.error('Failed to update business score');
+    console.error('Error in updateWebsiteAnalysis:', error);
+    return false;
   }
 }
 
-/**
- * Determine if a CMS is considered outdated or problematic
- */
-export function isOutdatedCMS(cms: string): boolean {
-  const lowerCms = cms.toLowerCase();
-  
-  // List of CMS platforms considered outdated or problematic
-  const outdatedCmsList = [
-    'wordpress 4', 
-    'wordpress 5.0', 
-    'wordpress 5.1', 
-    'wordpress 5.2', 
-    'wordpress 5.3', 
-    'wordpress 5.4',
-    'drupal 7',
-    'joomla 3',
-    'magento 1',
-    'wix',  // Include Wix as it often has limitations for professional development
-  ];
-  
-  return outdatedCmsList.some(outdatedCms => lowerCms.includes(outdatedCms));
-}
-
-/**
- * Process a batch of businesses to calculate and update their opportunity scores
- */
-export async function processBusinessOpportunityScores(businesses: Business[]): Promise<void> {
+// Get scan usage statistics for GTmetrix
+export async function getGTMetrixUsage(): Promise<{ used: number, limit: number, resetDate: string | null }> {
   try {
-    let updatedCount = 0;
+    const { data, error } = await supabase
+      .from('gtmetrix_usage')
+      .select('*')
+      .order('last_updated', { ascending: false })
+      .limit(1)
+      .single();
     
-    for (const business of businesses) {
-      await calculateWebsiteOpportunityScore(business);
-      updatedCount++;
+    if (error) {
+      console.error('Error fetching GTmetrix usage:', error);
+      return { used: 0, limit: 0, resetDate: null };
     }
     
-    toast.success(`Updated opportunity scores for ${updatedCount} businesses`);
+    return {
+      used: data.scans_used,
+      limit: data.scans_limit,
+      resetDate: data.reset_date
+    };
   } catch (error) {
-    console.error('Error processing business opportunity scores:', error);
-    toast.error('Failed to process business opportunity scores');
+    console.error('Error in getGTMetrixUsage:', error);
+    return { used: 0, limit: 0, resetDate: null };
   }
 }
 
-/**
- * Get businesses that need scoring
- */
-export async function getBusinessesNeedingScoring(): Promise<Business[]> {
+// Increment GTmetrix usage counter
+export async function incrementGTMetrixUsage(): Promise<boolean> {
+  try {
+    // Get current usage
+    const { data, error } = await supabase
+      .from('gtmetrix_usage')
+      .select('*')
+      .order('last_updated', { ascending: false })
+      .limit(1)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching GTmetrix usage:', error);
+      return false;
+    }
+    
+    // Update usage count
+    const { error: updateError } = await supabase
+      .from('gtmetrix_usage')
+      .update({
+        scans_used: data.scans_used + 1,
+        last_updated: new Date().toISOString()
+      })
+      .eq('id', data.id);
+    
+    if (updateError) {
+      console.error('Error updating GTmetrix usage:', updateError);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error in incrementGTMetrixUsage:', error);
+    return false;
+  }
+}
+
+// Get all businesses that need analysis
+export async function getBusinessesForAnalysis(limit: number = 10): Promise<Business[]> {
   try {
     const { data, error } = await supabase
       .from('businesses')
       .select('*')
-      .or('score.is.null,lighthouse_score.not.is.null,gtmetrix_score.not.is.null')
-      .order('last_checked', { ascending: false })
-      .limit(20);
+      .order('last_checked', { ascending: true })
+      .limit(limit);
     
     if (error) {
-      throw error;
+      console.error('Error fetching businesses for analysis:', error);
+      return [];
     }
     
+    // Ensure proper return type with required fields
     return data.map(business => ({
       ...business,
       lastChecked: business.last_checked,
@@ -146,44 +161,11 @@ export async function getBusinessesNeedingScoring(): Promise<Business[]> {
       gtmetrixReportUrl: business.gtmetrix_report_url,
       lastLighthouseScan: business.last_lighthouse_scan,
       lastGtmetrixScan: business.last_gtmetrix_scan,
-      is_mobile_friendly: business.is_mobile_friendly,
-      status: business.status || 'discovered', // Ensure status is set
-      issues: generateIssues(business),
-    }));
+      status: business.status || 'discovered',
+      issues: generateIssues(business as Business)
+    })) as Business[];
   } catch (error) {
-    console.error('Error fetching businesses needing scoring:', error);
+    console.error('Error in getBusinessesForAnalysis:', error);
     return [];
   }
 }
-
-/**
- * Calculate SEO issues based on a business's website metrics
- */
-export function calculateSEOIssues(business: Business): string[] {
-  const issues: string[] = [];
-  
-  // Performance issues
-  if ((business.lighthouse_score || business.lighthouseScore || 0) < 70) {
-    issues.push('Poor website performance');
-  }
-  
-  // Speed issues
-  if ((business.gtmetrix_score || business.gtmetrixScore || 0) < 60) {
-    issues.push('Slow page loading speed');
-  }
-  
-  // Mobile issues
-  if (business.is_mobile_friendly === false) {
-    issues.push('Not mobile-friendly');
-  }
-  
-  // CMS issues
-  if (business.cms && isOutdatedCMS(business.cms)) {
-    issues.push('Outdated CMS platform');
-  }
-  
-  return issues;
-}
-
-// Import generateIssues function
-import { generateIssues } from './businessUtilsService';

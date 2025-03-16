@@ -1,157 +1,197 @@
-
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { Business } from '@/types/business';
 
-/**
- * Trigger a manual scan of businesses
- */
-export async function triggerManualScan(): Promise<boolean> {
-  try {
-    const { data, error } = await supabase.functions.invoke('scheduled-scanner', {
-      body: { mode: 'manual' }
-    });
-    
-    if (error) {
-      console.error('Error triggering manual scan:', error);
-      toast.error('Failed to trigger scan');
-      return false;
-    }
-    
-    if (data.error) {
-      console.error('Scan error:', data.error);
-      toast.error(`Failed to trigger scan: ${data.error}`);
-      return false;
-    }
-    
-    if (data.message.includes('No businesses')) {
-      toast.info('No businesses found that need scanning');
-    } else {
-      toast.success(`Scanning initiated for ${data.businesses?.length || 0} businesses`);
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('Error triggering scan:', error);
-    toast.error('Failed to trigger scan');
-    return false;
-  }
+// Add status field to the business type to fix the type error
+interface ScanSettings {
+  id?: string;
+  scanning_enabled: boolean;
+  next_scheduled_scan: string | null;
+  last_scan_run: string | null;
+  scan_interval: string;
 }
 
 /**
- * Enable or disable automated scanning
+ * Get current scanning automation settings
  */
-export async function toggleAutomatedScanning(enabled: boolean): Promise<boolean> {
-  try {
-    // This will turn on/off the cron job in the database
-    const { error } = await supabase.rpc('toggle_scanning_schedule', {
-      enabled_param: enabled
-    });
-    
-    if (error) {
-      console.error('Error toggling scan schedule:', error);
-      toast.error('Failed to update scanning schedule');
-      return false;
-    }
-    
-    toast.success(enabled ? 'Automated scanning enabled' : 'Automated scanning disabled');
-    return true;
-  } catch (error) {
-    console.error('Error toggling scan schedule:', error);
-    toast.error('Failed to update scanning schedule');
-    return false;
-  }
-}
-
-/**
- * Get the current automation status
- */
-export async function getAutomationStatus(): Promise<{
-  enabled: boolean;
-  nextRun: string | null;
-  lastRun: string | null;
-}> {
+export async function getScanAutomationSettings(): Promise<ScanSettings | null> {
   try {
     const { data, error } = await supabase
       .from('automation_settings')
       .select('*')
+      .order('created_at', { ascending: false })
+      .limit(1)
       .single();
     
     if (error) {
-      console.error('Error getting automation status:', error);
-      return {
-        enabled: false,
-        nextRun: null,
-        lastRun: null
-      };
+      if (error.code === 'PGRST116') {
+        // No settings found, create default
+        return createDefaultSettings();
+      }
+      console.error('Error fetching scan settings:', error);
+      return null;
     }
     
-    return {
-      enabled: data?.scanning_enabled || false,
-      nextRun: data?.next_scheduled_scan || null,
-      lastRun: data?.last_scan_run || null
-    };
+    return data as ScanSettings;
   } catch (error) {
-    console.error('Error getting automation status:', error);
-    return {
-      enabled: false,
-      nextRun: null,
-      lastRun: null
-    };
+    console.error('Error in getScanAutomationSettings:', error);
+    return null;
   }
 }
 
 /**
- * Get scan queue status
+ * Create default settings if none exist
  */
-export async function getScanQueueStatus(): Promise<{
-  pendingScans: number;
-  inProgressScans: number;
-  completedToday: number;
-  failedToday: number;
-}> {
+async function createDefaultSettings(): Promise<ScanSettings | null> {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    // Get pending scans count
-    const { count: pendingCount, error: pendingError } = await supabase
-      .from('businesses')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'scanning');
-    
-    if (pendingError) throw pendingError;
-    
-    // Get today's completed scans
-    const { count: completedCount, error: completedError } = await supabase
-      .from('businesses')
-      .select('*', { count: 'exact', head: true })
-      .gte('last_checked', today.toISOString())
-      .eq('status', 'discovered');
-    
-    if (completedError) throw completedError;
-    
-    // Get today's failed scans
-    const { count: failedCount, error: failedError } = await supabase
-      .from('businesses')
-      .select('*', { count: 'exact', head: true })
-      .gte('last_checked', today.toISOString())
-      .eq('status', 'error');
-    
-    if (failedError) throw failedError;
-    
-    return {
-      pendingScans: pendingCount || 0,
-      inProgressScans: 0, // We'll implement this when we add queue management
-      completedToday: completedCount || 0,
-      failedToday: failedCount || 0
+    const defaultSettings = {
+      scanning_enabled: false,
+      next_scheduled_scan: null,
+      last_scan_run: null,
+      scan_interval: '0 3 * * *', // 3 AM every day
     };
+    
+    const { data, error } = await supabase
+      .from('automation_settings')
+      .insert(defaultSettings)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error creating default scan settings:', error);
+      return null;
+    }
+    
+    return data as ScanSettings;
   } catch (error) {
-    console.error('Error getting scan queue status:', error);
-    return {
-      pendingScans: 0,
-      inProgressScans: 0,
-      completedToday: 0,
-      failedToday: 0
-    };
+    console.error('Error in createDefaultSettings:', error);
+    return null;
+  }
+}
+
+/**
+ * Update scanning automation settings
+ */
+export async function updateScanAutomationSettings(settings: Partial<ScanSettings>): Promise<boolean> {
+  try {
+    // Get current settings
+    const currentSettings = await getScanAutomationSettings();
+    
+    if (!currentSettings) {
+      console.error('Failed to fetch current settings');
+      return false;
+    }
+    
+    // If toggling scanning_enabled, use the database function to calculate the next scan time properly
+    if (settings.scanning_enabled !== undefined && 
+        settings.scanning_enabled !== currentSettings.scanning_enabled) {
+      const { data, error } = await supabase.rpc(
+        'toggle_scanning_schedule', 
+        { enabled_param: settings.scanning_enabled }
+      );
+      
+      if (error) {
+        console.error('Error toggling scanning schedule:', error);
+        return false;
+      }
+      
+      // Return true if the function executed successfully
+      return true;
+    }
+    
+    // Otherwise update normally
+    const { error } = await supabase
+      .from('automation_settings')
+      .update({
+        scanning_enabled: settings.scanning_enabled ?? currentSettings.scanning_enabled,
+        scan_interval: settings.scan_interval ?? currentSettings.scan_interval,
+        // Only update next_scheduled_scan if explicitly provided
+        ...(settings.next_scheduled_scan !== undefined ? 
+          { next_scheduled_scan: settings.next_scheduled_scan } : {})
+      })
+      .eq('id', currentSettings.id);
+    
+    if (error) {
+      console.error('Error updating scan settings:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error in updateScanAutomationSettings:', error);
+    return false;
+  }
+}
+
+/**
+ * Record a scan run
+ */
+export async function recordScanRun(): Promise<boolean> {
+  try {
+    // Get current settings
+    const currentSettings = await getScanAutomationSettings();
+    
+    if (!currentSettings) {
+      console.error('Failed to fetch current settings');
+      return false;
+    }
+    
+    // Update last_scan_run and trigger update of next_scheduled_scan
+    const { error } = await supabase.rpc('update_next_scan_time');
+    
+    if (error) {
+      console.error('Error updating next scan time:', error);
+      return false;
+    }
+    
+    // Update last_scan_run
+    const { error: updateError } = await supabase
+      .from('automation_settings')
+      .update({
+        last_scan_run: new Date().toISOString()
+      })
+      .eq('id', currentSettings.id);
+    
+    if (updateError) {
+      console.error('Error updating last scan run:', updateError);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error in recordScanRun:', error);
+    return false;
+  }
+}
+
+/**
+ * Get businesses that need scanning
+ */
+export async function getBusinessesToScan(limit: number = 10): Promise<Business[]> {
+  try {
+    // Get businesses with oldest checks first
+    const { data, error } = await supabase
+      .from('businesses')
+      .select('*')
+      .order('last_checked', { ascending: true })
+      .limit(limit);
+    
+    if (error) {
+      console.error('Error fetching businesses to scan:', error);
+      return [];
+    }
+    
+    // Ensure returned businesses have correct structure
+    return data.map(business => ({
+      ...business,
+      // Convert database columns to camelCase properties
+      lastChecked: business.last_checked,
+      lighthouseScore: business.lighthouse_score,
+      gtmetrixScore: business.gtmetrix_score,
+      status: business.status || 'discovered',
+    })) as Business[];
+  } catch (error) {
+    console.error('Error in getBusinessesToScan:', error);
+    return [];
   }
 }

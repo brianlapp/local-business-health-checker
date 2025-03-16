@@ -1,75 +1,107 @@
 
+// File: src/services/businessUtilsService.ts
+
 import { Business } from '@/types/business';
 
-/**
- * Generate issue flags based on business data
- */
-export function generateIssues(business: Partial<Business>) {
-  // Add validation logging
-  console.log('Generating issues for business:', business.id);
-  console.log('Business score properties:', {
-    score: business.score,
-    lighthouseScore: business.lighthouseScore,
-    lighthouse_score: business.lighthouse_score,
-    gtmetrixScore: business.gtmetrixScore,
-    gtmetrix_score: business.gtmetrix_score
-  });
-  
-  return {
-    speedIssues: business.speedScore ? business.speedScore < 50 : false,
-    outdatedCMS: isCMSOutdated(business.cms),
-    noSSL: !isWebsiteSecure(business.website),
-    notMobileFriendly: business.is_mobile_friendly === false,
-    badFonts: false // Default value, would require font analysis
+export function generateIssues(business: Business | any): {
+  speedIssues?: boolean;
+  outdatedCMS?: boolean;
+  noSSL?: boolean;
+  notMobileFriendly?: boolean;
+  badFonts?: boolean;
+} {
+  // If business already has issues defined, return them
+  if (business.issues) {
+    return business.issues;
+  }
+
+  // Generate issues based on business data
+  const issues = {
+    speedIssues: false,
+    outdatedCMS: false,
+    noSSL: false,
+    notMobileFriendly: false,
+    badFonts: false
   };
+
+  // Speed issues if lighthouse score is below 50
+  if (business.lighthouse_score !== undefined && business.lighthouse_score < 50) {
+    issues.speedIssues = true;
+  } else if (business.lighthouseScore !== undefined && business.lighthouseScore < 50) {
+    issues.speedIssues = true;
+  }
+
+  // SSL issues if website does not include https
+  if (business.website) {
+    issues.noSSL = !business.website.includes('https');
+  }
+
+  // Mobile friendly based on mobile friendly flag
+  if (business.is_mobile_friendly === false) {
+    issues.notMobileFriendly = true;
+  }
+
+  // CMS issues
+  if (business.cms) {
+    // Check for outdated CMSes
+    const outdatedCMSList = ['wordpress 4', 'wordpress 5.0', 'joomla 3', 'drupal 7'];
+    issues.outdatedCMS = outdatedCMSList.some(cms => 
+      business.cms.toLowerCase().includes(cms.toLowerCase())
+    );
+  }
+
+  return issues;
 }
 
-/**
- * Check if a CMS is outdated
- */
-export function isCMSOutdated(cms?: string): boolean {
-  if (!cms) return false;
-  
-  // Simple patterns to detect outdated CMS versions
-  const outdatedPatterns = [
-    /wordpress\s+[1-4]\./i,
-    /wordpress\s+5\.[0-8]/i,
-    /joomla\s+[1-2]\./i,
-    /joomla\s+3\.[0-9]\./i,
-    /drupal\s+[1-7]\./i
-  ];
-  
-  return outdatedPatterns.some(pattern => pattern.test(cms));
-}
+export function generateBusinessScore(business: Business | any): number {
+  // If business already has a score, return it
+  if (business.score) {
+    return business.score;
+  }
 
-/**
- * Check if a website is secure (has HTTPS)
- */
-export function isWebsiteSecure(website?: string): boolean {
-  if (!website) return false;
-  return website.startsWith('https://');
-}
+  // Base score
+  let score = 50;
 
-/**
- * Log type validation information for debugging
- */
-export function validateBusinessType(business: Business, context: string): void {
-  console.log(`[TypeValidation:${context}] Business:`, {
-    id: business.id,
-    name: business.name,
-    hasSnakeCase: {
-      lighthouse_score: business.lighthouse_score !== undefined,
-      gtmetrix_score: business.gtmetrix_score !== undefined,
-      lighthouse_report_url: business.lighthouse_report_url !== undefined,
-      gtmetrix_report_url: business.gtmetrix_report_url !== undefined,
-      last_checked: business.last_checked !== undefined
-    },
-    hasCamelCase: {
-      lighthouseScore: business.lighthouseScore !== undefined,
-      gtmetrixScore: business.gtmetrixScore !== undefined,
-      lighthouseReportUrl: business.lighthouseReportUrl !== undefined,
-      gtmetrixReportUrl: business.gtmetrixReportUrl !== undefined,
-      lastChecked: business.lastChecked !== undefined
+  // Add points for good lighthouse score
+  if (business.lighthouse_score || business.lighthouseScore) {
+    const lighthouseScore = business.lighthouse_score || business.lighthouseScore;
+    if (lighthouseScore > 90) score += 20;
+    else if (lighthouseScore > 70) score += 15;
+    else if (lighthouseScore > 50) score += 10;
+    else if (lighthouseScore < 30) score -= 10;
+  }
+
+  // Add points for mobile-friendly
+  if (business.is_mobile_friendly === true) {
+    score += 10;
+  } else if (business.is_mobile_friendly === false) {
+    score -= 10;
+  }
+
+  // Add points for SSL
+  if (business.website) {
+    if (business.website.includes('https')) {
+      score += 5;
+    } else {
+      score -= 5;
     }
-  });
+  }
+
+  // Ensure score is between 0 and 100
+  return Math.max(0, Math.min(100, score));
+}
+
+export function businessNeedsUpdate(business: Business): boolean {
+  // Check if the business has been checked in the last 7 days
+  const lastChecked = business.last_checked || business.lastChecked;
+  
+  if (!lastChecked) {
+    return true; // Never checked, so needs update
+  }
+  
+  const lastCheckDate = new Date(lastChecked);
+  const now = new Date();
+  const daysSinceLastCheck = (now.getTime() - lastCheckDate.getTime()) / (1000 * 60 * 60 * 24);
+  
+  return daysSinceLastCheck > 7;
 }

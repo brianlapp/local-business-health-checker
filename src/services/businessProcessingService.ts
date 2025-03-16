@@ -99,70 +99,34 @@ export const processScrapedBusinesses = async (scrapedBusinesses: any[], source:
   return allBusinesses;
 };
 
-// Process mock businesses without saving them to database (demo mode)
-export const processMockBusinesses = (mockBusinesses: any[], location: string): Promise<Business[]> => {
-  console.log(`Processing ${mockBusinesses.length} mock businesses for ${location}`);
+// Process real businesses from API without saving them to database (for preview mode)
+export const processPreviewBusinesses = (previewBusinesses: any[], location: string): Promise<Business[]> => {
+  console.log(`Processing ${previewBusinesses.length} preview businesses for ${location}`);
   
-  const businesses = mockBusinesses.map(business => {
+  const businesses = previewBusinesses.map(business => {
     const score = Math.floor(Math.random() * 100);
     const now = new Date().toISOString();
     
-    const mockBusiness: Business = {
-      id: `mock-${uuidv4()}`, // Add 'mock-' prefix to ID to identify mock data
+    const previewBusiness: Business = {
+      id: uuidv4(),
       name: business.name,
       website: business.website,
       score,
       status: 'discovered', // Add required status field
       last_checked: now,
       lastChecked: now,
-      source: 'mock-data', // Set source for UI display purposes
+      source: 'preview', // Set source for UI display purposes
       issues: {
         speedIssues: score < 50,
-        outdatedCMS: Math.random() > 0.5,
+        outdatedCMS: false,
         noSSL: !business.website.includes('https'),
-        notMobileFriendly: Math.random() > 0.6,
-        badFonts: Math.random() > 0.7
+        notMobileFriendly: false,
+        badFonts: false
       }
     };
     
-    return mockBusiness;
+    return previewBusiness;
   });
   
   return Promise.resolve(businesses);
 };
-
-// Function to generate mock business data as fallback
-export function generateMockBusinessData(location: string, source: string = 'mock'): Business[] {
-  console.log(`Generating mock data for ${location}`);
-  
-  // Generate 5-10 mock businesses
-  const count = Math.floor(Math.random() * 6) + 5;
-  const businesses: Business[] = [];
-  
-  for (let i = 0; i < count; i++) {
-    const name = `${location} Business ${i + 1}`;
-    const website = `business${i + 1}.com`;
-    const score = Math.floor(Math.random() * 100);
-    const now = new Date().toISOString();
-    
-    businesses.push({
-      id: `mock-${uuidv4()}`,
-      name,
-      website,
-      score,
-      status: 'discovered', // Add required status field
-      last_checked: now,
-      lastChecked: now,
-      source,
-      issues: {
-        speedIssues: score < 50,
-        outdatedCMS: Math.random() > 0.5,
-        noSSL: Math.random() > 0.7,
-        notMobileFriendly: Math.random() > 0.6,
-        badFonts: Math.random() > 0.7
-      }
-    });
-  }
-  
-  return businesses;
-}

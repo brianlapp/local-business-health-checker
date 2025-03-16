@@ -13,35 +13,24 @@ export async function searchLocalBusinesses(
   try {
     console.log(`Searching for businesses in ${location}, industry: ${industry || 'any'}`);
     
-    // Placeholder implementation - would connect to business data APIs in production
-    const mockBusinesses: Business[] = [
-      {
-        id: 'local-1',
-        name: 'Local Business 1',
-        website: 'localbusiness1.com',
-        industry: industry || 'Technology',
-        location: location,
-        status: 'discovered',
-        score: 75,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      },
-      {
-        id: 'local-2',
-        name: 'Local Business 2',
-        website: 'localbusiness2.com',
-        industry: industry || 'Retail',
-        location: location,
-        status: 'discovered',
-        score: 60,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
-    ];
+    // Call the business search API
+    const response = await fetch(`/api/local-businesses-search?location=${encodeURIComponent(location)}&industry=${encodeURIComponent(industry || '')}`);
+    
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Ensure all businesses have the required status field
+    const businesses = data.businesses.map((business: any) => ({
+      ...business,
+      status: business.status || 'discovered'
+    }));
     
     return {
-      businesses: mockBusinesses,
-      count: mockBusinesses.length,
+      businesses,
+      count: businesses.length,
       location,
       industry
     };
