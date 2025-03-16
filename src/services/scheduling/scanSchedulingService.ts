@@ -111,10 +111,11 @@ export async function getScanQueueStatus(): Promise<ScanQueueStatus> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    // For scan queue status, we'll use RPC since we need custom data
-    const { data, error } = await supabase.rpc('get_scan_queue_stats', {
-      today_date: today.toISOString()
-    });
+    // For scan queue status, we'll query the scan_queue table directly
+    const { data, error } = await supabase
+      .from('scan_queue')
+      .select('status')
+      .is('completed_at', null);
     
     if (error) {
       console.error('Error getting scan queue status:', error);
@@ -126,11 +127,29 @@ export async function getScanQueueStatus(): Promise<ScanQueueStatus> {
       };
     }
     
+    // Count the number of pending and in-progress scans
+    const pending = data.filter(scan => scan.status === 'pending').length;
+    const inProgress = data.filter(scan => scan.status === 'processing').length;
+    
+    // Get completed scans today
+    const { data: completedData, error: completedError } = await supabase
+      .from('scan_queue')
+      .select('id')
+      .eq('status', 'completed')
+      .gte('completed_at', today.toISOString());
+    
+    // Get failed scans today
+    const { data: failedData, error: failedError } = await supabase
+      .from('scan_queue')
+      .select('id')
+      .eq('status', 'failed')
+      .gte('updated_at', today.toISOString());
+    
     return {
-      pendingScans: data.pending_scans || 0,
-      inProgressScans: data.in_progress_scans || 0,
-      completedToday: data.completed_today || 0,
-      failedToday: data.failed_today || 0
+      pendingScans: pending,
+      inProgressScans: inProgress,
+      completedToday: completedError ? 0 : (completedData?.length || 0),
+      failedToday: failedError ? 0 : (failedData?.length || 0)
     };
   } catch (error) {
     console.error('Error in getScanQueueStatus:', error);

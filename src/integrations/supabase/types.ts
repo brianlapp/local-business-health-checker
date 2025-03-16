@@ -577,6 +577,59 @@ export type Database = {
         }
         Relationships: []
       }
+      scan_queue: {
+        Row: {
+          business_id: string | null
+          completed_at: string | null
+          created_at: string | null
+          error: string | null
+          id: string
+          priority: string
+          result: Json | null
+          scan_type: string
+          started_at: string | null
+          status: string
+          updated_at: string | null
+          url: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          error?: string | null
+          id?: string
+          priority?: string
+          result?: Json | null
+          scan_type: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string | null
+          url?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          error?: string | null
+          id?: string
+          priority?: string
+          result?: Json | null
+          scan_type?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scan_queue_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scraped_data: {
         Row: {
           created_at: string | null
