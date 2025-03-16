@@ -44,7 +44,7 @@ const Header: React.FC = () => {
               <Link
                 to="/job-board"
                 className={`text-sm font-medium transition-colors hover:text-primary ${
-                  location.pathname === "/job-board" ? "text-foreground" : "text-muted-foreground"
+                  location.pathname === "/job-board" || location.pathname === "/jobs" ? "text-foreground" : "text-muted-foreground"
                 }`}
               >
                 Job Board
@@ -79,7 +79,6 @@ const Header: React.FC = () => {
       </div>
       
       <MobileNavigation isOpen={isMobileMenuOpen} onClose={toggleMobileMenu} />
-      
     </header>
   );
 };

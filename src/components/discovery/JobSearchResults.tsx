@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookmarkPlus, ExternalLink, MapPin, Building, Calendar, DollarSign } from 'lucide-react';
+import { BookmarkPlus, CheckCircle, ExternalLink, MapPin, Building, Calendar, DollarSign } from 'lucide-react';
 import { JobBoardResponse, JobListing } from '@/services/discovery/jobBoardService';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -33,7 +33,7 @@ const JobSearchResults: React.FC<JobSearchResultsProps> = ({
     try {
       return formatDistanceToNow(new Date(dateString), { addSuffix: true });
     } catch (e) {
-      return 'Unknown date';
+      return 'Recently';
     }
   };
 
@@ -83,16 +83,11 @@ const JobSearchResults: React.FC<JobSearchResultsProps> = ({
 
               {job.skills && job.skills.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-1">
-                  {job.skills.slice(0, 5).map((skill, i) => (
+                  {job.skills.map((skill, i) => (
                     <Badge key={i} variant="secondary" className="text-xs">
                       {skill}
                     </Badge>
                   ))}
-                  {job.skills.length > 5 && (
-                    <Badge variant="secondary" className="text-xs">
-                      +{job.skills.length - 5} more
-                    </Badge>
-                  )}
                 </div>
               )}
             </CardContent>
@@ -106,12 +101,16 @@ const JobSearchResults: React.FC<JobSearchResultsProps> = ({
                 View Job <ExternalLink className="ml-1 h-3 w-3" />
               </Button>
               <Button
-                variant="default"
+                variant={savedJobs.has(job.id) ? "secondary" : "default"}
                 size="sm"
                 onClick={() => onSaveJob(job)}
                 disabled={savedJobs.has(job.id) || !isLoggedIn}
               >
-                {savedJobs.has(job.id) ? 'Saved' : 'Save Job'} <BookmarkPlus className="ml-1 h-3 w-3" />
+                {savedJobs.has(job.id) ? (
+                  <>Saved <CheckCircle className="ml-1 h-3 w-3" /></>
+                ) : (
+                  <>Save Job <BookmarkPlus className="ml-1 h-3 w-3" /></>
+                )}
               </Button>
             </CardFooter>
           </Card>

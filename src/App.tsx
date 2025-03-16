@@ -41,6 +41,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Auth />} />
+            <Route path="/auth" element={<Auth />} />
             
             <Route
               path="/dashboard"
@@ -65,6 +66,15 @@ const App = () => {
               element={
                 <ProtectedRoute>
                   <MapScanner />
+                </ProtectedRoute>
+              }
+            />
+            
+            <Route
+              path="/job-board"
+              element={
+                <ProtectedRoute>
+                  <JobBoard />
                 </ProtectedRoute>
               }
             />

@@ -1,20 +1,23 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
-import { Search } from 'lucide-react';
+import { Search, Briefcase } from 'lucide-react';
 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Card } from '@/components/ui/card';
 
 const formSchema = z.object({
   query: z.string().min(2, { message: 'Search term must be at least 2 characters' }),
   location: z.string().optional(),
-  source: z.string().optional()
+  source: z.string().optional(),
+  remote: z.boolean().optional()
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -30,7 +33,8 @@ const JobSearchForm: React.FC<JobSearchFormProps> = ({ onSearch, isLoading = fal
     defaultValues: {
       query: '',
       location: 'remote',
-      source: 'all'
+      source: 'all',
+      remote: true
     }
   });
 
@@ -40,7 +44,7 @@ const JobSearchForm: React.FC<JobSearchFormProps> = ({ onSearch, isLoading = fal
     try {
       onSearch(
         data.query, 
-        data.location || 'remote', 
+        data.remote ? 'remote' : (data.location || ''), 
         data.source || 'all'
       );
     } catch (error) {
@@ -50,78 +54,121 @@ const JobSearchForm: React.FC<JobSearchFormProps> = ({ onSearch, isLoading = fal
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 bg-card p-6 rounded-lg shadow-sm border">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField
-            control={form.control}
-            name="query"
-            render={({ field }) => (
-              <FormItem className="md:col-span-1">
-                <FormLabel>Search Term</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g. React Developer" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+    <Card className="overflow-hidden">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="query"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>What are you looking for?</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                          placeholder="e.g. React Developer, WordPress, UI Design" 
+                          className="pl-10"
+                          {...field} 
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            
+              <FormField
+                control={form.control}
+                name="remote"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                    <div className="space-y-0.5">
+                      <FormLabel>Remote Only</FormLabel>
+                      <div className="text-sm text-muted-foreground">
+                        Only show remote opportunities
+                      </div>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="e.g. New York, London, Global" 
+                        {...field} 
+                        disabled={form.watch('remote')}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            
+              <FormField
+                control={form.control}
+                name="source"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Job Source</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select job source" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="all">All Sources</SelectItem>
+                        <SelectItem value="indeed">Indeed</SelectItem>
+                        <SelectItem value="linkedin">LinkedIn</SelectItem>
+                        <SelectItem value="upwork">Upwork</SelectItem>
+                        <SelectItem value="freelancer">Freelancer</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
           
-          <FormField
-            control={form.control}
-            name="location"
-            render={({ field }) => (
-              <FormItem className="md:col-span-1">
-                <FormLabel>Location</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g. Remote, New York" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={isLoading}
+            size="lg"
+          >
+            {isLoading ? (
+              <>Searching...</>
+            ) : (
+              <>
+                <Briefcase className="mr-2 h-4 w-4" />
+                Find Opportunities
+              </>
             )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="source"
-            render={({ field }) => (
-              <FormItem className="md:col-span-1">
-                <FormLabel>Job Board</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select job board" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="all">All Sources</SelectItem>
-                    <SelectItem value="indeed">Indeed</SelectItem>
-                    <SelectItem value="linkedin">LinkedIn</SelectItem>
-                    <SelectItem value="upwork">Upwork</SelectItem>
-                    <SelectItem value="freelancer">Freelancer</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? (
-            <>Searching...</>
-          ) : (
-            <>
-              <Search className="mr-2 h-4 w-4" />
-              Search Jobs
-            </>
-          )}
-        </Button>
-      </form>
-    </Form>
+          </Button>
+        </form>
+      </Form>
+    </Card>
   );
 };
 

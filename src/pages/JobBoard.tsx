@@ -1,17 +1,52 @@
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+import JobSearchForm from '@/components/discovery/JobSearchForm';
+import JobSearchResults from '@/components/discovery/JobSearchResults';
+import { JobBoardResponse, JobListing, saveJobAsOpportunity, searchJobs } from '@/services/discovery/jobBoardService';
+import { Loader2 } from 'lucide-react';
 
 const JobBoard: React.FC = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [location, setLocation] = useState('');
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState<JobBoardResponse | null>(null);
+  const [savedJobs, setSavedJobs] = useState<Set<string>>(new Set());
   
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Implement job search functionality
-    console.log('Searching for:', searchQuery, 'in', location);
+  const handleSearch = async (query: string, location: string, source: string) => {
+    if (!query) return;
+    
+    setIsLoading(true);
+    setSearchResults(null);
+    
+    try {
+      const results = await searchJobs(query, location, source === 'all' ? undefined : source);
+      setSearchResults(results);
+    } catch (error) {
+      console.error('Error searching jobs:', error);
+      toast.error('Failed to search for jobs');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleSaveJob = async (job: JobListing) => {
+    if (!user) {
+      toast.error('You must be logged in to save jobs');
+      return;
+    }
+    
+    try {
+      const savedOpportunity = await saveJobAsOpportunity(job, user.id);
+      if (savedOpportunity) {
+        // Add to saved jobs set to update UI
+        setSavedJobs(prev => new Set([...prev, job.id]));
+        toast.success('Job saved to opportunities');
+      }
+    } catch (error) {
+      console.error('Error saving job:', error);
+      toast.error('Failed to save job as opportunity');
+    }
   };
   
   return (
@@ -23,37 +58,26 @@ const JobBoard: React.FC = () => {
         </p>
       </div>
       
-      <form onSubmit={handleSearch} className="mb-8">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <Input
-              type="text"
-              placeholder="Skills, keywords, job titles..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full"
-            />
-          </div>
-          
-          <div className="flex-1">
-            <Input
-              type="text"
-              placeholder="Location (optional)"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className="w-full"
-            />
-          </div>
-          
-          <Button type="submit">
-            <Search className="mr-2 h-4 w-4" />
-            Search Jobs
-          </Button>
-        </div>
-      </form>
+      <JobSearchForm onSearch={handleSearch} isLoading={isLoading} />
       
-      <div className="text-center py-16 text-muted-foreground">
-        <p>Enter search terms above to find freelance opportunities</p>
+      <div className="mt-8">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+            <p className="text-muted-foreground">Searching for jobs...</p>
+          </div>
+        ) : searchResults ? (
+          <JobSearchResults 
+            results={searchResults} 
+            onSaveJob={handleSaveJob} 
+            savedJobs={savedJobs}
+            isLoggedIn={!!user}
+          />
+        ) : (
+          <div className="text-center py-16 text-muted-foreground">
+            <p>Enter search terms above to find freelance opportunities</p>
+          </div>
+        )}
       </div>
     </div>
   );

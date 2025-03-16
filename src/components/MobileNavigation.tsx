@@ -39,10 +39,10 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({ isOpen, onClose }) 
             isActive={location.pathname === '/map-scanner'} 
           />
           <NavItem 
-            to="/jobs" 
+            to="/job-board" 
             icon={<Briefcase className="w-5 h-5" />} 
             label="Jobs" 
-            isActive={location.pathname === '/jobs'} 
+            isActive={location.pathname === '/job-board' || location.pathname === '/jobs'} 
           />
           <NavItem 
             to="/opportunities" 
