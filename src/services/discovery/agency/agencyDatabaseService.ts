@@ -93,7 +93,12 @@ export async function getAgenciesFromDatabase(): Promise<Business[]> {
       throw error;
     }
     
-    return data || [];
+    // Make sure each agency has the required fields
+    return data.map(agency => ({
+      ...agency,
+      status: agency.status || 'discovered',
+      // Add other fields as needed
+    })) as Business[];
   } catch (error) {
     console.error('Error getting agencies:', error);
     toast.error('Failed to load agencies');

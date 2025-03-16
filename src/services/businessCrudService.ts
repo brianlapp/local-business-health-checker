@@ -30,6 +30,8 @@ export async function getBusinesses(): Promise<Business[]> {
       lastGtmetrixScan: business.last_gtmetrix_scan,
       // Make sure we're preserving the is_mobile_friendly value from the database
       is_mobile_friendly: business.is_mobile_friendly,
+      // Ensure status is always set (default to 'discovered' if not present)
+      status: business.status || 'discovered',
       issues: generateIssues(business),
     }));
   } catch (error) {
@@ -120,6 +122,7 @@ export async function addBusiness(business: Omit<Business, 'id' | 'issues'>): Pr
         cms: business.cms,
         lighthouse_score: business.lighthouseScore,
         last_checked: business.last_checked || business.lastChecked,
+        status: business.status || 'discovered', // Ensure status is set
       })
       .select()
       .single();
@@ -137,6 +140,7 @@ export async function addBusiness(business: Omit<Business, 'id' | 'issues'>): Pr
       gtmetrixReportUrl: data.gtmetrix_report_url,
       lastLighthouseScan: data.last_lighthouse_scan,
       lastGtmetrixScan: data.last_gtmetrix_scan,
+      status: data.status || 'discovered', // Ensure status is set
       issues: generateIssues(data),
     };
   } catch (error) {

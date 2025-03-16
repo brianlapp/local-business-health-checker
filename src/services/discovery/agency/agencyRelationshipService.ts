@@ -126,7 +126,7 @@ export async function addBulkClientsToAgencyPortfolio(
 export async function getRelationshipMapData(): Promise<RelationshipMapData> {
   try {
     // Get all agencies
-    const { data: agencies, error: agencyError } = await supabase
+    const { data: agenciesData, error: agencyError } = await supabase
       .from('businesses')
       .select('*')
       .eq('is_agency', true);
@@ -135,6 +135,12 @@ export async function getRelationshipMapData(): Promise<RelationshipMapData> {
       console.error('Error fetching agencies:', agencyError);
       throw agencyError;
     }
+
+    // Transform agency data to include required fields
+    const agencies = agenciesData.map(agency => ({
+      ...agency,
+      status: agency.status || 'discovered'
+    })) as Business[];
 
     // Get all relationships
     const { data: relationships, error: relationshipError } = await supabase
@@ -150,7 +156,7 @@ export async function getRelationshipMapData(): Promise<RelationshipMapData> {
     const clientIds = [...new Set(relationships.map(rel => rel.client_id))];
 
     // Fetch all clients in one query
-    const { data: clients, error: clientError } = await supabase
+    const { data: clientsData, error: clientError } = await supabase
       .from('businesses')
       .select('*')
       .in('id', clientIds);
@@ -160,9 +166,15 @@ export async function getRelationshipMapData(): Promise<RelationshipMapData> {
       throw clientError;
     }
 
+    // Transform client data to include required fields
+    const clients = clientsData.map(client => ({
+      ...client,
+      status: client.status || 'discovered'
+    })) as Business[];
+
     return {
-      agencies: agencies || [],
-      clients: clients || [],
+      agencies,
+      clients,
       relationships: relationships || []
     };
   } catch (error) {
@@ -196,7 +208,7 @@ export async function getAgencyClients(agencyId: string): Promise<Business[]> {
     const clientIds = relationships.map(rel => rel.client_id);
 
     // Fetch all clients in one query
-    const { data: clients, error: clientError } = await supabase
+    const { data: clientsData, error: clientError } = await supabase
       .from('businesses')
       .select('*')
       .in('id', clientIds);
@@ -206,7 +218,11 @@ export async function getAgencyClients(agencyId: string): Promise<Business[]> {
       throw clientError;
     }
 
-    return clients || [];
+    // Transform client data to include required fields
+    return clientsData.map(client => ({
+      ...client,
+      status: client.status || 'discovered'
+    })) as Business[];
   } catch (error) {
     console.error('Error getting agency clients:', error);
     toast.error('Failed to load agency clients');
@@ -248,7 +264,7 @@ export async function findCompetitorAgencies(agencyId: string): Promise<Business
     const competitorIds = [...new Set(competitorRelationships.map(rel => rel.agency_id))];
 
     // Fetch competitor agency details
-    const { data: competitors, error: compError } = await supabase
+    const { data: competitorsData, error: compError } = await supabase
       .from('businesses')
       .select('*')
       .in('id', competitorIds);
@@ -258,7 +274,11 @@ export async function findCompetitorAgencies(agencyId: string): Promise<Business
       throw compError;
     }
 
-    return competitors || [];
+    // Transform competitor data to include required fields
+    return competitorsData.map(competitor => ({
+      ...competitor,
+      status: competitor.status || 'discovered'
+    })) as Business[];
   } catch (error) {
     console.error('Error finding competitor agencies:', error);
     toast.error('Failed to find competitor agencies');

@@ -114,36 +114,36 @@ export async function getScanQueueStatus(): Promise<{
     today.setHours(0, 0, 0, 0);
     
     // Get pending scans count
-    const { data: pendingData, error: pendingError } = await supabase
+    const { count: pendingCount, error: pendingError } = await supabase
       .from('businesses')
-      .select('id', { count: 'exact' })
+      .select('*', { count: 'exact', head: true })
       .eq('status', 'scanning');
     
     if (pendingError) throw pendingError;
     
     // Get today's completed scans
-    const { data: completedData, error: completedError } = await supabase
+    const { count: completedCount, error: completedError } = await supabase
       .from('businesses')
-      .select('id', { count: 'exact' })
+      .select('*', { count: 'exact', head: true })
       .gte('last_checked', today.toISOString())
       .eq('status', 'discovered');
     
     if (completedError) throw completedError;
     
     // Get today's failed scans
-    const { data: failedData, error: failedError } = await supabase
+    const { count: failedCount, error: failedError } = await supabase
       .from('businesses')
-      .select('id', { count: 'exact' })
+      .select('*', { count: 'exact', head: true })
       .gte('last_checked', today.toISOString())
       .eq('status', 'error');
     
     if (failedError) throw failedError;
     
     return {
-      pendingScans: pendingData?.length || 0,
+      pendingScans: pendingCount || 0,
       inProgressScans: 0, // We'll implement this when we add queue management
-      completedToday: completedData?.length || 0,
-      failedToday: failedData?.length || 0
+      completedToday: completedCount || 0,
+      failedToday: failedCount || 0
     };
   } catch (error) {
     console.error('Error getting scan queue status:', error);

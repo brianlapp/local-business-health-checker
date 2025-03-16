@@ -63,6 +63,11 @@ export async function searchLocalBusinesses(
  */
 export async function addLocalBusiness(businessData: Partial<Business>): Promise<Business | null> {
   try {
+    // Make sure name and status are included in the data
+    if (!businessData.name) {
+      throw new Error('Business name is required');
+    }
+    
     const { data, error } = await supabase
       .from('businesses')
       .insert({
@@ -79,7 +84,10 @@ export async function addLocalBusiness(businessData: Partial<Business>): Promise
     if (error) throw error;
     
     toast.success('Business added successfully');
-    return data as Business;
+    return {
+      ...data,
+      status: data.status || 'discovered',
+    } as Business;
   } catch (error) {
     console.error('Error adding business:', error);
     toast.error('Failed to add business');
@@ -99,7 +107,10 @@ export async function getLocalBusinesses(): Promise<Business[]> {
     
     if (error) throw error;
     
-    return data as Business[];
+    return data.map(business => ({
+      ...business,
+      status: business.status || 'discovered',
+    })) as Business[];
   } catch (error) {
     console.error('Error fetching businesses:', error);
     toast.error('Failed to load businesses');

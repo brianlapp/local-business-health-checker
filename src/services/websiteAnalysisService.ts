@@ -1,4 +1,3 @@
-
 import { Business } from '@/types/business';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -137,7 +136,20 @@ export async function getBusinessesNeedingScoring(): Promise<Business[]> {
       throw error;
     }
     
-    return data as Business[];
+    return data.map(business => ({
+      ...business,
+      lastChecked: business.last_checked,
+      speedScore: business.speed_score,
+      lighthouseScore: business.lighthouse_score,
+      gtmetrixScore: business.gtmetrix_score,
+      lighthouseReportUrl: business.lighthouse_report_url,
+      gtmetrixReportUrl: business.gtmetrix_report_url,
+      lastLighthouseScan: business.last_lighthouse_scan,
+      lastGtmetrixScan: business.last_gtmetrix_scan,
+      is_mobile_friendly: business.is_mobile_friendly,
+      status: business.status || 'discovered', // Ensure status is set
+      issues: generateIssues(business),
+    }));
   } catch (error) {
     console.error('Error fetching businesses needing scoring:', error);
     return [];
@@ -172,3 +184,6 @@ export function calculateSEOIssues(business: Business): string[] {
   
   return issues;
 }
+
+// Import generateIssues function
+import { generateIssues } from './businessUtilsService';

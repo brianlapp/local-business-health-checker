@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { Business } from '@/types/business';
 import { v4 as uuidv4 } from 'uuid';
@@ -47,6 +46,7 @@ export const processScrapedBusinesses = async (scrapedBusinesses: any[], source:
           gtmetrixReportUrl: existingBusiness.gtmetrix_report_url,
           lastLighthouseScan: existingBusiness.last_lighthouse_scan,
           lastGtmetrixScan: existingBusiness.last_gtmetrix_scan,
+          status: existingBusiness.status || 'discovered', // Ensure status is set
           issues: generateIssues(existingBusiness),
           source: source // Set source for UI display purposes
         });
@@ -58,12 +58,12 @@ export const processScrapedBusinesses = async (scrapedBusinesses: any[], source:
       
       // Create new business with database schema column names
       // Remove source property as it doesn't exist in the database schema
-      const newBusiness: Partial<Business> = {
+      const newBusiness = {
         id: uuidv4(),
         name: business.name,
         website: business.website,
         score,
-        status: 'discovered', // Add required status field
+        status: 'discovered' as const, // Add required status field
         last_checked: new Date().toISOString(),
       };
       
@@ -131,7 +131,7 @@ export const processMockBusinesses = (mockBusinesses: any[], location: string): 
 };
 
 // Function to generate mock business data as fallback
-export function generateMockBusinessData(location: string, source: string = 'mock'): Business[] {
+export function generateMockBusinessData(location: string, source: string = 'mock'): Business[] => {
   console.log(`Generating mock data for ${location}`);
   
   // Generate 5-10 mock businesses
