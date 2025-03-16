@@ -27,12 +27,15 @@ const BatchOpportunityScoring: React.FC = () => {
       // Count businesses without opportunity scores
       const needScoring = data.filter(b => 
         b.website && 
-        (!b.opportunityScore || b.lighthouseScore || b.lighthouse_score)
+        (!b.opportunityScore && !b.opportunity_score && (b.lighthouseScore || b.lighthouse_score))
       );
       setNeedScoringCount(needScoring.length);
       
       // Count already scored businesses
-      const scored = data.filter(b => b.opportunityScore !== undefined && b.opportunityScore !== null);
+      const scored = data.filter(b => 
+        b.opportunityScore !== undefined || 
+        b.opportunity_score !== undefined
+      );
       setScoredCount(scored.length);
     } catch (error) {
       console.error('Error fetching businesses:', error);
@@ -52,7 +55,7 @@ const BatchOpportunityScoring: React.FC = () => {
       // Find businesses that need scoring
       const businessesToScore = businesses.filter(b => 
         b.website && 
-        (!b.opportunityScore || b.lighthouseScore || b.lighthouse_score)
+        (!b.opportunityScore && !b.opportunity_score && (b.lighthouseScore || b.lighthouse_score))
       );
       
       if (businessesToScore.length === 0) {
@@ -68,7 +71,8 @@ const BatchOpportunityScoring: React.FC = () => {
       
       for (let i = 0; i < businessesToScore.length; i += batchSize) {
         const batch = businessesToScore.slice(i, i + batchSize);
-        await evaluateOpportunities(batch.map(b => b.id));
+        // Pass both businessIds and a callback to refresh after scoring
+        await evaluateOpportunities(batch.map(b => b.id), fetchBusinesses);
         processed += batch.length;
         
         // Update progress

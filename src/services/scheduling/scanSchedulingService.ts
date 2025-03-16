@@ -111,38 +111,13 @@ export async function getScanQueueStatus(): Promise<ScanQueueStatus> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    // Get pending scans
-    const { data: pendingData, error: pendingError } = await supabase
-      .from('scan_queue')
-      .select('id')
-      .eq('status', 'pending')
-      .count();
+    // For scan queue status, we'll use RPC since we need custom data
+    const { data, error } = await supabase.rpc('get_scan_queue_stats', {
+      today_date: today.toISOString()
+    });
     
-    // Get in-progress scans
-    const { data: inProgressData, error: inProgressError } = await supabase
-      .from('scan_queue')
-      .select('id')
-      .eq('status', 'in_progress')
-      .count();
-    
-    // Get completed scans today
-    const { data: completedData, error: completedError } = await supabase
-      .from('scan_queue')
-      .select('id')
-      .eq('status', 'completed')
-      .gte('completed_at', today.toISOString())
-      .count();
-    
-    // Get failed scans today
-    const { data: failedData, error: failedError } = await supabase
-      .from('scan_queue')
-      .select('id')
-      .eq('status', 'failed')
-      .gte('updated_at', today.toISOString())
-      .count();
-    
-    if (pendingError || inProgressError || completedError || failedError) {
-      console.error('Error getting scan queue status');
+    if (error) {
+      console.error('Error getting scan queue status:', error);
       return {
         pendingScans: 0,
         inProgressScans: 0,
@@ -152,10 +127,10 @@ export async function getScanQueueStatus(): Promise<ScanQueueStatus> {
     }
     
     return {
-      pendingScans: pendingData?.count || 0,
-      inProgressScans: inProgressData?.count || 0,
-      completedToday: completedData?.count || 0,
-      failedToday: failedData?.count || 0
+      pendingScans: data.pending_scans || 0,
+      inProgressScans: data.in_progress_scans || 0,
+      completedToday: data.completed_today || 0,
+      failedToday: data.failed_today || 0
     };
   } catch (error) {
     console.error('Error in getScanQueueStatus:', error);

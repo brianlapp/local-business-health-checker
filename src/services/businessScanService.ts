@@ -86,18 +86,13 @@ export async function scanWithLighthouse(businessId: string, url: string): Promi
   isRealScore?: boolean;
 }> {
   try {
-    // Add the business to the scan queue instead of scanning directly
-    const { data: queueData, error: queueError } = await supabase
-      .from('scan_queue')
-      .insert({
-        business_id: businessId,
-        scan_type: 'lighthouse',
-        url: url,
-        status: 'pending',
-        priority: 'medium'
-      })
-      .select('id')
-      .single();
+    // Use RPC to add the business to the scan queue
+    const { data: queueData, error: queueError } = await supabase.rpc('add_to_scan_queue', {
+      business_id_param: businessId,
+      scan_type_param: 'lighthouse',
+      url_param: url,
+      priority_param: 'medium'
+    });
     
     if (queueError) {
       console.error('Error adding to scan queue:', queueError);

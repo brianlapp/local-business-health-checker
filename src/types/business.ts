@@ -28,6 +28,8 @@ export interface Business {
   lastChecked?: string;
   last_checked?: string; // For backward compatibility
   is_mobile_friendly?: boolean;
+  opportunityScore?: number; // Added this property
+  opportunity_score?: number; // For backward compatibility
   issues?: {
     speedIssues?: boolean;
     outdatedCMS?: boolean;
