@@ -1,21 +1,26 @@
+import { supabase } from '@/lib/supabase';
+import { Business } from '@/types/business';
+import { ensureBusinessStatus, isCMSOutdated, isWebsiteSecure } from './businessUtilsService';
 
-// This file serves as a facade to the underlying specialized services
-// It re-exports functions from the specialized services to maintain backward compatibility
-
-import { scanBusinessesInArea } from './scanningService';
-import { addBusiness, getBusinesses } from './businessCrudService';
-import { generateIssues, isCMSOutdated, isWebsiteSecure } from './businessUtilsService';
-import { scanWithGoogleMaps } from './scanning/googleMapsScanner';
-import { scanWithWebScraper } from './scanning/webScraperService';
-
-// Re-export everything
-export {
-  scanBusinessesInArea,
-  scanWithGoogleMaps,
-  scanWithWebScraper,
-  addBusiness,
-  getBusinesses,
-  generateIssues,
-  isCMSOutdated,
-  isWebsiteSecure
-};
+/**
+ * Get all businesses from the database
+ */
+export async function getBusinesses(): Promise<Business[]> {
+  try {
+    const { data, error } = await supabase
+      .from('businesses')
+      .select('*')
+      .order('score', { ascending: false });
+    
+    if (error) {
+      console.error('Supabase error:', error);
+      return [];
+    }
+    
+    // Use our utility function to ensure all businesses have the correct shape
+    return data.map(business => ensureBusinessStatus(business));
+  } catch (error) {
+    console.error('Error fetching businesses:', error);
+    return [];
+  }
+}

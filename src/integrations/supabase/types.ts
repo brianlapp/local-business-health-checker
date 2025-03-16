@@ -75,50 +75,74 @@ export type Database = {
       businesses: {
         Row: {
           cms: string | null
+          created_at: string | null
           gtmetrix_report_url: string | null
           gtmetrix_score: number | null
           id: string
+          industry: string | null
+          is_agency: boolean | null
           is_mobile_friendly: boolean | null
           last_checked: string | null
           last_gtmetrix_scan: string | null
           last_lighthouse_scan: string | null
           lighthouse_report_url: string | null
           lighthouse_score: number | null
+          location: string | null
           name: string
+          opportunity_calculated_at: string | null
+          opportunity_score: number | null
           score: number | null
           speed_score: number | null
+          status: string | null
+          updated_at: string | null
           website: string
         }
         Insert: {
           cms?: string | null
+          created_at?: string | null
           gtmetrix_report_url?: string | null
           gtmetrix_score?: number | null
           id?: string
+          industry?: string | null
+          is_agency?: boolean | null
           is_mobile_friendly?: boolean | null
           last_checked?: string | null
           last_gtmetrix_scan?: string | null
           last_lighthouse_scan?: string | null
           lighthouse_report_url?: string | null
           lighthouse_score?: number | null
+          location?: string | null
           name: string
+          opportunity_calculated_at?: string | null
+          opportunity_score?: number | null
           score?: number | null
           speed_score?: number | null
+          status?: string | null
+          updated_at?: string | null
           website: string
         }
         Update: {
           cms?: string | null
+          created_at?: string | null
           gtmetrix_report_url?: string | null
           gtmetrix_score?: number | null
           id?: string
+          industry?: string | null
+          is_agency?: boolean | null
           is_mobile_friendly?: boolean | null
           last_checked?: string | null
           last_gtmetrix_scan?: string | null
           last_lighthouse_scan?: string | null
           lighthouse_report_url?: string | null
           lighthouse_score?: number | null
+          location?: string | null
           name?: string
+          opportunity_calculated_at?: string | null
+          opportunity_score?: number | null
           score?: number | null
           speed_score?: number | null
+          status?: string | null
+          updated_at?: string | null
           website?: string
         }
         Relationships: []

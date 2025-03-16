@@ -96,11 +96,8 @@ export async function getLocalBusinesses(): Promise<Business[]> {
     
     if (error) throw error;
     
-    // Map database fields to Business type with proper status field
-    return data.map(business => ({
-      ...business,
-      status: business.status || 'discovered',
-    })) as Business[];
+    // Use our utility function to ensure all businesses have the required fields
+    return data.map(business => ensureBusinessStatus(business));
   } catch (error) {
     console.error('Error fetching businesses:', error);
     toast.error('Failed to load businesses');

@@ -281,3 +281,30 @@ export async function getScanQueueStatus(): Promise<ScanQueueStatus> {
     };
   }
 }
+
+/**
+ * Update business status
+ */
+export async function updateBusinessStatus(businessId: string, status: string): Promise<boolean> {
+  try {
+    console.log(`Updating business ${businessId} to status: ${status}`);
+    
+    // Update the business status in the database
+    const { error } = await supabase
+      .from('businesses')
+      .update({ 
+        status: status,
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', businessId);
+    
+    if (error) {
+      throw error;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error updating business status:', error);
+    return false;
+  }
+}

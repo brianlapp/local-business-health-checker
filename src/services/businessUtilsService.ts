@@ -13,13 +13,31 @@ export function generateIssues(business: any): Business['issues'] {
   
   return {
     speedIssues: score < 70 || business.speed_score < 50,
-    outdatedCMS: business.cms?.toLowerCase().includes('5.') || 
-                business.cms?.toLowerCase().includes('joomla 3') || 
-                business.cms?.toLowerCase().includes('drupal 7'),
-    noSSL: business.website?.startsWith('http:') || false,
+    outdatedCMS: isCMSOutdated(business.cms),
+    noSSL: !isWebsiteSecure(business.website),
     notMobileFriendly: business.is_mobile_friendly === false,
     badFonts: false // Default value as we don't currently check fonts
   };
+}
+
+/**
+ * Check if a CMS version is outdated
+ */
+export function isCMSOutdated(cms?: string): boolean {
+  if (!cms) return false;
+  
+  const lowerCms = cms.toLowerCase();
+  return lowerCms.includes('wordpress 5.') || 
+         lowerCms.includes('joomla 3') || 
+         lowerCms.includes('drupal 7');
+}
+
+/**
+ * Check if a website uses HTTPS
+ */
+export function isWebsiteSecure(website?: string): boolean {
+  if (!website) return true; // Can't determine if secure
+  return !website.startsWith('http:');
 }
 
 /**

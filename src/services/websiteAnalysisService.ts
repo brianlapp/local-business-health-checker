@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { Business } from '@/types/business';
 import { toast } from 'sonner';
@@ -35,7 +34,7 @@ export async function getBusinessesNeedingScoring(): Promise<Business[]> {
 /**
  * Calculate opportunity score for a business website
  */
-export function calculateWebsiteOpportunityScore(business: Business): number {
+export async function calculateOpportunityScore(business: Business): Promise<number> {
   if (!business) return 0;
   
   let score = 50; // Default base score
@@ -110,14 +109,16 @@ export async function processBusinessOpportunityScores(businesses: Business[]): 
   for (const business of businesses) {
     try {
       // Calculate opportunity score
-      const opportunityScore = calculateWebsiteOpportunityScore(business);
+      const opportunityScore = calculateOpportunityScore(business);
       
       // Update in database
       const { error } = await supabase
         .from('businesses')
-        .update({
+        .update({ 
           opportunity_score: opportunityScore,
-          opportunity_calculated_at: new Date().toISOString()
+          opportunity_calculated_at: new Date().toISOString(),
+          status: business.status || 'discovered',
+          updated_at: new Date().toISOString()
         })
         .eq('id', business.id);
       
