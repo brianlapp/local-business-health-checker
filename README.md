@@ -1,69 +1,79 @@
-# Welcome to your Lovable project
 
-## Project info
+# Freelance Opportunity Finder
 
-**URL**: https://lovable.dev/projects/01c4eda3-3561-41ab-811d-aa0d1bc4c0bd
+A comprehensive tool to discover, evaluate, and manage freelance opportunities across multiple channels.
 
-## How can I edit this code?
+## Project Overview
 
-There are several ways of editing your application.
+The **Freelance Opportunity Finder** is an **automated system** designed to assist freelancers and agencies in **finding and managing potential clients** across multiple channels. The primary objective is to **streamline** the entire process, from **opportunity discovery** to **client outreach** and **relationship management**.
 
-**Use Lovable**
+## Key Features
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/01c4eda3-3561-41ab-811d-aa0d1bc4c0bd) and start prompting.
+- **🔍 Discovery System:** Multi-source opportunity scanning (job boards, agencies, local businesses)
+- **📊 Evaluation Tools:** Smart scoring system for matching opportunities to your skills
+- **📬 Outreach Management:** Proposal generation and follow-up scheduling
+- **📈 Analytics & Tracking:** Success rate monitoring and ROI calculation
 
-Changes made via Lovable will be committed automatically to this repo.
+## Project Status
 
-**Use your preferred IDE**
+### Implemented Features
+- Authentication and user management
+- Core infrastructure setup
+- Basic UI components with responsive design
+- Protected routes for authenticated users
+- Mobile and desktop navigation
+- Basic project structure and architecture
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### In Progress
+- Opportunity discovery from multiple sources
+- Business scoring and evaluation system
+- Agency analysis and portfolio scanning
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Upcoming Features
+- Advanced opportunity evaluation
+- Outreach automation
+- Performance analytics dashboard
 
-Follow these steps:
+## Tech Stack
+
+- **Frontend:** React + Tailwind CSS + shadcn/ui
+- **Backend:** Supabase (database, edge functions, authentication)
+- **State Management:** React Context + React Query
+- **Routing:** React Router
+- **Styling:** Tailwind CSS with dark/light mode support
+
+## Development Setup
+
+To run this project locally:
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Clone the repository
+git clone <repository-url>
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Navigate to the project directory
+cd freelance-opportunity-finder
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Install dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start the development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Project Structure
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+The project follows a feature-based organization:
 
-**Use GitHub Codespaces**
+- `/components` - Reusable UI components
+- `/pages` - Main application pages
+- `/services` - API and business logic services
+- `/contexts` - React context providers
+- `/hooks` - Custom React hooks
+- `/types` - TypeScript type definitions
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Learn More
 
-## What technologies are used for this project?
-
-This project is built with .
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/01c4eda3-3561-41ab-811d-aa0d1bc4c0bd) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+For more detailed information about the project:
+- Check the `/docs` directory for technical specifications
+- See `implementation-spec.md` for the current implementation status
+- Review `project-overview.md` for a complete feature list
