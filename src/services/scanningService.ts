@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { Business, BusinessScanResponse, ScanDebugInfo } from '@/types/business';
 import { scanWithGoogleMaps } from './scanning/googleMapsScanner';
 import { toast } from 'sonner';
+import { ensureBusinessesStatus } from './businessUtilsService';
 
 /**
  * Scan businesses in a specific area
@@ -28,7 +29,6 @@ export async function scanBusinessesInArea(
     }
     
     // Default approach - fetch from businesses table with filtering
-    // This replaces the RPC call that was causing the error
     const radiusNum = parseInt(radius, 10);
     
     const { data, error } = await supabase
@@ -42,10 +42,12 @@ export async function scanBusinessesInArea(
     }
     
     // Filter businesses based on location (simple contains match)
-    // This is a simplified approach - ideally would use geographic filtering
-    const filteredBusinesses = data.filter(business => 
+    const filteredData = data.filter(business => 
       business.location && business.location.toLowerCase().includes(location.toLowerCase())
     );
+
+    // Transform the data to match the Business type
+    const filteredBusinesses = ensureBusinessesStatus(filteredData);
 
     return {
       businesses: filteredBusinesses || [],

@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Business } from '@/types/business';
@@ -18,7 +19,7 @@ export async function findAgencies(location: string): Promise<Business[]> {
   try {
     console.log(`Finding agencies in ${location}`);
     
-    // Pass "10" as the radius string and true as the useGoogle parameter
+    // Pass "10" as the radius string and true for useGoogle
     const response = await scanBusinessesInArea(location, "10", 20, true);
     
     if (!response.businesses || response.businesses.length === 0) {
