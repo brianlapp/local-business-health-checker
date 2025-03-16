@@ -105,3 +105,19 @@ export function businessNeedsUpdate(business: Business): boolean {
   
   return daysSinceLastCheck > 7;
 }
+
+// Check if a CMS is outdated
+export function isCMSOutdated(cms: string | undefined): boolean {
+  if (!cms) return false;
+  
+  const outdatedCMSList = ['wordpress 4', 'wordpress 5.0', 'joomla 3', 'drupal 7'];
+  return outdatedCMSList.some(outdatedCms => 
+    cms.toLowerCase().includes(outdatedCms.toLowerCase())
+  );
+}
+
+// Check if a website is secure (has HTTPS)
+export function isWebsiteSecure(website: string | undefined): boolean {
+  if (!website) return false;
+  return website.includes('https');
+}

@@ -130,3 +130,40 @@ export const processPreviewBusinesses = (previewBusinesses: any[], location: str
   
   return Promise.resolve(businesses);
 };
+
+// Function to generate sample business data for preview
+export function generateMockBusinessData(locationInput: string): Business[] {
+  const location = typeof locationInput === 'string' ? locationInput : 'Unknown';
+  console.log(`Generating preview data for ${location}`);
+  
+  // Generate 5-10 preview businesses
+  const count = Math.floor(Math.random() * 6) + 5;
+  const businesses: Business[] = [];
+  
+  for (let i = 0; i < count; i++) {
+    const name = `${location} Business ${i + 1}`;
+    const website = `https://business${i + 1}.com`;
+    const score = Math.floor(Math.random() * 100);
+    const now = new Date().toISOString();
+    
+    businesses.push({
+      id: `preview-${uuidv4()}`,
+      name,
+      website,
+      score,
+      status: 'discovered', // Add required status field
+      last_checked: now,
+      lastChecked: now,
+      source: 'preview',
+      issues: {
+        speedIssues: score < 50,
+        outdatedCMS: Math.random() > 0.5,
+        noSSL: Math.random() > 0.7,
+        notMobileFriendly: Math.random() > 0.6,
+        badFonts: Math.random() > 0.7
+      }
+    });
+  }
+  
+  return businesses;
+}

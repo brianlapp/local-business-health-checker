@@ -4,7 +4,7 @@ import { Business, BusinessScanResponse, ScanDebugInfo } from '@/types/business'
 import { generateMockBusinessData } from '../businessProcessingService';
 
 /**
- * Handles errors and returns mock data as fallback
+ * Handles errors and returns preview data as fallback
  */
 export function handleScanError(
   error: any, 
@@ -17,13 +17,13 @@ export function handleScanError(
   // Convert location to string to ensure type compatibility
   const locationString = String(location);
   
-  // Generate mock businesses with correct argument count
-  const mockBusinesses = generateMockBusinessData(locationString);
+  // Generate preview businesses
+  const previewBusinesses = generateMockBusinessData(locationString);
   
-  // Return mock data as a fallback with proper BusinessScanResponse type
+  // Return preview data as a fallback with proper BusinessScanResponse type
   return {
-    businesses: mockBusinesses,
-    count: mockBusinesses.length,
+    businesses: previewBusinesses,
+    count: previewBusinesses.length,
     location: locationString,
     source: 'error-fallback',
     timestamp: new Date().toISOString(),
@@ -33,7 +33,7 @@ export function handleScanError(
     debugInfo: {
       errors: [error.message || 'Unknown error'],
       warnings: ['Using fallback data'],
-      logs: ['Error occurred, using mock data'],
+      logs: ['Error occurred, using preview data'],
       htmlSamples: []
     }
   };

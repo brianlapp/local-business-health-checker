@@ -33,7 +33,7 @@ export async function getBusinesses(): Promise<Business[]> {
       // Ensure status is always set (default to 'discovered' if not present)
       status: business.status || 'discovered',
       issues: generateIssues(business),
-    }));
+    }) as Business);
   } catch (error) {
     console.error('Error fetching businesses:', error);
     toast.error('Failed to load businesses');
@@ -142,7 +142,7 @@ export async function addBusiness(business: Omit<Business, 'id' | 'issues'>): Pr
       lastGtmetrixScan: data.last_gtmetrix_scan,
       status: data.status || 'discovered', // Ensure status is set
       issues: generateIssues(data),
-    };
+    } as Business;
   } catch (error) {
     console.error('Error adding business:', error);
     toast.error('Failed to add business');
@@ -205,4 +205,3 @@ export async function updateBusiness(id: string, updates: Partial<Omit<Business,
 
 // Import these utilities from businessUtilsService
 import { generateIssues } from './businessUtilsService';
-

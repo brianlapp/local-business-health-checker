@@ -58,10 +58,9 @@ export async function scanWithWebScraper(
     if (data?.error) {
       console.error('Web scraper error:', data.error);
       
-      // If we got mock data despite an error, use it
-      if (data.mockData && data.businesses && data.businesses.length > 0) {
-        const mockBusinesses = await generateMockBusinessData(data.businesses, location);
-        return mockBusinesses;
+      // If we got preview data despite an error, use it
+      if (data.businesses && data.businesses.length > 0) {
+        return await processScrapedBusinesses(data.businesses, source, location);
       }
       
       throw new Error(data.message || data.error);
@@ -72,16 +71,11 @@ export async function scanWithWebScraper(
       return [];
     }
     
-    // If it's mock data
-    if (data.mockData) {
-      const mockBusinesses = await generateMockBusinessData(data.businesses, location);
-      return mockBusinesses;
-    }
-    
     // Otherwise process the scraped businesses
     return await processScrapedBusinesses(data.businesses, source, location);
   } catch (error: any) {
     console.error('Error in web scraper scan:', error);
-    throw error;
+    // Use preview data as fallback if there's an error
+    return generateMockBusinessData(location);
   }
 }

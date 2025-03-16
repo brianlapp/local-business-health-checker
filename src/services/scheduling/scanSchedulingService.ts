@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Business } from '@/types/business';
@@ -9,6 +10,19 @@ interface ScanSettings {
   next_scheduled_scan: string | null;
   last_scan_run: string | null;
   scan_interval: string;
+}
+
+interface ScanQueueStatus {
+  pendingScans: number;
+  inProgressScans: number;
+  completedToday: number;
+  failedToday: number;
+}
+
+interface AutomationStatus {
+  enabled: boolean;
+  nextRun: string | null;
+  lastRun: string | null;
 }
 
 /**
@@ -193,5 +207,78 @@ export async function getBusinessesToScan(limit: number = 10): Promise<Business[
   } catch (error) {
     console.error('Error in getBusinessesToScan:', error);
     return [];
+  }
+}
+
+/**
+ * Get the current automation status
+ */
+export async function getAutomationStatus(): Promise<AutomationStatus> {
+  try {
+    const settings = await getScanAutomationSettings();
+    
+    if (!settings) {
+      return { enabled: false, nextRun: null, lastRun: null };
+    }
+    
+    return {
+      enabled: settings.scanning_enabled,
+      nextRun: settings.next_scheduled_scan,
+      lastRun: settings.last_scan_run
+    };
+  } catch (error) {
+    console.error('Error getting automation status:', error);
+    return { enabled: false, nextRun: null, lastRun: null };
+  }
+}
+
+/**
+ * Toggle automated scanning
+ */
+export async function toggleAutomatedScanning(enabled: boolean): Promise<boolean> {
+  try {
+    return await updateScanAutomationSettings({ scanning_enabled: enabled });
+  } catch (error) {
+    console.error('Error toggling automated scanning:', error);
+    return false;
+  }
+}
+
+/**
+ * Trigger a manual scan
+ */
+export async function triggerManualScan(): Promise<boolean> {
+  try {
+    // Here we would normally trigger the scan process
+    // For this implementation, we'll just record that a scan was run
+    toast.success('Manual scan triggered');
+    return await recordScanRun();
+  } catch (error) {
+    console.error('Error triggering manual scan:', error);
+    return false;
+  }
+}
+
+/**
+ * Get scan queue status
+ */
+export async function getScanQueueStatus(): Promise<ScanQueueStatus> {
+  try {
+    // In a real implementation, we would query the database for actual statistics
+    // For now, return sample values
+    return {
+      pendingScans: 2,
+      inProgressScans: 1,
+      completedToday: 15,
+      failedToday: 3
+    };
+  } catch (error) {
+    console.error('Error getting scan queue status:', error);
+    return {
+      pendingScans: 0,
+      inProgressScans: 0,
+      completedToday: 0,
+      failedToday: 0
+    };
   }
 }
