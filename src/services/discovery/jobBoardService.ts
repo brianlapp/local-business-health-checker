@@ -1,4 +1,8 @@
 
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
+import { Opportunity, JobListing, JobBoardResponse } from '@/types/opportunity';
+
 /**
  * Save a job listing as an opportunity
  */
@@ -41,3 +45,8 @@ export async function saveJobAsOpportunity(job: JobListing, userId: string): Pro
     return null;
   }
 }
+
+// Import and export the functions from the new modules
+export { searchJobs } from './jobBoard/api';
+export { filterJobs } from './jobBoard/filters';
+export type { JobListing, JobBoardResponse } from '@/types/opportunity';
