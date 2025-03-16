@@ -10,9 +10,9 @@ export interface JobListing {
   location: string;
   description: string;
   url: string;
-  datePosted: string; // Updated to match usage in JobSearchResults.tsx
-  posted_date?: string; // Keep for backward compatibility
-  salary?: string; // Added to match usage in JobSearchResults.tsx
+  datePosted: string;
+  posted_date?: string;
+  salary?: string;
   budget_min?: number;
   budget_max?: number;
   skills?: string[];
@@ -23,7 +23,7 @@ export interface JobListing {
 export interface JobBoardResponse {
   jobs: JobListing[];
   count: number;
-  source: string; // Added to match usage in JobSearchResults.tsx
+  source: string;
   location?: string;
   query?: string;
   error?: string;
@@ -81,7 +81,9 @@ export async function searchJobs(
     return {
       jobs: mockJobs,
       count: mockJobs.length,
-      source: 'Mock Data'
+      source: 'Mock Data',
+      location: location,
+      query: query
     };
   } catch (error) {
     console.error('Error searching jobs:', error);

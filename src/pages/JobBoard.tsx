@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -20,7 +19,10 @@ const JobBoard: React.FC = () => {
     setSearchResults(null);
     
     try {
-      const results = await searchJobs(query, location, source === 'all' ? undefined : source);
+      // Fixed: The third parameter should be a boolean for 'remote', not a source string
+      // Let's derive the isRemote value based on location being 'remote'
+      const isRemote = location === 'remote';
+      const results = await searchJobs(query, location, isRemote);
       setSearchResults(results);
     } catch (error) {
       console.error('Error searching jobs:', error);
