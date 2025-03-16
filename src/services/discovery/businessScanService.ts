@@ -73,6 +73,8 @@ export async function addLocalBusiness(businessData: Partial<Business>): Promise
     if (error) throw error;
     
     toast.success('Business added successfully');
+    
+    // Ensure the returned business has the required status field
     return {
       ...data,
       status: data.status || 'discovered',
@@ -96,6 +98,7 @@ export async function getLocalBusinesses(): Promise<Business[]> {
     
     if (error) throw error;
     
+    // Ensure all businesses have the required status field
     return data.map(business => ({
       ...business,
       status: business.status || 'discovered',

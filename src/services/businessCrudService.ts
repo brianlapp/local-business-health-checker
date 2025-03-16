@@ -18,8 +18,11 @@ export async function getBusinesses(): Promise<Business[]> {
     
     console.log(`Retrieved ${data?.length || 0} businesses`);
     
+    // Ensure every business has a status field
     return data.map(business => ({
       ...business,
+      // If status doesn't exist in the database, set a default value
+      status: business.status || 'discovered',
       lastChecked: business.last_checked,
       speedScore: business.speed_score,
       lighthouseScore: business.lighthouse_score,
@@ -30,8 +33,6 @@ export async function getBusinesses(): Promise<Business[]> {
       lastGtmetrixScan: business.last_gtmetrix_scan,
       // Make sure we're preserving the is_mobile_friendly value from the database
       is_mobile_friendly: business.is_mobile_friendly,
-      // Ensure status is always set (default to 'discovered' if not present)
-      status: business.status || 'discovered',
       issues: generateIssues(business),
     }) as Business);
   } catch (error) {
@@ -130,8 +131,11 @@ export async function addBusiness(business: Omit<Business, 'id' | 'issues'>): Pr
     if (error) throw error;
     
     toast.success('Business added successfully');
+    
+    // Ensure the returned business has the required status field
     return {
       ...data,
+      status: data.status || 'discovered', // Ensure status is set
       lastChecked: data.last_checked,
       speedScore: data.speed_score,
       lighthouseScore: data.lighthouse_score,
@@ -140,7 +144,6 @@ export async function addBusiness(business: Omit<Business, 'id' | 'issues'>): Pr
       gtmetrixReportUrl: data.gtmetrix_report_url,
       lastLighthouseScan: data.last_lighthouse_scan,
       lastGtmetrixScan: data.last_gtmetrix_scan,
-      status: data.status || 'discovered', // Ensure status is set
       issues: generateIssues(data),
     } as Business;
   } catch (error) {
