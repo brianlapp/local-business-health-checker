@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { Business } from '@/types/business';
 import { v4 as uuidv4 } from 'uuid';
@@ -131,7 +132,7 @@ export const processMockBusinesses = (mockBusinesses: any[], location: string): 
 };
 
 // Function to generate mock business data as fallback
-export function generateMockBusinessData(location: string, source: string = 'mock'): Business[] => {
+export function generateMockBusinessData(location: string, source: string = 'mock'): Business[] {
   console.log(`Generating mock data for ${location}`);
   
   // Generate 5-10 mock businesses
