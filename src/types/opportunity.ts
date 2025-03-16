@@ -1,4 +1,3 @@
-
 export interface Opportunity {
   id: string;
   title: string;
@@ -68,15 +67,19 @@ export interface JobListing {
   description: string;
   url: string;
   location?: string;
-  salary?: string; // Added to match usage in JobSearchResults.tsx
+  salary?: string;
   skills?: string[];
-  datePosted: string; // Added to match usage in JobSearchResults.tsx
-  source: string; // Added to match usage in JobSearchResults.tsx
+  datePosted: string;
+  source: string;
+  is_remote?: boolean;
+  budget_min?: number;
+  budget_max?: number;
+  job_type?: string;
 }
 
 export interface JobBoardResponse {
   jobs: JobListing[];
-  source: string; // Added to match usage in JobSearchResults.tsx
+  source: string;
   count: number;
   location?: string;
   query?: string;
