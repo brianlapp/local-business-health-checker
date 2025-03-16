@@ -124,7 +124,7 @@ const App = () => {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </div>
-        <MobileNavigation />
+        {user && <MobileNavigation />}
       </Router>
     </div>
   );
