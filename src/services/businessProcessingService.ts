@@ -131,9 +131,8 @@ export const processPreviewBusinesses = (previewBusinesses: any[], location: str
   return Promise.resolve(businesses);
 };
 
-// Function to generate sample business data for preview
-export function generateMockBusinessData(locationInput: string): Business[] {
-  const location = typeof locationInput === 'string' ? locationInput : 'Unknown';
+// Function to generate preview business data for fallbacks
+export function generatePreviewBusinessData(location: string): Business[] {
   console.log(`Generating preview data for ${location}`);
   
   // Generate 5-10 preview businesses

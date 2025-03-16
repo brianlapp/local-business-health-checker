@@ -1,7 +1,7 @@
 
 import { toast } from 'sonner';
 import { Business, BusinessScanResponse, ScanDebugInfo } from '@/types/business';
-import { generateMockBusinessData } from '../businessProcessingService';
+import { generatePreviewBusinessData } from '../businessProcessingService';
 
 /**
  * Handles errors and returns preview data as fallback
@@ -18,7 +18,7 @@ export function handleScanError(
   const locationString = String(location);
   
   // Generate preview businesses
-  const previewBusinesses = generateMockBusinessData(locationString);
+  const previewBusinesses = generatePreviewBusinessData(locationString);
   
   // Return preview data as a fallback with proper BusinessScanResponse type
   return {

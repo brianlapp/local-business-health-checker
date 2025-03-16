@@ -162,7 +162,7 @@ export async function getBusinessesForAnalysis(limit: number = 10): Promise<Busi
       lastLighthouseScan: business.last_lighthouse_scan,
       lastGtmetrixScan: business.last_gtmetrix_scan,
       status: business.status || 'discovered',
-      issues: generateIssues(business as Business)
+      issues: generateIssues(business as unknown as Business)
     })) as Business[];
   } catch (error) {
     console.error('Error in getBusinessesForAnalysis:', error);
@@ -286,7 +286,7 @@ export async function getBusinessesNeedingScoring(): Promise<Business[]> {
       lastLighthouseScan: business.last_lighthouse_scan,
       lastGtmetrixScan: business.last_gtmetrix_scan,
       status: business.status || 'discovered',
-      issues: generateIssues(business as Business)
+      issues: generateIssues(business as unknown as Business)
     })) as Business[];
   } catch (error) {
     console.error('Error in getBusinessesNeedingScoring:', error);

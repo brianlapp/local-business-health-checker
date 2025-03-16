@@ -1,6 +1,7 @@
+
 import { Business, BusinessScanResponse, ScanDebugInfo } from '@/types/business';
 import { invokeEdgeFunction } from '../api/supabaseApiClient';
-import { processScrapedBusinesses, generateMockBusinessData } from '../businessProcessingService';
+import { processScrapedBusinesses, generatePreviewBusinessData } from '../businessProcessingService';
 
 /**
  * Scans for businesses using the web scraper edge function
@@ -76,6 +77,6 @@ export async function scanWithWebScraper(
   } catch (error: any) {
     console.error('Error in web scraper scan:', error);
     // Use preview data as fallback if there's an error
-    return generateMockBusinessData(location);
+    return generatePreviewBusinessData(location);
   }
 }
