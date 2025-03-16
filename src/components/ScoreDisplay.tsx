@@ -2,7 +2,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { Business } from '@/types/business';
-import { scanWithGTmetrix, scanWithLighthouse, scanWithBuiltWith } from '@/services/businessScanService';
 import PerformanceScores from './score/PerformanceScores';
 import IssuesList from './score/IssuesList';
 
@@ -138,3 +137,6 @@ async function getGTmetrixUsage() {
     return null;
   }
 }
+
+// Import scan functions from businessScanService
+import { scanWithLighthouse, scanWithGTmetrix } from '@/services/businessScanService';

@@ -111,16 +111,37 @@ export async function getScanQueueStatus(): Promise<ScanQueueStatus> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Call the RPC function to get stats
-    const { data, error } = await supabase.rpc(
-      'get_scan_queue_stats' as any,
-      { 
-        today_date: today.toISOString() 
-      }
-    );
+    // Fetch pending scans
+    const { count: pendingScans, error: pendingError } = await supabase
+      .from('scan_queue' as any)
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pending');
     
-    if (error) {
-      console.error('Error getting scan queue status:', error);
+    // Fetch in-progress scans
+    const { count: inProgressScans, error: inProgressError } = await supabase
+      .from('scan_queue' as any)
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'in_progress');
+    
+    // Fetch completed scans today
+    const { count: completedToday, error: completedError } = await supabase
+      .from('scan_queue' as any)
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'completed')
+      .gte('completed_at', today.toISOString());
+    
+    // Fetch failed scans today
+    const { count: failedToday, error: failedError } = await supabase
+      .from('scan_queue' as any)
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'failed')
+      .gte('updated_at', today.toISOString());
+    
+    if (pendingError || inProgressError || completedError || failedError) {
+      console.error('Error getting scan queue status:', 
+        pendingError || inProgressError || completedError || failedError);
+      
+      // Return default values
       return {
         pendingScans: 0,
         inProgressScans: 0,
@@ -129,15 +150,11 @@ export async function getScanQueueStatus(): Promise<ScanQueueStatus> {
       };
     }
     
-    // Extract values from the result
-    // TypeScript doesn't know about the RPC result shape, so we need to cast
-    const result = data as any;
-    
     return {
-      pendingScans: result.pending_scans || 0,
-      inProgressScans: result.in_progress_scans || 0,
-      completedToday: result.completed_today || 0,
-      failedToday: result.failed_today || 0
+      pendingScans: pendingScans || 0,
+      inProgressScans: inProgressScans || 0,
+      completedToday: completedToday || 0,
+      failedToday: failedToday || 0
     };
   } catch (error) {
     console.error('Error in getScanQueueStatus:', error);

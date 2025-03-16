@@ -21,7 +21,8 @@ export async function getBusinessesNeedingRealScores(): Promise<Business[]> {
       return [];
     }
     
-    return data || [];
+    // Use our utility function to ensure all businesses have the required fields
+    return (data || []).map(business => ensureBusinessStatus(business));
   } catch (error) {
     console.error('Error in getBusinessesNeedingRealScores:', error);
     toast.error('An unexpected error occurred');

@@ -8,11 +8,12 @@ import { Business } from '@/types/business';
 
 interface CMSDetectionProps {
   business: Business;
+  isScanning?: boolean;
   onScanComplete?: () => void;
 }
 
-const CMSDetection: React.FC<CMSDetectionProps> = ({ business, onScanComplete }) => {
-  const [isLoading, setIsLoading] = useState(false);
+const CMSDetection: React.FC<CMSDetectionProps> = ({ business, isScanning = false, onScanComplete }) => {
+  const [loading, setLoading] = useState(false);
   
   // Get CMS name from the business object
   const cmsName = business.cms || 'Unknown';
@@ -23,9 +24,9 @@ const CMSDetection: React.FC<CMSDetectionProps> = ({ business, onScanComplete })
   const handleDetectTech = async () => {
     if (!business.id) return;
     
-    setIsLoading(true);
+    setLoading(true);
     try {
-      await scanWithBuiltWith(business.id);
+      const result = await scanWithBuiltWith(business.id);
       
       if (onScanComplete) {
         onScanComplete();
@@ -33,7 +34,7 @@ const CMSDetection: React.FC<CMSDetectionProps> = ({ business, onScanComplete })
     } catch (error) {
       console.error('Error detecting technology:', error);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
   
@@ -45,9 +46,9 @@ const CMSDetection: React.FC<CMSDetectionProps> = ({ business, onScanComplete })
           variant="outline" 
           size="sm" 
           onClick={handleDetectTech}
-          disabled={isLoading}
+          disabled={loading || isScanning}
         >
-          {isLoading ? (
+          {loading ? (
             <>
               <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
               Detecting...

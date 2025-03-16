@@ -33,17 +33,17 @@ const BatchOpportunityScoring: React.FC = () => {
     }
   };
   
-  const getBusisnessesWithoutScores = (): Business[] => {
+  const getBusinessesWithoutScores = (): Business[] => {
     return businesses.filter(b => (
       (b.opportunityScore === undefined || b.opportunityScore === null) && 
       (b.opportunity_score === undefined || b.opportunity_score === null)
     ));
   };
   
-  const getBusisnessesWithScores = (): Business[] => {
+  const getBusinessesWithScores = (): Business[] => {
     return businesses.filter(b => (
-      b.opportunityScore !== undefined && b.opportunityScore !== null) || 
-      (b.opportunity_score !== undefined && b.opportunity_score !== null
+      (b.opportunityScore !== undefined && b.opportunityScore !== null) || 
+      (b.opportunity_score !== undefined && b.opportunity_score !== null)
     ));
   };
   
@@ -52,7 +52,7 @@ const BatchOpportunityScoring: React.FC = () => {
   };
   
   const handleScoreAll = async () => {
-    const businessesToScore = getBusisnessesWithoutScores();
+    const businessesToScore = getBusinessesWithoutScores();
     
     if (businessesToScore.length === 0) {
       toast.info('All businesses already have opportunity scores');
@@ -66,7 +66,7 @@ const BatchOpportunityScoring: React.FC = () => {
       // Convert to business IDs for the evaluation service
       const businessIds = businessesToScore.map(b => b.id);
       
-      // Call evaluateOpportunities with the correct signature
+      // Call evaluateOpportunities with the correct signature (passing a callback function)
       await evaluateOpportunities(businessIds, () => {
         // Callback to refresh data once scoring is complete
         loadBusinesses();
@@ -81,7 +81,7 @@ const BatchOpportunityScoring: React.FC = () => {
   };
   
   const formatChartData = () => {
-    const businessesWithScores = getBusisnessesWithScores();
+    const businessesWithScores = getBusinessesWithScores();
     const scoreRanges = {
       '0-20': 0,
       '21-40': 0,
@@ -125,7 +125,7 @@ const BatchOpportunityScoring: React.FC = () => {
           <Tabs defaultValue="stats">
             <TabsList className="mb-4">
               <TabsTrigger value="stats">Statistics</TabsTrigger>
-              <TabsTrigger value="unscored">Unscored ({getBusisnessesWithoutScores().length})</TabsTrigger>
+              <TabsTrigger value="unscored">Unscored ({getBusinessesWithoutScores().length})</TabsTrigger>
             </TabsList>
             <TabsContent value="stats">
               <div className="h-60">
@@ -139,20 +139,20 @@ const BatchOpportunityScoring: React.FC = () => {
                 </ResponsiveContainer>
               </div>
               <div className="mt-4 text-sm text-muted-foreground">
-                {getBusisnessesWithScores().length} of {businesses.length} businesses have opportunity scores
+                {getBusinessesWithScores().length} of {businesses.length} businesses have opportunity scores
               </div>
             </TabsContent>
             <TabsContent value="unscored">
               <div className="text-sm">
-                {getBusisnessesWithoutScores().length === 0 ? (
+                {getBusinessesWithoutScores().length === 0 ? (
                   <p>All businesses have been scored! 🎉</p>
                 ) : (
                   <ul className="list-disc pl-5 space-y-1">
-                    {getBusisnessesWithoutScores().slice(0, 5).map(business => (
+                    {getBusinessesWithoutScores().slice(0, 5).map(business => (
                       <li key={business.id}>{business.name}</li>
                     ))}
-                    {getBusisnessesWithoutScores().length > 5 && (
-                      <li>...and {getBusisnessesWithoutScores().length - 5} more</li>
+                    {getBusinessesWithoutScores().length > 5 && (
+                      <li>...and {getBusinessesWithoutScores().length - 5} more</li>
                     )}
                   </ul>
                 )}
@@ -164,7 +164,7 @@ const BatchOpportunityScoring: React.FC = () => {
       <CardFooter>
         <Button 
           onClick={handleScoreAll} 
-          disabled={loading || scoring || getBusisnessesWithoutScores().length === 0}
+          disabled={loading || scoring || getBusinessesWithoutScores().length === 0}
           className="w-full"
         >
           {scoring ? (
@@ -173,7 +173,7 @@ const BatchOpportunityScoring: React.FC = () => {
               Calculating Scores...
             </>
           ) : (
-            `Score ${getBusisnessesWithoutScores().length} Businesses`
+            `Score ${getBusinessesWithoutScores().length} Businesses`
           )}
         </Button>
       </CardFooter>
