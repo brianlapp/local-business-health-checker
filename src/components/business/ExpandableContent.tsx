@@ -3,6 +3,7 @@ import React from 'react';
 import { Business } from '@/types/business';
 import ScoreDisplay from '../ScoreDisplay';
 import CardActions from './CardActions';
+import WebsiteOpportunityScore from './WebsiteOpportunityScore';
 
 interface ExpandableContentProps {
   business: Business;
@@ -23,6 +24,13 @@ const ExpandableContent: React.FC<ExpandableContentProps> = ({
           business={business} 
           onScanComplete={onScanComplete}
         />
+        
+        <div className="mt-6">
+          <WebsiteOpportunityScore 
+            business={business} 
+            onScoreUpdated={async () => await onScanComplete()}
+          />
+        </div>
         
         <CardActions business={business} />
       </div>

@@ -18,11 +18,19 @@ interface BusinessCardProps {
 const BusinessCard: React.FC<BusinessCardProps> = ({ business, className, onUpdate }) => {
   const { expanded, toggleExpanded, handleToggleButtonClick } = useExpand(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [currentBusiness, setCurrentBusiness] = useState<Business>(business);
   
   const handleScanComplete = async () => {
     try {
       setIsRefreshing(true);
       const updatedBusinesses = await getBusinesses();
+      
+      // Find the updated version of this business
+      const updatedBusiness = updatedBusinesses.find(b => b.id === business.id);
+      if (updatedBusiness) {
+        setCurrentBusiness(updatedBusiness);
+      }
+      
       if (onUpdate) {
         onUpdate(updatedBusinesses);
       }
@@ -32,6 +40,9 @@ const BusinessCard: React.FC<BusinessCardProps> = ({ business, className, onUpda
       setIsRefreshing(false);
     }
   };
+  
+  // Use the most up-to-date business data
+  const displayBusiness = currentBusiness || business;
   
   return (
     <div 
@@ -46,10 +57,10 @@ const BusinessCard: React.FC<BusinessCardProps> = ({ business, className, onUpda
         className="p-5 cursor-pointer flex items-center justify-between"
         onClick={toggleExpanded}
       >
-        <BusinessHeader business={business} onClick={toggleExpanded} />
+        <BusinessHeader business={displayBusiness} onClick={toggleExpanded} />
         
         <div className="flex items-center">
-          <ScoreBadge score={business.score} />
+          <ScoreBadge score={displayBusiness.score || 0} />
           <ToggleExpandButton 
             expanded={expanded} 
             onClick={handleToggleButtonClick}
@@ -57,7 +68,12 @@ const BusinessCard: React.FC<BusinessCardProps> = ({ business, className, onUpda
         </div>
       </div>
       
-      {expanded && <ExpandableContent business={business} onScanComplete={handleScanComplete} />}
+      {expanded && (
+        <ExpandableContent 
+          business={displayBusiness} 
+          onScanComplete={handleScanComplete} 
+        />
+      )}
     </div>
   );
 };

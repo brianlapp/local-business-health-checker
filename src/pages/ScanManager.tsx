@@ -1,8 +1,10 @@
 
 import React from 'react';
 import ScanningAutomation from '@/components/scanning/ScanningAutomation';
+import BatchOpportunityScoring from '@/components/scanning/BatchOpportunityScoring';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { InfoIcon } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const ScanManager: React.FC = () => {
   return (
@@ -10,46 +12,99 @@ const ScanManager: React.FC = () => {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Scan Management</h1>
         <p className="text-muted-foreground">
-          Configure and monitor automated scanning of business websites
+          Configure and monitor automated scanning and opportunity scoring
         </p>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <ScanningAutomation />
-        </div>
+      <Tabs defaultValue="scanning" className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger value="scanning">Website Scanning</TabsTrigger>
+          <TabsTrigger value="scoring">Opportunity Scoring</TabsTrigger>
+        </TabsList>
         
-        <div>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <InfoIcon className="h-5 w-5 mr-2" />
-                About Automated Scanning
-              </CardTitle>
-              <CardDescription>How scanning works</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm">
-              <p>
-                Automated scanning checks businesses that haven't been scanned 
-                in the last 30 days or that have never been scanned.
-              </p>
-              <p>
-                The system processes businesses in batches to prevent 
-                overwhelming external services and applies rate limiting 
-                automatically.
-              </p>
-              <p>
-                Scheduled scans run daily at 3:00 AM by default to minimize impact
-                on your usage quotas for external services.
-              </p>
-              <p>
-                Manual scans can be triggered at any time, but keep in mind that
-                some scanning services like GTmetrix have daily usage limits.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+        <TabsContent value="scanning">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <ScanningAutomation />
+            </div>
+            
+            <div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <InfoIcon className="h-5 w-5 mr-2" />
+                    About Automated Scanning
+                  </CardTitle>
+                  <CardDescription>How scanning works</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 text-sm">
+                  <p>
+                    Automated scanning checks businesses that haven't been scanned 
+                    in the last 30 days or that have never been scanned.
+                  </p>
+                  <p>
+                    The system processes businesses in batches to prevent 
+                    overwhelming external services and applies rate limiting 
+                    automatically.
+                  </p>
+                  <p>
+                    Scheduled scans run daily at 3:00 AM by default to minimize impact
+                    on your usage quotas for external services.
+                  </p>
+                  <p>
+                    Manual scans can be triggered at any time, but keep in mind that
+                    some scanning services like GTmetrix have daily usage limits.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="scoring">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <BatchOpportunityScoring />
+            </div>
+            
+            <div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <InfoIcon className="h-5 w-5 mr-2" />
+                    About Opportunity Scoring
+                  </CardTitle>
+                  <CardDescription>How scoring works</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 text-sm">
+                  <p>
+                    Opportunity scoring analyzes website quality metrics to determine
+                    how likely a business is to need your services.
+                  </p>
+                  <p>
+                    Higher scores (60-100) indicate businesses with significant website
+                    issues that could benefit from your expertise.
+                  </p>
+                  <p>
+                    Scores are calculated based on factors like:
+                  </p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Performance metrics (Lighthouse score)</li>
+                    <li>Page speed (GTmetrix results)</li>
+                    <li>Mobile-friendliness</li>
+                    <li>CMS platform and version</li>
+                    <li>SEO issues</li>
+                  </ul>
+                  <p>
+                    Businesses must have been scanned with at least one tool
+                    before opportunity scoring can be calculated.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
