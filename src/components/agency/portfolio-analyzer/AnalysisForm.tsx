@@ -22,6 +22,12 @@ const AnalysisForm: React.FC<AnalysisFormProps> = ({
     onAnalyze(websiteUrl);
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      onAnalyze(websiteUrl);
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="flex gap-2">
@@ -29,6 +35,7 @@ const AnalysisForm: React.FC<AnalysisFormProps> = ({
           placeholder="Enter agency website URL"
           value={websiteUrl}
           onChange={(e) => setWebsiteUrl(e.target.value)}
+          onKeyPress={handleKeyPress}
           className="flex-1"
           disabled={isAnalyzing}
         />

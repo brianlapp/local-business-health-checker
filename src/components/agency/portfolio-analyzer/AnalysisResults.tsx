@@ -35,6 +35,9 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
   onMapSingleRelationship,
   agencyId
 }) => {
+  const allClientsAdded = results.clients.every(client => addedClients.has(client.id));
+  const allRelationshipsMapped = results.clients.every(client => addedToRelationships.has(client.id));
+
   return (
     <div className="mt-6">
       <div className="flex justify-between items-center mb-4">
@@ -55,10 +58,10 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
               size="sm" 
               variant="outline"
               onClick={onMapRelationships}
-              disabled={results.clients.every(client => addedToRelationships.has(client.id))}
+              disabled={allRelationshipsMapped}
             >
               <Network className="w-4 h-4 mr-1" />
-              Map Relationships
+              Map All Relationships
             </Button>
           )}
           
@@ -67,7 +70,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
               size="sm" 
               variant="secondary" 
               onClick={onAddAllClients}
-              disabled={results.clients.every(client => addedClients.has(client.id))}
+              disabled={allClientsAdded}
             >
               <Plus className="w-4 h-4 mr-1" />
               Add All Clients
@@ -77,14 +80,14 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
       </div>
       
       <Tabs defaultValue="clients">
-        <TabsList className="w-full">
-          <TabsTrigger value="clients" className="flex-1">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="clients">
             Clients ({results.clients.length})
           </TabsTrigger>
-          <TabsTrigger value="links" className="flex-1">
+          <TabsTrigger value="links">
             Portfolio Links ({results.portfolioLinks.length})
           </TabsTrigger>
-          <TabsTrigger value="debug" className="flex-1">
+          <TabsTrigger value="debug">
             Debug Info
           </TabsTrigger>
         </TabsList>

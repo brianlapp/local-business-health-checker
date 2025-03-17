@@ -1,9 +1,9 @@
 
 import React from 'react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Code } from '@/components/ui/code';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Info } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
+import { AlertTriangle } from 'lucide-react';
 import { Business } from '@/types/business';
 
 interface DebugInfoProps {
@@ -14,52 +14,29 @@ interface DebugInfoProps {
 
 const DebugInfo: React.FC<DebugInfoProps> = ({ requestUrl, error, clients }) => {
   return (
-    <div>
-      <Alert className="mb-4">
-        <Info className="h-4 w-4" />
-        <AlertTitle>Analysis Information</AlertTitle>
-        <AlertDescription>
-          Details about the agency portfolio analysis process.
-        </AlertDescription>
-      </Alert>
+    <div className="space-y-4">
+      {error && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
       
-      <div className="space-y-4">
+      {requestUrl && (
         <div>
-          <h3 className="font-medium mb-2">Request URL</h3>
-          <p className="text-sm text-muted-foreground">
-            {requestUrl || 'No request URL available'}
-          </p>
+          <h4 className="font-medium text-sm mb-1">Request URL</h4>
+          <Code className="text-xs p-2 break-all">{requestUrl}</Code>
         </div>
-        
-        <Separator />
-        
-        <div>
-          <h3 className="font-medium mb-2">Status</h3>
-          <p className="text-sm text-muted-foreground">
-            {error ? (
-              <span className="text-destructive">{error}</span>
-            ) : (
-              <span className="text-green-500">Analysis successful</span>
-            )}
-          </p>
-        </div>
-        
-        <Separator />
-        
-        <div>
-          <h3 className="font-medium mb-2">Client Sources</h3>
-          {clients.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {Array.from(new Set(clients.map(c => c.source))).map((source, i) => (
-                <Badge key={i} variant="outline">
-                  {source}
-                </Badge>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No clients found</p>
-          )}
-        </div>
+      )}
+      
+      <div>
+        <h4 className="font-medium text-sm mb-1">Found Clients ({clients.length})</h4>
+        <ScrollArea className="h-[300px]">
+          <Code className="text-xs p-2">
+            {JSON.stringify(clients, null, 2)}
+          </Code>
+        </ScrollArea>
       </div>
     </div>
   );

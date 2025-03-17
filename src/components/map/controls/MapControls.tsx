@@ -2,7 +2,8 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Search, Loader2, MapPin } from 'lucide-react';
 
 interface MapControlsProps {
   interactive?: boolean;
@@ -11,10 +12,12 @@ interface MapControlsProps {
   handleSearch: () => void;
   businessCount?: number;
   location?: string;
+  isLoading?: boolean;
 }
 
 /**
  * Controls overlay for the map component
+ * Provides search functionality for interactive mode or status display for static mode
  */
 const MapControls: React.FC<MapControlsProps> = ({
   interactive = false,
@@ -22,30 +25,45 @@ const MapControls: React.FC<MapControlsProps> = ({
   setSelectedLocation,
   handleSearch,
   businessCount,
-  location
+  location,
+  isLoading = false
 }) => {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
   if (interactive) {
     return (
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 bg-background/90 backdrop-blur-sm p-3 rounded-lg shadow-md border border-border">
         <div className="flex gap-2">
-          <input
+          <Input
             type="text"
             value={selectedLocation}
             onChange={(e) => setSelectedLocation(e.target.value)}
+            onKeyPress={handleKeyPress}
             placeholder="Enter location..."
-            className="px-2 py-1 text-sm rounded border border-gray-300 w-48"
+            className="w-full md:w-48"
+            disabled={isLoading}
           />
           <Button 
             size="sm" 
             variant="secondary" 
             onClick={handleSearch}
             className="flex items-center gap-1"
+            disabled={isLoading}
           >
-            <Search className="w-4 h-4" />
-            <span className="hidden sm:inline">Search</span>
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Search className="w-4 h-4" />
+            )}
+            <span className="hidden sm:inline">{isLoading ? 'Searching...' : 'Search'}</span>
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
+          <MapPin className="w-3 h-3 inline mr-1" />
           Click anywhere on the map to select a location
         </p>
       </div>
@@ -54,8 +72,11 @@ const MapControls: React.FC<MapControlsProps> = ({
   
   return (
     <StatusBadge 
-      status="info" 
-      text={businessCount && businessCount > 0 ? `${businessCount} businesses in ${location}` : location || ''} 
+      status={businessCount && businessCount > 0 ? "success" : "info"} 
+      text={businessCount && businessCount > 0 
+        ? `${businessCount} businesses in ${location}`
+        : location || 'No location selected'
+      } 
     />
   );
 };

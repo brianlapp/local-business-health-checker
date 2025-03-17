@@ -1,12 +1,12 @@
 
 import React, { useState } from 'react';
 import { Business } from '@/types/business';
-import AnalysisForm from './portfolio-analyzer/AnalysisForm';
-import AnalysisResults from './portfolio-analyzer/AnalysisResults';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { analyzeAgencyPortfolio } from '@/services/businessService';
 import { addBulkClientsToAgencyPortfolio } from '@/services/discovery/agency/agencyRelationshipService';
 import { toast } from 'sonner';
+import AnalysisForm from './portfolio-analyzer/AnalysisForm';
+import AnalysisResults from './portfolio-analyzer/AnalysisResults';
 
 interface AgencyPortfolioAnalyzerProps {
   onAddClient?: (client: Business) => void;
@@ -14,6 +14,10 @@ interface AgencyPortfolioAnalyzerProps {
   agencyId?: string;
 }
 
+/**
+ * A component that analyzes agency websites to find their clients
+ * and extract potential business opportunities
+ */
 const AgencyPortfolioAnalyzer: React.FC<AgencyPortfolioAnalyzerProps> = ({ 
   onAddClient, 
   agencyWebsite = '',
