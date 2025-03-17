@@ -22,10 +22,8 @@ const InteractiveMapScanner: React.FC<InteractiveMapScannerProps> = ({
 }) => {
   const [location, setLocation] = useState('');
   const [radius, setRadius] = useState(5);
-  const [selectedMapLocation, setSelectedMapLocation] = useState('');
   
   const handleLocationSelect = (newLocation: string) => {
-    setSelectedMapLocation(newLocation);
     setLocation(newLocation);
   };
   

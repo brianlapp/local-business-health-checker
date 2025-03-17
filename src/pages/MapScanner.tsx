@@ -14,7 +14,32 @@ import DebugInfoDisplay from '@/components/map-scanner/DebugInfoDisplay';
 import AlertNotifications from '@/components/map-scanner/AlertNotifications';
 import { InteractiveMapScanner } from '@/components/map';
 
+/**
+ * Utility functions for the MapScanner component
+ */
+const scannerUtils = {
+  formatLocation: (locationStr: string): string => {
+    return locationStr.replace(/\s+/g, ' ').trim().replace(/\s*,\s*/g, ', ');
+  },
+  
+  validateCanadianLocation: (location: string): boolean => {
+    const locationParts = location.split(',').map(part => part.trim());
+    
+    if (locationParts.length === 3) {
+      const country = locationParts[2].toLowerCase();
+      return country === 'canada' || country === 'ca';
+    }
+    
+    if (locationParts.length === 2) {
+      return true;
+    }
+    
+    return false;
+  }
+};
+
 const MapScanner = () => {
+  // State declarations
   const [location, setLocation] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -33,46 +58,34 @@ const MapScanner = () => {
   
   const navigate = useNavigate();
   
-  const formatLocation = (locationStr: string): string => {
-    return locationStr.replace(/\s+/g, ' ').trim().replace(/\s*,\s*/g, ', ');
-  };
-  
-  const validateCanadianLocation = (location: string): boolean => {
-    const locationParts = location.split(',').map(part => part.trim());
-    
-    if (locationParts.length === 3) {
-      const country = locationParts[2].toLowerCase();
-      return country === 'canada' || country === 'ca';
-    }
-    
-    if (locationParts.length === 2) {
-      return true;
-    }
-    
-    return false;
-  };
-  
+  /**
+   * Process the scan submission
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await performScan(location, scanRadius);
   };
   
+  /**
+   * Execute the business scan for a location
+   */
   const performScan = async (scanLocation: string, radius: number) => {
     if (!scanLocation) {
       toast.error('Please enter a location to scan');
       return;
     }
     
+    // Reset state before scanning
     setScanComplete(false);
     
     let finalLocation = scanLocation;
     
     // Check if this is a coordinate pair from map click (contains a dot)
     if (!finalLocation.includes(',') || !finalLocation.includes('.')) {
-      finalLocation = formatLocation(scanLocation);
+      finalLocation = scannerUtils.formatLocation(scanLocation);
       const locationParts = finalLocation.split(',').map(part => part.trim());
       
-      if (!validateCanadianLocation(finalLocation)) {
+      if (!scannerUtils.validateCanadianLocation(finalLocation)) {
         toast.warning('Please enter a valid Canadian location');
         setApiTip('For best results, use the format "City, Province" or "City, Province, Canada" (e.g. "Toronto, Ontario" or "Vancouver, BC, Canada")');
         if (locationParts.length < 2) {
@@ -85,6 +98,7 @@ const MapScanner = () => {
       }
     }
     
+    // Set initial state for scanning
     setLocation(finalLocation);
     setIsScanning(true);
     setProgress(0);
@@ -96,6 +110,7 @@ const MapScanner = () => {
     setDebugInfo(null);
     
     try {
+      // Simulate progress updates
       const progressInterval = setInterval(() => {
         setProgress(prev => {
           if (prev >= 95) {
@@ -131,6 +146,7 @@ const MapScanner = () => {
       
       console.log('Scan response:', response);
       
+      // Process the response
       let businesses: Business[] = [];
       let testMode = false;
       let hasError = false;
@@ -162,11 +178,13 @@ const MapScanner = () => {
         }
       }
       
+      // Check if we're using mock data
       const isMockData = testMode || 
         (businesses.length > 0 && businesses.every(b => b.id && b.id.startsWith('mock-')));
       
       setUsingMockData(isMockData);
       
+      // Handle results
       if (businesses.length === 0 && !hasError) {
         setError(`No businesses found in ${finalLocation}. Try a different location or data source.`);
         toast.info('No businesses found in this area. Try a different search.');
@@ -206,6 +224,9 @@ const MapScanner = () => {
     }
   };
   
+  /**
+   * Navigate to results page
+   */
   const handleViewResults = () => {
     navigate('/', { 
       state: { 
@@ -215,6 +236,9 @@ const MapScanner = () => {
     });
   };
   
+  /**
+   * Navigate to all businesses view
+   */
   const handleViewAll = () => {
     navigate('/');
   };
