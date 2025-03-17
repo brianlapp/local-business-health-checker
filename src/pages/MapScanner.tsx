@@ -1,21 +1,16 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, MapPin, Loader2, AlertCircle, Info, Bug, ExternalLink, ArrowRight, Check } from 'lucide-react';
-import { scanBusinessesInArea } from '@/services/scanningService';
-import { Business, ScanDebugInfo, BusinessScanResponse } from '@/types/business';
 import { toast } from 'sonner';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Slider } from "@/components/ui/slider";
-import { StatusBadge } from '@/components/ui/status-badge';
-import MapView from '@/components/map/MapView';
-import ScanResultItem from '@/components/business/ScanResultItem';
+import { Business, ScanDebugInfo } from '@/types/business';
+import { scanBusinessesInArea } from '@/services/scanningService';
+
+// Import refactored components
+import ScanForm from '@/components/map-scanner/ScanForm';
+import ScanResults from '@/components/map-scanner/ScanResults';
+import DebugInfoDisplay from '@/components/map-scanner/DebugInfoDisplay';
+import AlertNotifications from '@/components/map-scanner/AlertNotifications';
 
 const MapScanner = () => {
   const [location, setLocation] = useState('');
@@ -32,7 +27,6 @@ const MapScanner = () => {
   const [scanComplete, setScanComplete] = useState(false);
   const [autoRedirect, setAutoRedirect] = useState(false);
   const [scanRadius, setScanRadius] = useState(5); // Default radius of 5km
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   
   const navigate = useNavigate();
   
@@ -199,12 +193,6 @@ const MapScanner = () => {
     navigate('/');
   };
   
-  const dataSources = [
-    { value: 'google', label: 'Google Maps' },
-    { value: 'yellowpages', label: 'Yellow Pages' },
-    { value: 'localstack', label: 'LocalStack (Sample Data)' },
-  ];
-  
   return (
     <div className="container py-8">
       <div className="flex justify-between items-center mb-8">
@@ -218,327 +206,44 @@ const MapScanner = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="md:col-span-1">
-          <CardHeader>
-            <CardTitle>Scan Settings</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium" htmlFor="location">
-                  Canadian Location
-                </label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="location"
-                    placeholder="City, Province, Canada"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    className="pl-10"
-                    disabled={isScanning}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Use format: "City, Province" or "City, Province, Canada"<br />
-                  Examples: "Toronto, Ontario" or "Vancouver, BC, Canada"
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Scan Radius: {scanRadius} km</label>
-                <Slider
-                  min={1}
-                  max={20}
-                  step={1}
-                  value={[scanRadius]}
-                  onValueChange={(values) => setScanRadius(values[0])}
-                  disabled={isScanning}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Adjust the search radius (1-20 km)
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium" htmlFor="source">
-                  Data Source
-                </label>
-                <Select
-                  value={source}
-                  onValueChange={setSource}
-                  disabled={isScanning}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select data source" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {dataSources.map((source) => (
-                      <SelectItem key={source.value} value={source.value}>
-                        {source.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Choose where to scrape Canadian business data from
-                </p>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="autoRedirect" 
-                  checked={autoRedirect}
-                  onCheckedChange={(checked) => setAutoRedirect(checked === true)}
-                  disabled={isScanning}
-                />
-                <label 
-                  htmlFor="autoRedirect" 
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Auto-redirect to dashboard after scan
-                </label>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="debugMode" 
-                  checked={debugMode}
-                  onCheckedChange={(checked) => setDebugMode(checked === true)}
-                  disabled={isScanning}
-                />
-                <label 
-                  htmlFor="debugMode" 
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center"
-                >
-                  <Bug className="h-4 w-4 mr-1" />
-                  Enable Debug Mode
-                </label>
-              </div>
-              <p className="text-xs text-muted-foreground -mt-2">
-                Provides additional technical details for troubleshooting
-              </p>
-              
-              <Button 
-                type="submit" 
-                className="w-full" 
-                disabled={isScanning || !location}
-              >
-                {isScanning ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Scanning...
-                  </>
-                ) : (
-                  <>
-                    <Search className="mr-2 h-4 w-4" />
-                    Scan Area
-                  </>
-                )}
-              </Button>
-              
-              {isScanning && (
-                <div className="space-y-1">
-                  <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-primary transition-all duration-500 ease-out" 
-                      style={{ width: `${progress}%` }} 
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground text-center">
-                    Scanning businesses in {location}...
-                  </p>
-                </div>
-              )}
-            </form>
-          </CardContent>
-        </Card>
+        <ScanForm
+          isScanning={isScanning}
+          location={location}
+          setLocation={setLocation}
+          scanRadius={scanRadius}
+          setScanRadius={setScanRadius}
+          source={source}
+          setSource={setSource}
+          autoRedirect={autoRedirect}
+          setAutoRedirect={setAutoRedirect}
+          debugMode={debugMode}
+          setDebugMode={setDebugMode}
+          onSubmit={handleSubmit}
+          progress={progress}
+        />
         
-        <Card className="md:col-span-2">
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-center">
-              <CardTitle>Scan Results</CardTitle>
-              {scannedBusinesses.length > 0 && (
-                <Tabs 
-                  value={viewMode} 
-                  onValueChange={(value) => setViewMode(value as 'list' | 'map')}
-                  className="w-auto"
-                >
-                  <TabsList className="grid w-[200px] grid-cols-2">
-                    <TabsTrigger value="list">List View</TabsTrigger>
-                    <TabsTrigger value="map">Map View</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {scanComplete && scannedBusinesses.length > 0 && (
-              <Alert className="mb-4 bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400">
-                <Check className="h-4 w-4" />
-                <AlertTitle>Scan Complete!</AlertTitle>
-                <AlertDescription className="space-y-2">
-                  <p>Found {scannedBusinesses.length} businesses in {location}.</p>
-                  <Button 
-                    variant="outline" 
-                    className="bg-white dark:bg-gray-800 mt-2"
-                    onClick={handleViewResults}
-                  >
-                    View Results on Dashboard
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </AlertDescription>
-              </Alert>
-            )}
-            
-            {error && source === 'google' && scannedBusinesses.length === 0 && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Google Maps API Error</AlertTitle>
-                <AlertDescription>
-                  <p>{error}</p>
-                  {apiTip && <p className="mt-1">{apiTip}</p>}
-                  {apiTroubleshooting && (
-                    <div className="mt-2 p-2 bg-destructive/10 rounded-md text-sm">
-                      <p className="font-medium">Troubleshooting:</p>
-                      <p>{apiTroubleshooting}</p>
-                      <a 
-                        href="https://console.cloud.google.com/apis/library/places-backend.googleapis.com" 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="flex items-center mt-2 text-blue-600 hover:underline"
-                      >
-                        <ExternalLink className="h-3 w-3 mr-1" />
-                        Google Cloud Console - Enable Places API
-                      </a>
-                    </div>
-                  )}
-                </AlertDescription>
-              </Alert>
-            )}
-            
-            {usingMockData && !error && (
-              <div className="bg-amber-50 text-amber-800 p-4 rounded-md mb-4 flex items-start dark:bg-amber-900/20 dark:text-amber-400">
-                <Info className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium">Demo Mode Active</p>
-                  <p className="text-sm">
-                    You're viewing sample business data. In a production environment, you'd connect to a business data API.
-                    {apiTip && <span className="block mt-1">{apiTip}</span>}
-                  </p>
-                </div>
-              </div>
-            )}
-            
-            {error && source !== 'google' && scannedBusinesses.length === 0 && (
-              <div className="bg-destructive/10 text-destructive p-4 rounded-md mb-4 flex items-start">
-                <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium">{error}</p>
-                  {apiTip && (
-                    <div className="mt-2 text-sm whitespace-pre-line">
-                      <p>{apiTip}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-            
-            {apiTip && !error && !usingMockData && !scanComplete && (
-              <div className="bg-blue-50 text-blue-800 p-4 rounded-md mb-4 flex items-start dark:bg-blue-900/20 dark:text-blue-400">
-                <Info className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-                <p className="text-sm whitespace-pre-line">{apiTip}</p>
-              </div>
-            )}
-            
-            {debugInfo && debugInfo.logs && debugInfo.logs.length > 0 && (
-              <div className="bg-gray-50 text-gray-800 p-4 rounded-md mb-4 dark:bg-gray-900/20 dark:text-gray-400 overflow-hidden">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-medium flex items-center">
-                    <Bug className="h-4 w-4 mr-2" />
-                    Debug Information
-                  </h3>
-                  <StatusBadge
-                    status="info"
-                    text={`${debugInfo.logs.length} log entries`}
-                    className="text-xs"
-                  />
-                </div>
-                <div className="text-xs font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded max-h-60 overflow-y-auto">
-                  {debugInfo.logs.map((log, i) => (
-                    <div key={i} className="py-1">
-                      {log}
-                    </div>
-                  ))}
-                </div>
-                
-                {debugInfo.htmlSamples && debugInfo.htmlSamples.length > 0 && (
-                  <div className="mt-4">
-                    <h4 className="text-sm font-medium mb-2">HTML Samples ({debugInfo.htmlSamples.length})</h4>
-                    <div className="space-y-2">
-                      {debugInfo.htmlSamples.map((sample, i) => (
-                        <div key={i} className="bg-gray-100 dark:bg-gray-800 p-2 rounded text-xs">
-                          <div className="flex justify-between mb-1">
-                            <span className="font-semibold">{sample.url}</span>
-                            <span>{sample.length} bytes</span>
-                          </div>
-                          <pre className="whitespace-pre-wrap overflow-x-auto max-h-20">
-                            {sample.sample}
-                          </pre>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-            
-            {scannedBusinesses.length === 0 ? (
-              <div className="text-center py-8">
-                <MapPin className="h-12 w-12 mx-auto text-muted-foreground opacity-20" />
-                <p className="mt-2 text-muted-foreground">
-                  {isScanning 
-                    ? 'Scanning for Canadian businesses...' 
-                    : 'No businesses scanned yet. Enter a Canadian location and start scanning.'}
-                </p>
-              </div>
-            ) : (
-              <>
-                {viewMode === 'map' && (
-                  <MapView 
-                    businesses={scannedBusinesses}
-                    location={location}
-                    isLoading={isScanning}
-                  />
-                )}
-                
-                {viewMode === 'list' && (
-                  <div className="space-y-4">
-                    <div className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
-                      <StatusBadge 
-                        status={isScanning ? 'scanning' : 'success'} 
-                        text={`${scannedBusinesses.length} businesses in ${location}`} 
-                      />
-                      {scanRadius && (
-                        <span className="text-xs text-muted-foreground">
-                          (within {scanRadius}km radius)
-                        </span>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      {scannedBusinesses.map((business) => (
-                        <ScanResultItem 
-                          key={business.id}
-                          business={business}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
+        <div className="md:col-span-2 space-y-4">
+          <AlertNotifications
+            error={error}
+            apiTip={apiTip}
+            apiTroubleshooting={apiTroubleshooting}
+            source={source}
+            usingMockData={usingMockData}
+            scanComplete={scanComplete}
+            scannedBusinesses={scannedBusinesses}
+          />
+          
+          <DebugInfoDisplay debugInfo={debugInfo} />
+          
+          <ScanResults
+            businesses={scannedBusinesses}
+            location={location}
+            isScanning={isScanning}
+            scanComplete={scanComplete}
+            scanRadius={scanRadius}
+            handleViewResults={handleViewResults}
+          />
+        </div>
       </div>
     </div>
   );
