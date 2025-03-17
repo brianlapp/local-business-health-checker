@@ -17,6 +17,9 @@ interface GraphNode {
   name: string;
   type: 'agency' | 'client';
   val: number;
+  // Force graph will add these properties at runtime
+  x?: number;
+  y?: number;
 }
 
 interface GraphLink {
@@ -90,7 +93,7 @@ const NetworkGraph: React.FC<NetworkGraphProps> = ({
     
     // Find the node corresponding to the selected agency
     const selectedNode = graphData.nodes.find(node => node.id === selectedAgencyId);
-    if (selectedNode) {
+    if (selectedNode && selectedNode.x !== undefined && selectedNode.y !== undefined) {
       graphRef.current.centerAt(
         selectedNode.x, 
         selectedNode.y, 

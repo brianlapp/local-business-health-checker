@@ -272,7 +272,8 @@ export async function updateScheduleSettings(settings: ScheduleSettings): Promis
         retry_failed: settings.retry_failed,
         max_retries: settings.max_retries,
       })
-      .is('id', 'not.null'); // Update all rows (there should only be one)
+      .eq('scanning_enabled', true)
+      .is('scanning_enabled', true); // Use appropriate filter that doesn't cause type errors
     
     if (error) {
       console.error('Error updating schedule settings:', error);

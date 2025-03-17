@@ -4,7 +4,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Users2Icon, CalendarIcon, SourceIcon, Building2Icon } from 'lucide-react';
+import { Users2Icon, CalendarIcon, LinkIcon, Building2Icon } from 'lucide-react';
 import { Business } from '@/types/business';
 import { AgencyClientRelationship } from '@/services/discovery/agency/agencyRelationshipService';
 import { format, parseISO } from 'date-fns';
@@ -60,7 +60,7 @@ const RelationshipsList: React.FC<RelationshipsListProps> = ({
               
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div className="flex items-center text-muted-foreground">
-                  <SourceIcon className="h-3.5 w-3.5 mr-1.5" />
+                  <LinkIcon className="h-3.5 w-3.5 mr-1.5" />
                   Source: {relationship.source || 'Unknown'}
                 </div>
                 
