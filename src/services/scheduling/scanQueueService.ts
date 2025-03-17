@@ -25,19 +25,25 @@ export async function addToScanQueue(
   priority: 'high' | 'medium' | 'low' = 'medium'
 ): Promise<string | null> {
   try {
-    const { data, error } = await supabase.rpc('add_to_scan_queue', {
-      business_id_param: businessId,
-      scan_type_param: scanType,
-      url_param: url,
-      priority_param: priority
-    });
+    // Use a PostgreSQL function call instead of RPC
+    const { data, error } = await supabase
+      .from('scan_queue')
+      .insert({
+        business_id: businessId,
+        scan_type: scanType,
+        url: url,
+        priority: priority,
+        status: 'pending'
+      })
+      .select('id')
+      .single();
     
     if (error) {
       console.error('Error adding to scan queue:', error);
       return null;
     }
     
-    return data;
+    return data.id;
   } catch (error) {
     console.error('Error in addToScanQueue:', error);
     return null;

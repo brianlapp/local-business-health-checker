@@ -233,10 +233,16 @@ export async function getScheduleSettings(): Promise<ScheduleSettings> {
       };
     }
     
+    // Ensure scan_frequency is a valid type
+    const validFrequency = (['daily', 'weekly', 'biweekly', 'monthly'] as const).includes(
+      data.scan_frequency as any
+    ) ? data.scan_frequency as 'daily' | 'weekly' | 'biweekly' | 'monthly' 
+      : 'daily';
+    
     return {
       scanning_enabled: data.scanning_enabled || false,
       scan_hour: data.scan_hour || 3,
-      scan_frequency: data.scan_frequency || 'daily',
+      scan_frequency: validFrequency,
       batch_size: data.batch_size || 5,
       retry_failed: data.retry_failed !== false, // Default to true
       max_retries: data.max_retries || 3
@@ -272,7 +278,8 @@ export async function updateScheduleSettings(settings: ScheduleSettings): Promis
         retry_failed: settings.retry_failed,
         max_retries: settings.max_retries,
       })
-      .is('id', 'not.null'); // Use appropriate filter to update all rows (there should be only one)
+      // Fix the filter - use a simpler approach since there should only be one record
+      .not('id', 'is', null);
     
     if (error) {
       console.error('Error updating schedule settings:', error);
