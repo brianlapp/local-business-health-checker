@@ -5,12 +5,14 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Business, ScanDebugInfo } from '@/types/business';
 import { scanBusinessesInArea } from '@/services/scanningService';
+import { geocodeLocation } from '@/services/map/geocodingService';
 
 // Import refactored components
 import ScanForm from '@/components/map-scanner/ScanForm';
 import ScanResults from '@/components/map-scanner/ScanResults';
 import DebugInfoDisplay from '@/components/map-scanner/DebugInfoDisplay';
 import AlertNotifications from '@/components/map-scanner/AlertNotifications';
+import { InteractiveMapScanner } from '@/components/map';
 
 const MapScanner = () => {
   const [location, setLocation] = useState('');
@@ -27,6 +29,7 @@ const MapScanner = () => {
   const [scanComplete, setScanComplete] = useState(false);
   const [autoRedirect, setAutoRedirect] = useState(false);
   const [scanRadius, setScanRadius] = useState(5); // Default radius of 5km
+  const [view, setView] = useState<'form' | 'map'>('map'); // Default to map view
   
   const navigate = useNavigate();
   
@@ -51,29 +54,38 @@ const MapScanner = () => {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!location) {
+    await performScan(location, scanRadius);
+  };
+  
+  const performScan = async (scanLocation: string, radius: number) => {
+    if (!scanLocation) {
       toast.error('Please enter a location to scan');
       return;
     }
     
     setScanComplete(false);
     
-    const formattedLocation = formatLocation(location);
-    const locationParts = formattedLocation.split(',').map(part => part.trim());
+    let finalLocation = scanLocation;
     
-    if (!validateCanadianLocation(formattedLocation)) {
-      toast.warning('Please enter a valid Canadian location');
-      setApiTip('For best results, use the format "City, Province" or "City, Province, Canada" (e.g. "Toronto, Ontario" or "Vancouver, BC, Canada")');
-      if (locationParts.length < 2) {
-        return;
+    // Check if this is a coordinate pair from map click (contains a dot)
+    if (!finalLocation.includes(',') || !finalLocation.includes('.')) {
+      finalLocation = formatLocation(scanLocation);
+      const locationParts = finalLocation.split(',').map(part => part.trim());
+      
+      if (!validateCanadianLocation(finalLocation)) {
+        toast.warning('Please enter a valid Canadian location');
+        setApiTip('For best results, use the format "City, Province" or "City, Province, Canada" (e.g. "Toronto, Ontario" or "Vancouver, BC, Canada")');
+        if (locationParts.length < 2) {
+          return;
+        }
+      }
+      
+      if (locationParts.length === 2) {
+        finalLocation = `${finalLocation}, Canada`;
       }
     }
     
-    let finalLocation = formattedLocation;
-    if (locationParts.length === 2) {
-      finalLocation = `${formattedLocation}, Canada`;
-    }
-    
+    setLocation(finalLocation);
     setIsScanning(true);
     setProgress(0);
     setScannedBusinesses([]);
@@ -96,10 +108,23 @@ const MapScanner = () => {
       
       toast.info(`Scanning for businesses in ${finalLocation}...`);
       
-      console.log(`Starting business scan for ${finalLocation} with source ${source}, debug mode: ${debugMode}`);
+      console.log(`Starting business scan for ${finalLocation} with source ${source}, debug mode: ${debugMode}, radius: ${radius}km`);
+      
+      // Geocode the location first for better accuracy
+      let enhancedLocation = finalLocation;
+      
+      try {
+        const geocodeResult = await geocodeLocation(finalLocation);
+        if (geocodeResult && !geocodeResult.error && geocodeResult.formatted_location) {
+          enhancedLocation = geocodeResult.formatted_location;
+          console.log(`Location geocoded to: ${enhancedLocation}`);
+        }
+      } catch (geoError) {
+        console.error('Geocoding error, using original location:', geoError);
+      }
       
       // Pass the scanRadius to the API call
-      const response = await scanBusinessesInArea(finalLocation, scanRadius.toString(), debugMode ? 20 : 10);
+      const response = await scanBusinessesInArea(enhancedLocation, radius.toString(), debugMode ? 20 : 10);
       
       clearInterval(progressInterval);
       setProgress(100);
@@ -149,6 +174,7 @@ const MapScanner = () => {
       } else if (businesses.length > 0) {
         setScannedBusinesses(businesses);
         setScanComplete(true);
+        setScanRadius(radius);
         
         if (isMockData) {
           toast.success(`Found ${businesses.length} sample businesses for ${finalLocation}`);
@@ -200,27 +226,51 @@ const MapScanner = () => {
           <h2 className="text-3xl font-bold">Canadian Business Scanner</h2>
           <p className="text-muted-foreground">Find businesses in Canadian cities</p>
         </div>
-        <Button variant="outline" onClick={handleViewAll}>
-          View All Businesses
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center border rounded-md overflow-hidden">
+            <button
+              onClick={() => setView('map')}
+              className={`px-3 py-1.5 ${view === 'map' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}
+            >
+              Map View
+            </button>
+            <button
+              onClick={() => setView('form')}
+              className={`px-3 py-1.5 ${view === 'form' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}
+            >
+              Form View
+            </button>
+          </div>
+          <Button variant="outline" onClick={handleViewAll}>
+            View All Businesses
+          </Button>
+        </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <ScanForm
-          isScanning={isScanning}
-          location={location}
-          setLocation={setLocation}
-          scanRadius={scanRadius}
-          setScanRadius={setScanRadius}
-          source={source}
-          setSource={setSource}
-          autoRedirect={autoRedirect}
-          setAutoRedirect={setAutoRedirect}
-          debugMode={debugMode}
-          setDebugMode={setDebugMode}
-          onSubmit={handleSubmit}
-          progress={progress}
-        />
+        {view === 'form' ? (
+          <ScanForm
+            isScanning={isScanning}
+            location={location}
+            setLocation={setLocation}
+            scanRadius={scanRadius}
+            setScanRadius={setScanRadius}
+            source={source}
+            setSource={setSource}
+            autoRedirect={autoRedirect}
+            setAutoRedirect={setAutoRedirect}
+            debugMode={debugMode}
+            setDebugMode={setDebugMode}
+            onSubmit={handleSubmit}
+            progress={progress}
+          />
+        ) : (
+          <InteractiveMapScanner
+            onScan={performScan}
+            businesses={scannedBusinesses}
+            isScanning={isScanning}
+          />
+        )}
         
         <div className="md:col-span-2 space-y-4">
           <AlertNotifications
