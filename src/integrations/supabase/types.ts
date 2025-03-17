@@ -44,28 +44,43 @@ export type Database = {
       }
       automation_settings: {
         Row: {
+          batch_size: number
           created_at: string | null
           id: string
           last_scan_run: string | null
+          max_retries: number
           next_scheduled_scan: string | null
+          retry_failed: boolean
+          scan_frequency: string
+          scan_hour: number
           scan_interval: string | null
           scanning_enabled: boolean | null
           updated_at: string | null
         }
         Insert: {
+          batch_size?: number
           created_at?: string | null
           id?: string
           last_scan_run?: string | null
+          max_retries?: number
           next_scheduled_scan?: string | null
+          retry_failed?: boolean
+          scan_frequency?: string
+          scan_hour?: number
           scan_interval?: string | null
           scanning_enabled?: boolean | null
           updated_at?: string | null
         }
         Update: {
+          batch_size?: number
           created_at?: string | null
           id?: string
           last_scan_run?: string | null
+          max_retries?: number
           next_scheduled_scan?: string | null
+          retry_failed?: boolean
+          scan_frequency?: string
+          scan_hour?: number
           scan_interval?: string | null
           scanning_enabled?: boolean | null
           updated_at?: string | null
