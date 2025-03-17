@@ -1,186 +1,233 @@
 
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Business } from '@/types/business';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { 
+  DollarSign, 
+  RefreshCw,
+  Target,
+  AlertCircle,
+  CheckCircle2,
+  Gauge,
+  BarChart
+} from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { getBusinesses } from '@/services/businessCrudService';
-import { evaluateOpportunities } from '@/services/evaluation/opportunityEvaluationService';
+import { format } from 'date-fns';
+import { 
+  getBusinessesNeedingScores,
+  calculateOpportunityScores,
+  OpportunityScore
+} from '@/services/scoring/scoreService';
 
 const BatchOpportunityScoring: React.FC = () => {
-  const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
-  const [scoring, setScoring] = useState(false);
-  
+  const [calculating, setCalculating] = useState(false);
+  const [businesses, setBusinesses] = useState<OpportunityScore[]>([]);
+  const [progress, setProgress] = useState(0);
+
   useEffect(() => {
     loadBusinesses();
   }, []);
-  
+
   const loadBusinesses = async () => {
     setLoading(true);
     try {
-      const data = await getBusinesses();
+      const data = await getBusinessesNeedingScores();
       setBusinesses(data);
     } catch (error) {
       console.error('Error loading businesses:', error);
-      toast.error('Failed to load businesses');
+      toast.error('Failed to load businesses needing scores');
     } finally {
       setLoading(false);
     }
   };
-  
-  const getBusinessesWithoutScores = (): Business[] => {
-    return businesses.filter(b => (
-      (b.opportunityScore === undefined || b.opportunityScore === null) && 
-      (b.opportunity_score === undefined || b.opportunity_score === null)
-    ));
-  };
-  
-  const getBusinessesWithScores = (): Business[] => {
-    return businesses.filter(b => (
-      (b.opportunityScore !== undefined && b.opportunityScore !== null) || 
-      (b.opportunity_score !== undefined && b.opportunity_score !== null)
-    ));
-  };
-  
-  const getOpportunityScore = (business: Business): number => {
-    return business.opportunityScore || business.opportunity_score || 0;
-  };
-  
-  const handleScoreAll = async () => {
-    const businessesToScore = getBusinessesWithoutScores();
-    
-    if (businessesToScore.length === 0) {
-      toast.info('All businesses already have opportunity scores');
-      return;
-    }
-    
-    setScoring(true);
-    toast.loading(`Calculating opportunity scores for ${businessesToScore.length} businesses...`);
+
+  const handleCalculateScores = async () => {
+    setCalculating(true);
+    setProgress(0);
     
     try {
-      // Get the business IDs
-      const businessIds = businessesToScore.map(b => b.id);
+      // We'll simulate progress updates
+      const progressInterval = setInterval(() => {
+        setProgress(prev => {
+          const newProgress = prev + 5;
+          if (newProgress >= 95) {
+            clearInterval(progressInterval);
+            return 95;
+          }
+          return newProgress;
+        });
+      }, 300);
       
-      // Create a basic evaluation criteria object
-      const defaultCriteria = {
-        userSkills: [],
-        preferRemote: true
-      };
+      const updatedBusinesses = await calculateOpportunityScores(businesses.map(b => b.id));
       
-      // Call evaluateOpportunities with the correct signature
-      // Using type assertion for businessIds, but properly passing criteria as second parameter
-      await evaluateOpportunities(businessIds as any, defaultCriteria);
+      clearInterval(progressInterval);
+      setProgress(100);
       
-      // After evaluation completes, refresh the data
-      await loadBusinesses();
-      toast.success(`Opportunity scores calculated for ${businessesToScore.length} businesses`);
+      toast.success(`Calculated opportunity scores for ${updatedBusinesses.length} businesses`);
+      
+      // Reload the businesses after a short delay so the progress animation completes
+      setTimeout(() => {
+        loadBusinesses();
+        setCalculating(false);
+        setProgress(0);
+      }, 1000);
     } catch (error) {
-      console.error('Error scoring businesses:', error);
+      console.error('Error calculating scores:', error);
       toast.error('Failed to calculate opportunity scores');
-    } finally {
-      setScoring(false);
+      setCalculating(false);
+      setProgress(0);
     }
   };
-  
-  const formatChartData = () => {
-    const businessesWithScores = getBusinessesWithScores();
-    const scoreRanges = {
-      '0-20': 0,
-      '21-40': 0,
-      '41-60': 0,
-      '61-80': 0,
-      '81-100': 0
-    };
-    
-    businessesWithScores.forEach(business => {
-      const score = getOpportunityScore(business);
-      
-      if (score <= 20) scoreRanges['0-20']++;
-      else if (score <= 40) scoreRanges['21-40']++;
-      else if (score <= 60) scoreRanges['41-60']++;
-      else if (score <= 80) scoreRanges['61-80']++;
-      else scoreRanges['81-100']++;
-    });
-    
-    return Object.entries(scoreRanges).map(([range, count]) => ({
-      range,
-      count
-    }));
+
+  const getScoreColor = (score: number | null) => {
+    if (score === null) return 'text-muted-foreground';
+    if (score >= 80) return 'text-green-500';
+    if (score >= 60) return 'text-yellow-500';
+    if (score >= 40) return 'text-orange-500';
+    return 'text-red-500';
   };
-  
+
   return (
     <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Opportunity Scoring</CardTitle>
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center">
+          <Target className="mr-2 h-5 w-5" />
+          Opportunity Scoring
+        </CardTitle>
         <CardDescription>
-          Calculate potential value scores for businesses
+          Calculate opportunity scores for businesses based on scan results
         </CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-48 w-full" />
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
           </div>
+        ) : businesses.length === 0 ? (
+          <Alert className="bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400">
+            <CheckCircle2 className="h-4 w-4" />
+            <AlertTitle>All Caught Up!</AlertTitle>
+            <AlertDescription>
+              All businesses have been scored. No opportunity scoring needed at this time.
+            </AlertDescription>
+          </Alert>
         ) : (
-          <Tabs defaultValue="stats">
-            <TabsList className="mb-4">
-              <TabsTrigger value="stats">Statistics</TabsTrigger>
-              <TabsTrigger value="unscored">Unscored ({getBusinessesWithoutScores().length})</TabsTrigger>
-            </TabsList>
-            <TabsContent value="stats">
-              <div className="h-60">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={formatChartData()}>
-                    <XAxis dataKey="range" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#6366f1" />
-                  </BarChart>
-                </ResponsiveContainer>
+          <>
+            <Alert className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Business Opportunity Scoring</AlertTitle>
+              <AlertDescription>
+                {businesses.length} businesses need opportunity scores calculated.
+                Opportunity scores help you prioritize which businesses to contact.
+              </AlertDescription>
+            </Alert>
+            
+            {calculating && (
+              <div className="my-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Calculating scores...</span>
+                  <span>{progress}%</span>
+                </div>
+                <Progress value={progress} />
               </div>
-              <div className="mt-4 text-sm text-muted-foreground">
-                {getBusinessesWithScores().length} of {businesses.length} businesses have opportunity scores
+            )}
+            
+            <div className="rounded-md border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Business</TableHead>
+                    <TableHead>Website Performance</TableHead>
+                    <TableHead>Last Scan</TableHead>
+                    <TableHead>Opportunity Score</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {businesses.slice(0, 10).map((business) => (
+                    <TableRow key={business.id}>
+                      <TableCell className="font-medium">
+                        {business.name}
+                        <div className="text-xs text-muted-foreground truncate max-w-[200px]">
+                          {business.website}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Gauge className="h-4 w-4 text-purple-500" />
+                          <span className={getScoreColor(business.lighthouseScore)}>
+                            {business.lighthouseScore !== null ? `${business.lighthouseScore}/100` : 'No data'}
+                          </span>
+                        </div>
+                        {business.gtmetrixScore !== null && (
+                          <div className="flex items-center gap-2 mt-1">
+                            <BarChart className="h-4 w-4 text-blue-500" />
+                            <span className={getScoreColor(business.gtmetrixScore)}>
+                              {business.gtmetrixScore}/100
+                            </span>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {business.lastChecked ? 
+                          format(new Date(business.lastChecked), 'MMM d, yyyy') : 
+                          'Never'
+                        }
+                      </TableCell>
+                      <TableCell>
+                        <div className={`text-lg font-bold ${getScoreColor(business.opportunityScore)}`}>
+                          {business.opportunityScore !== null ? 
+                            `${business.opportunityScore}/100` : 
+                            '—'
+                          }
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            
+            {businesses.length > 10 && (
+              <div className="mt-2 text-sm text-muted-foreground">
+                Showing 10 of {businesses.length} businesses
               </div>
-            </TabsContent>
-            <TabsContent value="unscored">
-              <div className="text-sm">
-                {getBusinessesWithoutScores().length === 0 ? (
-                  <p>All businesses have been scored! 🎉</p>
-                ) : (
-                  <ul className="list-disc pl-5 space-y-1">
-                    {getBusinessesWithoutScores().slice(0, 5).map(business => (
-                      <li key={business.id}>{business.name}</li>
-                    ))}
-                    {getBusinessesWithoutScores().length > 5 && (
-                      <li>...and {getBusinessesWithoutScores().length - 5} more</li>
-                    )}
-                  </ul>
-                )}
-              </div>
-            </TabsContent>
-          </Tabs>
+            )}
+          </>
         )}
       </CardContent>
       <CardFooter>
         <Button 
-          onClick={handleScoreAll} 
-          disabled={loading || scoring || getBusinessesWithoutScores().length === 0}
-          className="w-full"
+          className="w-full" 
+          onClick={handleCalculateScores}
+          disabled={loading || calculating || businesses.length === 0}
         >
-          {scoring ? (
+          {calculating ? (
             <>
               <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-              Calculating Scores...
+              Calculating...
             </>
           ) : (
-            `Score ${getBusinessesWithoutScores().length} Businesses`
+            <>
+              <DollarSign className="mr-2 h-4 w-4" />
+              Calculate Opportunity Scores
+            </>
           )}
         </Button>
       </CardFooter>

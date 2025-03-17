@@ -3,6 +3,8 @@ import React from 'react';
 import ScanningAutomation from '@/components/scanning/ScanningAutomation';
 import ScanScheduleConfig from '@/components/scanning/ScanScheduleConfig';
 import BatchOpportunityScoring from '@/components/scanning/BatchOpportunityScoring';
+import ScanAnalyticsDashboard from '@/components/scanning/ScanAnalyticsDashboard';
+import ScanQueueManager from '@/components/scanning/ScanQueueManager';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { InfoIcon, AlertCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -31,7 +33,9 @@ const ScanManager: React.FC = () => {
       <Tabs defaultValue="scanning" className="w-full">
         <TabsList className="mb-6">
           <TabsTrigger value="scanning">Website Scanning</TabsTrigger>
-          <TabsTrigger value="schedule">Schedule Configuration</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="queue">Queue Management</TabsTrigger>
+          <TabsTrigger value="schedule">Schedule Config</TabsTrigger>
           <TabsTrigger value="scoring">Opportunity Scoring</TabsTrigger>
         </TabsList>
         
@@ -77,6 +81,14 @@ const ScanManager: React.FC = () => {
               </Card>
             </div>
           </div>
+        </TabsContent>
+        
+        <TabsContent value="analytics">
+          <ScanAnalyticsDashboard />
+        </TabsContent>
+        
+        <TabsContent value="queue">
+          <ScanQueueManager />
         </TabsContent>
         
         <TabsContent value="schedule">
