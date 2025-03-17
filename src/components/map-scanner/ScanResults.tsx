@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Check, ArrowRight, MapPin } from 'lucide-react';
+import { Check, ArrowRight, MapPin, Map, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import MapView from '@/components/map/MapView';
 import ScanResultItem from '@/components/business/ScanResultItem';
@@ -60,8 +60,14 @@ const ScanResults: React.FC<ScanResultsProps> = ({
             className="w-auto"
           >
             <TabsList className="grid w-[200px] grid-cols-2">
-              <TabsTrigger value="list">List View</TabsTrigger>
-              <TabsTrigger value="map">Map View</TabsTrigger>
+              <TabsTrigger value="list" className="flex items-center gap-1">
+                <List className="h-4 w-4" />
+                List
+              </TabsTrigger>
+              <TabsTrigger value="map" className="flex items-center gap-1">
+                <Map className="h-4 w-4" />
+                Map
+              </TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
