@@ -1,6 +1,7 @@
 
 import React from 'react';
 import ScanningAutomation from '@/components/scanning/ScanningAutomation';
+import ScanScheduleConfig from '@/components/scanning/ScanScheduleConfig';
 import BatchOpportunityScoring from '@/components/scanning/BatchOpportunityScoring';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { InfoIcon, AlertCircle } from 'lucide-react';
@@ -30,6 +31,7 @@ const ScanManager: React.FC = () => {
       <Tabs defaultValue="scanning" className="w-full">
         <TabsList className="mb-6">
           <TabsTrigger value="scanning">Website Scanning</TabsTrigger>
+          <TabsTrigger value="schedule">Schedule Configuration</TabsTrigger>
           <TabsTrigger value="scoring">Opportunity Scoring</TabsTrigger>
         </TabsList>
         
@@ -70,6 +72,52 @@ const ScanManager: React.FC = () => {
                   <p className="font-medium text-blue-600 dark:text-blue-400">
                     Important: Scanning has been moved from the dashboard to this dedicated
                     page to prevent rate limiting issues.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="schedule">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <ScanScheduleConfig />
+            </div>
+            
+            <div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <InfoIcon className="h-5 w-5 mr-2" />
+                    About Scheduling
+                  </CardTitle>
+                  <CardDescription>How scheduling works</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 text-sm">
+                  <p>
+                    The schedule configuration allows you to control when and how 
+                    automated scans run, helping you optimize API usage.
+                  </p>
+                  <p>
+                    <strong>Scan Time:</strong> Choose an hour when your application 
+                    usage is low, typically overnight.
+                  </p>
+                  <p>
+                    <strong>Scan Frequency:</strong> Set how often scans should run, 
+                    from daily to monthly depending on your needs.
+                  </p>
+                  <p>
+                    <strong>Batch Size:</strong> Control how many businesses are 
+                    processed in each batch. Smaller batches are slower but 
+                    safer for API limits.
+                  </p>
+                  <p>
+                    <strong>Retry Failed:</strong> Enable automatic retries for 
+                    failed scans with a configurable maximum retry count.
+                  </p>
+                  <p className="font-medium text-blue-600 dark:text-blue-400">
+                    Remember to save your settings after making changes.
                   </p>
                 </CardContent>
               </Card>

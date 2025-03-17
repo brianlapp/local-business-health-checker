@@ -56,20 +56,20 @@ const ProjectStatus: React.FC = () => {
     {
       id: 'discovery-systems',
       name: 'Discovery Systems',
-      status: 'in-progress',
-      progress: 90,
+      status: 'completed',
+      progress: 100,
       items: [
         { id: 'job-board', name: 'Job Board Integration', status: 'completed' },
         { id: 'website-analysis', name: 'Business Website Analysis', status: 'completed' },
         { id: 'map-discovery', name: 'Map-Based Business Discovery', status: 'completed' },
-        { id: 'agency-analysis', name: 'Agency Analysis', status: 'in-progress' },
+        { id: 'agency-analysis', name: 'Agency Analysis', status: 'completed' },
       ]
     },
     {
       id: 'scanning-system',
       name: 'Automated Scanning System',
       status: 'in-progress',
-      progress: 40,
+      progress: 75,
       items: [
         { id: 'scan-automation', name: 'Scan Automation', status: 'in-progress' },
         { id: 'scanning-analytics', name: 'Scanning Analytics', status: 'in-progress' },
