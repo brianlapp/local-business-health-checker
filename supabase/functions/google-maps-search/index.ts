@@ -38,7 +38,7 @@ serve(async (req) => {
       });
     }
 
-    const { location, radius } = await req.json();
+    const { location, radius, limit } = await req.json();
     
     if (!location) {
       return new Response(JSON.stringify({
@@ -51,12 +51,17 @@ serve(async (req) => {
       });
     }
 
-    console.log(`Searching for businesses in: "${location}" within ${radius}km radius`);
+    // Ensure radius is a number with default
+    const radiusInMeters = (parseInt(radius) || 10) * 1000; // Convert km to meters
+    // Ensure limit is a number with default
+    const resultsLimit = parseInt(limit) || 20;
+
+    console.log(`Searching for businesses in: "${location}" within ${radiusInMeters/1000}km radius, limit: ${resultsLimit}`);
     
     // Use the Places API for better business search
     const searchUrl = new URL('https://maps.googleapis.com/maps/api/place/textsearch/json');
     searchUrl.searchParams.append('query', `businesses in ${location}`);
-    searchUrl.searchParams.append('radius', (radius * 1000).toString()); // Convert km to meters
+    searchUrl.searchParams.append('radius', radiusInMeters.toString());
     searchUrl.searchParams.append('key', GOOGLE_MAPS_API_KEY);
     
     console.log(`Places API Request URL: ${searchUrl.toString().replace(GOOGLE_MAPS_API_KEY, 'REDACTED')}`);
@@ -145,53 +150,110 @@ serve(async (req) => {
       
       // Process the results to get business data
       const businesses = [];
+      const logs = [];
+      const htmlSamples = [];
       
-      for (const place of searchData.results) {
+      // Limit to the requested number of results
+      const placesToProcess = searchData.results.slice(0, resultsLimit);
+      
+      logs.push(`Found ${searchData.results.length} total places, processing ${placesToProcess.length} based on limit`);
+      
+      for (const place of placesToProcess) {
         // If the place has a name, consider it a business
         if (place.name) {
+          logs.push(`Processing place: ${place.name}`);
+          
           // Places API doesn't always return website URLs directly, get details for websites
           if (place.place_id) {
             const detailsUrl = new URL('https://maps.googleapis.com/maps/api/place/details/json');
             detailsUrl.searchParams.append('place_id', place.place_id);
-            detailsUrl.searchParams.append('fields', 'name,website,formatted_address');
+            detailsUrl.searchParams.append('fields', 'name,website,formatted_address,types,rating,user_ratings_total');
             detailsUrl.searchParams.append('key', GOOGLE_MAPS_API_KEY);
             
             try {
+              logs.push(`Fetching details for place_id: ${place.place_id}`);
+              
               const detailsResponse = await fetch(detailsUrl.toString());
               
               if (!detailsResponse.ok) {
-                console.error(`Failed to fetch details: ${detailsResponse.status}`);
+                logs.push(`Error: Failed to fetch details: ${detailsResponse.status}`);
                 continue;
               }
               
               const detailsData = await detailsResponse.json();
               
               if (detailsData.status === 'OK' && detailsData.result) {
-                const { name, website, formatted_address } = detailsData.result;
+                const { name, website, formatted_address, types, rating, user_ratings_total } = detailsData.result;
+                
+                logs.push(`Details retrieved. Website exists: ${Boolean(website)}`);
                 
                 // Only add businesses with websites
                 if (website) {
+                  // Try to fetch the website metadata for analysis
+                  let websiteHtml = '';
+                  try {
+                    const websiteResponse = await fetch(website, { 
+                      headers: { 'User-Agent': 'Mozilla/5.0 Google Maps Scanner' },
+                      signal: AbortSignal.timeout(5000) // 5 second timeout
+                    });
+                    
+                    if (websiteResponse.ok) {
+                      const contentType = websiteResponse.headers.get('content-type');
+                      
+                      if (contentType && contentType.includes('text/html')) {
+                        websiteHtml = await websiteResponse.text();
+                        
+                        // Store a short sample of the HTML to help with debugging
+                        if (websiteHtml.length > 0) {
+                          htmlSamples.push({
+                            url: website,
+                            length: websiteHtml.length,
+                            sample: websiteHtml.substring(0, 200) + '...'
+                          });
+                        }
+                      }
+                    }
+                  } catch (websiteError) {
+                    logs.push(`Error fetching website ${website}: ${websiteError.message}`);
+                  }
+                  
                   businesses.push({
                     name,
                     website: website.replace(/^https?:\/\//, ''),
                     formatted_address,
-                    place_id: place.place_id
+                    location: formatted_address,
+                    place_id: place.place_id,
+                    business_types: types || [],
+                    rating: rating || 0,
+                    rating_count: user_ratings_total || 0,
+                    has_website: true
                   });
+                  
+                  logs.push(`Added business: ${name}`);
                 }
+              } else {
+                logs.push(`Error in details response: ${detailsData.status}`);
               }
             } catch (detailsError) {
-              console.error(`Error fetching details for ${place.name}:`, detailsError);
+              logs.push(`Error fetching details for ${place.name}: ${detailsError.message}`);
             }
           }
         }
       }
       
-      console.log(`Found ${businesses.length} businesses with websites`);
+      logs.push(`Found ${businesses.length} businesses with websites`);
+      
+      // Create debug info object to return with the response
+      const debugInfo: ScanDebugInfo = {
+        logs,
+        htmlSamples: htmlSamples.length > 0 ? htmlSamples : undefined
+      };
       
       return new Response(JSON.stringify({ 
         businesses,
         status: 'OK',
         test_mode: false,
+        debugInfo
       }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

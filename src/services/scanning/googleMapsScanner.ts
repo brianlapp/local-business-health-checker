@@ -7,8 +7,13 @@ import { processScrapedBusinesses } from '../businessProcessingService';
  * Scans for businesses using Google Maps API
  * @param location - Location to scan (city, province, country)
  * @param radius - Radius in kilometers to scan
+ * @param limit - Maximum number of businesses to return
  */
-export async function scanWithGoogleMaps(location: string, radius: number = 10): Promise<{
+export async function scanWithGoogleMaps(
+  location: string, 
+  radius: number = 10, 
+  limit: number = 20
+): Promise<{
   businesses: Business[], 
   error?: string, 
   message?: string,
@@ -18,13 +23,17 @@ export async function scanWithGoogleMaps(location: string, radius: number = 10):
   location?: string,
   source?: string,
   timestamp?: string,
-  debugInfo?: ScanDebugInfo // Added to match usage in scanningService.ts
+  debugInfo?: ScanDebugInfo
 }> {
   try {
-    console.log(`Scanning with Google Maps API: ${location}, radius: ${radius}km`);
+    console.log(`Scanning with Google Maps API: ${location}, radius: ${radius}km, limit: ${limit}`);
     
     // Call the edge function to search for businesses using Google Maps
-    const { data, error } = await invokeEdgeFunction('google-maps-search', { location, radius });
+    const { data, error } = await invokeEdgeFunction('google-maps-search', { 
+      location, 
+      radius,
+      limit
+    });
     
     if (error) {
       console.error('Google Maps edge function error:', error);

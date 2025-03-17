@@ -5,13 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, MapPin, Loader2, AlertCircle, Info, Bug, ExternalLink, ArrowRight, Check } from 'lucide-react';
-import { scanBusinessesInArea } from '@/services/apiService';
+import { scanBusinessesInArea } from '@/services/scanningService';
 import { Business, ScanDebugInfo, BusinessScanResponse } from '@/types/business';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { AlertCircleIcon } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Slider } from "@/components/ui/slider";
+import { StatusBadge } from '@/components/ui/status-badge';
+import MapView from '@/components/map/MapView';
+import ScanResultItem from '@/components/business/ScanResultItem';
 
 const MapScanner = () => {
   const [location, setLocation] = useState('');
@@ -27,6 +31,8 @@ const MapScanner = () => {
   const [debugInfo, setDebugInfo] = useState<ScanDebugInfo | null>(null);
   const [scanComplete, setScanComplete] = useState(false);
   const [autoRedirect, setAutoRedirect] = useState(false);
+  const [scanRadius, setScanRadius] = useState(5); // Default radius of 5km
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   
   const navigate = useNavigate();
   
@@ -98,8 +104,8 @@ const MapScanner = () => {
       
       console.log(`Starting business scan for ${finalLocation} with source ${source}, debug mode: ${debugMode}`);
       
-      // Fixed: Passing source as string and adding a default radius of 5 as number
-      const response = await scanBusinessesInArea(finalLocation, 5, debugMode ? 20 : 10);
+      // Pass the scanRadius to the API call
+      const response = await scanBusinessesInArea(finalLocation, scanRadius.toString(), debugMode ? 20 : 10);
       
       clearInterval(progressInterval);
       setProgress(100);
@@ -240,6 +246,21 @@ const MapScanner = () => {
               </div>
               
               <div className="space-y-2">
+                <label className="text-sm font-medium">Scan Radius: {scanRadius} km</label>
+                <Slider
+                  min={1}
+                  max={20}
+                  step={1}
+                  value={[scanRadius]}
+                  onValueChange={(values) => setScanRadius(values[0])}
+                  disabled={isScanning}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Adjust the search radius (1-20 km)
+                </p>
+              </div>
+              
+              <div className="space-y-2">
                 <label className="text-sm font-medium" htmlFor="source">
                   Data Source
                 </label>
@@ -334,10 +355,24 @@ const MapScanner = () => {
         </Card>
         
         <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>Scan Results</CardTitle>
+          <CardHeader className="pb-2">
+            <div className="flex justify-between items-center">
+              <CardTitle>Scan Results</CardTitle>
+              {scannedBusinesses.length > 0 && (
+                <Tabs 
+                  value={viewMode} 
+                  onValueChange={(value) => setViewMode(value as 'list' | 'map')}
+                  className="w-auto"
+                >
+                  <TabsList className="grid w-[200px] grid-cols-2">
+                    <TabsTrigger value="list">List View</TabsTrigger>
+                    <TabsTrigger value="map">Map View</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              )}
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             {scanComplete && scannedBusinesses.length > 0 && (
               <Alert className="mb-4 bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400">
                 <Check className="h-4 w-4" />
@@ -358,7 +393,7 @@ const MapScanner = () => {
             
             {error && source === 'google' && scannedBusinesses.length === 0 && (
               <Alert variant="destructive" className="mb-4">
-                <AlertCircleIcon className="h-4 w-4" />
+                <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Google Maps API Error</AlertTitle>
                 <AlertDescription>
                   <p>{error}</p>
@@ -423,9 +458,11 @@ const MapScanner = () => {
                     <Bug className="h-4 w-4 mr-2" />
                     Debug Information
                   </h3>
-                  <span className="text-xs bg-gray-200 px-2 py-1 rounded dark:bg-gray-800">
-                    {debugInfo.logs.length} log entries
-                  </span>
+                  <StatusBadge
+                    status="info"
+                    text={`${debugInfo.logs.length} log entries`}
+                    className="text-xs"
+                  />
                 </div>
                 <div className="text-xs font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded max-h-60 overflow-y-auto">
                   {debugInfo.logs.map((log, i) => (
@@ -466,32 +503,39 @@ const MapScanner = () => {
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
-                <div className="text-sm text-muted-foreground mb-2">
-                  Found {scannedBusinesses.length} businesses in {location}
-                </div>
-                <div className="space-y-2">
-                  {scannedBusinesses.map((business) => (
-                    <div 
-                      key={business.id} 
-                      className="flex justify-between items-center p-3 bg-secondary/50 rounded-lg hover:bg-secondary transition-colors"
-                    >
-                      <div>
-                        <div className="font-medium">{business.name}</div>
-                        <div className="text-sm text-muted-foreground">{business.website}</div>
-                      </div>
-                      <div className={`text-sm font-bold px-2 py-1 rounded ${
-                        business.score >= 80 ? 'bg-red-100 text-red-600' : 
-                        business.score >= 60 ? 'bg-orange-100 text-orange-600' : 
-                        business.score >= 40 ? 'bg-yellow-100 text-yellow-600' : 
-                        'bg-green-100 text-green-600'
-                      }`}>
-                        {business.score}
-                      </div>
+              <>
+                {viewMode === 'map' && (
+                  <MapView 
+                    businesses={scannedBusinesses}
+                    location={location}
+                    isLoading={isScanning}
+                  />
+                )}
+                
+                {viewMode === 'list' && (
+                  <div className="space-y-4">
+                    <div className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
+                      <StatusBadge 
+                        status={isScanning ? 'scanning' : 'success'} 
+                        text={`${scannedBusinesses.length} businesses in ${location}`} 
+                      />
+                      {scanRadius && (
+                        <span className="text-xs text-muted-foreground">
+                          (within {scanRadius}km radius)
+                        </span>
+                      )}
                     </div>
-                  ))}
-                </div>
-              </div>
+                    <div className="space-y-2">
+                      {scannedBusinesses.map((business) => (
+                        <ScanResultItem 
+                          key={business.id}
+                          business={business}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
