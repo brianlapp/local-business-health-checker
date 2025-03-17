@@ -7,9 +7,7 @@ import { MapPin, Loader2, Map as MapIcon } from 'lucide-react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { env } from '@/lib/env';
-
-// Use token from environment
-const MAPBOX_TOKEN = env.mapbox.token;
+import { supabase } from '@/integrations/supabase/client';
 
 interface MapViewProps {
   businesses: Business[];
@@ -22,62 +20,81 @@ const MapView: React.FC<MapViewProps> = ({ businesses, location, isLoading = fal
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapInitialized, setMapInitialized] = useState(false);
   const [noToken, setNoToken] = useState(false);
+  const [mapError, setMapError] = useState<string | null>(null);
   
   // Initialize map when component mounts
   useEffect(() => {
     if (isLoading || businesses.length === 0 || !mapContainerRef.current) return;
     
-    // Check if Mapbox token is available
-    if (!MAPBOX_TOKEN) {
-      console.error('Mapbox token is missing. Please add your token to environment variables as VITE_MAPBOX_TOKEN');
-      setNoToken(true);
-      return;
-    }
-
     // Initialize map only once
     if (map.current) return;
     
-    mapboxgl.accessToken = MAPBOX_TOKEN;
-    
-    // Try to geocode the location to get coordinates
-    const defaultCoordinates = [-79.347, 43.651]; // Default to Toronto, Canada
-    
-    try {
-      map.current = new mapboxgl.Map({
-        container: mapContainerRef.current,
-        style: env.mapbox.styles.street,
-        center: defaultCoordinates,
-        zoom: 10
-      });
-      
-      map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-      
-      // Add a loading handler
-      map.current.on('load', () => {
-        setMapInitialized(true);
-        
-        // After map is loaded, try to geocode the location and add markers
-        geocodeLocation(location).then(coordinates => {
-          if (map.current && coordinates) {
-            map.current.flyTo({
-              center: coordinates,
-              zoom: 10,
-              essential: true
-            });
-            
-            // Add markers for each business
-            addBusinessMarkers(businesses);
-          }
-        }).catch(err => {
-          console.error('Error geocoding location:', err);
-          // Still add markers using default coordinates
-          addBusinessMarkers(businesses);
+    async function initializeMap() {
+      try {
+        // Get Mapbox token and style URL securely from Edge Function
+        const { data, error } = await supabase.functions.invoke('mapbox-proxy', {
+          body: { style: 'streets-v12' }
         });
-      });
-    } catch (error) {
-      console.error('Error initializing map:', error);
-      setMapInitialized(false);
+        
+        if (error) {
+          console.error('Error fetching Mapbox token:', error);
+          setNoToken(true);
+          setMapError('Failed to fetch Mapbox configuration');
+          return;
+        }
+        
+        if (!data || !data.token) {
+          console.error('No token received from Edge Function');
+          setNoToken(true);
+          setMapError('Authentication error with map service');
+          return;
+        }
+        
+        // Set the token and initialize map
+        mapboxgl.accessToken = data.token;
+        
+        // Default coordinates (Toronto, Canada)
+        const defaultCoordinates = [-79.347, 43.651];
+        
+        map.current = new mapboxgl.Map({
+          container: mapContainerRef.current,
+          style: data.styleUrl || 'mapbox://styles/mapbox/streets-v12',
+          center: defaultCoordinates,
+          zoom: 10
+        });
+        
+        map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+        
+        // Add a loading handler
+        map.current.on('load', () => {
+          setMapInitialized(true);
+          
+          // After map is loaded, try to geocode the location and add markers
+          geocodeLocation(location).then(coordinates => {
+            if (map.current && coordinates) {
+              map.current.flyTo({
+                center: coordinates,
+                zoom: 10,
+                essential: true
+              });
+              
+              // Add markers for each business
+              addBusinessMarkers(businesses);
+            }
+          }).catch(err => {
+            console.error('Error geocoding location:', err);
+            // Still add markers using default coordinates
+            addBusinessMarkers(businesses);
+          });
+        });
+      } catch (error) {
+        console.error('Error initializing map:', error);
+        setMapInitialized(false);
+        setMapError(error.message || 'Failed to initialize map');
+      }
     }
+    
+    initializeMap();
     
     // Cleanup function
     return () => {
@@ -184,14 +201,12 @@ const MapView: React.FC<MapViewProps> = ({ businesses, location, isLoading = fal
     return (
       <Card className="p-6 flex flex-col items-center justify-center min-h-[300px]">
         <MapIcon className="h-8 w-8 text-amber-500 mb-4" />
-        <h3 className="text-lg font-medium mb-2">Mapbox Token Required</h3>
+        <h3 className="text-lg font-medium mb-2">Map Configuration Required</h3>
         <p className="text-muted-foreground text-center mb-4">
-          To display the interactive map, you need to provide a Mapbox access token.
+          {mapError || "There was an issue accessing the map service."}
         </p>
         <p className="text-xs text-muted-foreground text-center max-w-md">
-          1. Create a free account at <a href="https://mapbox.com" className="text-blue-500 hover:underline" target="_blank" rel="noreferrer">mapbox.com</a><br/>
-          2. Get your public token from the Mapbox dashboard<br/>
-          3. Add it to your .env file as VITE_MAPBOX_TOKEN
+          Please ensure your Mapbox token is properly configured in Supabase Edge Function Secrets.
         </p>
       </Card>
     );

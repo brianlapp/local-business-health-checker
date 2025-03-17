@@ -6,13 +6,13 @@
 export const env = {
   // Mapbox configuration
   mapbox: {
-    token: import.meta.env.VITE_MAPBOX_TOKEN || '',
+    // No token stored here - will be fetched securely via Edge Function
     styles: {
-      // Mapbox style URLs
-      street: 'mapbox://styles/mapbox/streets-v12',
-      light: 'mapbox://styles/mapbox/light-v11',
-      dark: 'mapbox://styles/mapbox/dark-v11',
-      satellite: 'mapbox://styles/mapbox/satellite-streets-v12',
+      // These are just references, actual URLs will come from the Edge Function
+      street: 'street',
+      light: 'light-v11',
+      dark: 'dark-v11',
+      satellite: 'satellite-streets-v12',
     }
   },
   
