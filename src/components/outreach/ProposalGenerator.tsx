@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,7 +26,13 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, FileText, Edit, Save, Plus, Trash2 } from 'lucide-react';
 import { Business } from '@/types/business';
 import { Opportunity } from '@/types/opportunity';
-import { generateProposal, getProposalTemplates, saveProposalTemplate, deleteProposalTemplate, ProposalTemplate } from '@/services/outreach/proposalService';
+import { 
+  generateProposal, 
+  getProposalTemplates, 
+  saveProposalTemplate, 
+  deleteProposalTemplate, 
+  ProposalTemplate 
+} from '@/services/outreach/proposalService';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Markdown } from '@/components/ui/markdown';
 import { toast } from 'sonner';
