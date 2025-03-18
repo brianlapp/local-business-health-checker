@@ -128,12 +128,12 @@ export async function checkEmailStatus(trackingId: string): Promise<string> {
   try {
     console.log('Checking email status for tracking ID:', trackingId);
     
-    // Simplify the query to avoid TypeScript inference issues
+    // Use explicit typing and specific column selection to avoid TypeScript inference issues
     const { data, error } = await supabase
       .from('outreach_messages')
-      .select('*')
+      .select('status')
       .eq('tracking_id', trackingId)
-      .maybeSingle();
+      .maybeSingle<{ status: string | null }>();
     
     console.log('Email status query result:', { data, error });
     

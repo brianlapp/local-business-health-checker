@@ -4,7 +4,7 @@ import { Business } from '@/types/business';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+// Note: mapbox-gl CSS is imported in the main CSS file
 import { geocodeLocation } from '@/services/map/geocodingService';
 
 // Import refactored components

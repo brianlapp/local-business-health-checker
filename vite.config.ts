@@ -19,4 +19,21 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          mapbox: ['mapbox-gl'],
+        },
+      },
+    },
+  },
+  css: {
+    preprocessorOptions: {
+      // Add any CSS preprocessor options if needed
+    },
+  },
+  optimizeDeps: {
+    include: ['mapbox-gl'],
+  },
 }));
