@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { OutreachMessage } from '@/types/outreach';
@@ -129,13 +128,12 @@ export async function checkEmailStatus(trackingId: string): Promise<string> {
   try {
     console.log('Checking email status for tracking ID:', trackingId);
     
-    // Use a raw query approach to avoid TypeScript inference issues
+    // Simplify the query to avoid TypeScript inference issues
     const { data, error } = await supabase
       .from('outreach_messages')
-      .select('status')
+      .select('*')
       .eq('tracking_id', trackingId)
-      .limit(1)
-      .single();
+      .maybeSingle();
     
     console.log('Email status query result:', { data, error });
     
