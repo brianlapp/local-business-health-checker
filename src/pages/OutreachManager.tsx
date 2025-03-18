@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ProposalGenerator from '@/components/outreach/ProposalGenerator';
 import { Business } from '@/types/business';
-import { Opportunity } from '@/types/opportunity';
+import { Opportunity, OpportunityContact } from '@/types/opportunity';
 import { ensureBusinessStatus } from '@/services/businessUtilsService';
+import { Json } from '@/integrations/supabase/types';
 
 const OutreachManager: React.FC = () => {
   const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -47,7 +48,9 @@ const OutreachManager: React.FC = () => {
         const typedOpportunities: Opportunity[] = opportunitiesData.map(opp => ({
           ...opp,
           source: (opp.source as any) || 'other', // Ensure it's a valid enum value
-          status: (opp.status as any) || 'new'    // Ensure it's a valid enum value
+          status: (opp.status as any) || 'new',   // Ensure it's a valid enum value
+          // Properly cast the contact_info JSON field to OpportunityContact type
+          contact_info: opp.contact_info ? (opp.contact_info as unknown as OpportunityContact) : undefined
         }));
         setOpportunities(typedOpportunities);
         

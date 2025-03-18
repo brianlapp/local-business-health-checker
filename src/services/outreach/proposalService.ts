@@ -129,27 +129,11 @@ Best regards,
     
     if (user) {
       try {
-        const { error } = await supabase
-          .from('proposals')
-          .insert({
-            id: uuidv4(),
-            user_id: user.id,
-            target_type: isBusiness ? 'business' : 'opportunity',
-            target_id: target.id,
-            content: proposalContent,
-            status: 'draft',
-            created_at: new Date().toISOString(),
-          });
-          
-        if (error) {
-          console.error('Error saving proposal:', error);
-          toast.error('Proposal generated but could not be saved');
-        } else {
-          toast.success('Proposal generated and saved');
-        }
-      } catch (insertError) {
-        // Fall back to outreach_messages if proposals table doesn't exist yet
-        console.warn('Falling back to outreach_messages table:', insertError);
+        // Instead of trying to access a non-existent table directly, check if it exists first
+        // For now, we'll skip this check and go directly to the fallback approach
+        // In the future, we can implement a check to see if the table exists
+        
+        console.log('Saving to outreach_messages table as fallback');
         const { error: fallbackError } = await supabase
           .from('outreach_messages')
           .insert({
@@ -164,9 +148,13 @@ Best regards,
         
         if (fallbackError) {
           console.error('Error with fallback save:', fallbackError);
+          toast.error('Failed to save proposal');
         } else {
           toast.success('Proposal generated and saved');
         }
+      } catch (insertError) {
+        console.error('Error saving proposal:', insertError);
+        toast.error('Failed to save proposal');
       }
     }
     
