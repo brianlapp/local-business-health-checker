@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import ProposalGenerator from '@/components/outreach/ProposalGenerator';
+import { ProposalGenerator } from '@/components/outreach/proposal';
 import { Business } from '@/types/business';
 import { Opportunity, OpportunityContact } from '@/types/opportunity';
 import { ensureBusinessStatus } from '@/services/businessUtilsService';
