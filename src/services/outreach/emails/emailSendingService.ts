@@ -126,20 +126,24 @@ async function storeOutreachEmail(data: OutreachEmailData): Promise<boolean> {
  */
 export async function checkEmailStatus(trackingId: string): Promise<string> {
   try {
-    // Use a more explicit type approach to avoid TypeScript's excessive depth error
-    type StatusResult = { status: string } | null;
+    console.log('Checking email status for tracking ID:', trackingId);
     
-    const { data, error } = await supabase
+    // Simplify the query and avoid type assertion complexities
+    const result = await supabase
       .from('outreach_messages')
       .select('status')
       .eq('tracking_id', trackingId)
-      .maybeSingle() as { data: StatusResult, error: any };
+      .maybeSingle();
     
-    if (error) {
-      throw error;
+    console.log('Email status query result:', result);
+    
+    if (result.error) {
+      console.error('Error checking email status:', result.error);
+      throw result.error;
     }
     
-    return data?.status || 'unknown';
+    // Safely access the status property if data exists
+    return result.data?.status || 'unknown';
   } catch (error) {
     console.error('Error checking email status:', error);
     return 'unknown';
