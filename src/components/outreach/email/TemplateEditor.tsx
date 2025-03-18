@@ -11,14 +11,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Loader2, Save } from 'lucide-react';
-import { EmailTemplate } from '@/types/emailTemplate';
+import { EmailTemplate, EmailTemplateFormData } from '@/types/emailTemplate';
 import { saveEmailTemplate } from '@/services/outreach/templates/emailTemplateService';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Template name is required'),
   subject: z.string().min(1, 'Email subject is required'),
   content: z.string().min(1, 'Email content is required'),
-  is_default: z.boolean().optional(),
+  is_default: z.boolean().default(false),
 });
 
 type TemplateFormValues = z.infer<typeof formSchema>;
@@ -60,7 +60,15 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
   const onSubmit = async (values: TemplateFormValues) => {
     setIsSaving(true);
     try {
-      const templateId = await saveEmailTemplate(values);
+      // Ensure we pass all required fields for EmailTemplateFormData
+      const templateData: EmailTemplateFormData = {
+        name: values.name,
+        subject: values.subject,
+        content: values.content,
+        is_default: values.is_default,
+      };
+      
+      const templateId = await saveEmailTemplate(templateData);
       if (templateId) {
         toast.success('Email template saved successfully');
         if (onSave) {
