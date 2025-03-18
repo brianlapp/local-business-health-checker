@@ -128,22 +128,21 @@ export async function checkEmailStatus(trackingId: string): Promise<string> {
   try {
     console.log('Checking email status for tracking ID:', trackingId);
     
-    // Simplify the query and avoid type assertion complexities
-    const result = await supabase
+    // Use explicit typing for the query result to avoid excessive type inference
+    const { data, error } = await supabase
       .from('outreach_messages')
       .select('status')
       .eq('tracking_id', trackingId)
-      .maybeSingle();
+      .single();
     
-    console.log('Email status query result:', result);
+    console.log('Email status query result:', { data, error });
     
-    if (result.error) {
-      console.error('Error checking email status:', result.error);
-      throw result.error;
+    if (error) {
+      console.error('Error checking email status:', error);
+      return 'unknown';
     }
     
-    // Safely access the status property if data exists
-    return result.data?.status || 'unknown';
+    return data?.status || 'unknown';
   } catch (error) {
     console.error('Error checking email status:', error);
     return 'unknown';
