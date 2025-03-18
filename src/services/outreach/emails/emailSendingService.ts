@@ -126,18 +126,23 @@ async function storeOutreachEmail(data: OutreachEmailData): Promise<boolean> {
  */
 export async function checkEmailStatus(trackingId: string): Promise<string> {
   try {
-    // Use explicit type annotation to avoid excessive type instantiation
-    const { data, error } = await supabase
+    // Define a more specific return type to avoid excessive type instantiation
+    type StatusQueryResult = { data: { status: string } | null; error: any };
+    
+    // Cast the query result to our simplified type
+    const result = await supabase
       .from('outreach_messages')
       .select('status')
       .eq('tracking_id', trackingId)
       .single();
       
+    const { data, error } = result as StatusQueryResult;
+      
     if (error) {
       throw error;
     }
     
-    return data.status;
+    return data?.status || 'unknown';
   } catch (error) {
     console.error('Error checking email status:', error);
     return 'unknown';
