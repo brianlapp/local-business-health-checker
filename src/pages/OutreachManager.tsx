@@ -7,7 +7,7 @@ import { ProposalGenerator } from '@/components/outreach/proposal';
 import { Business } from '@/types/business';
 import { Opportunity, OpportunityContact } from '@/types/opportunity';
 import { ensureBusinessStatus } from '@/services/businessUtilsService';
-import { Json } from '@/integrations/supabase/types';
+import EmailOutreach from '@/components/outreach/email/EmailOutreach';
 
 const OutreachManager: React.FC = () => {
   const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -105,9 +105,13 @@ const OutreachManager: React.FC = () => {
               <CardTitle>Email Outreach</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
-                The email outreach feature is coming soon. You'll be able to create, schedule, and track email campaigns from here.
-              </p>
+              <EmailOutreach
+                businesses={businesses}
+                opportunities={opportunities}
+                selectedTarget={selectedTarget}
+                onSelectTarget={setSelectedTarget}
+                loading={loading}
+              />
             </CardContent>
           </Card>
         </TabsContent>
