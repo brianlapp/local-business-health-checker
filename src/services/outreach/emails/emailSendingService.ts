@@ -126,12 +126,14 @@ async function storeOutreachEmail(data: OutreachEmailData): Promise<boolean> {
  */
 export async function checkEmailStatus(trackingId: string): Promise<string> {
   try {
-    // Use a direct query approach instead of RPC to avoid type issues
+    // Use a more explicit type approach to avoid TypeScript's excessive depth error
+    type StatusResult = { status: string } | null;
+    
     const { data, error } = await supabase
       .from('outreach_messages')
       .select('status')
       .eq('tracking_id', trackingId)
-      .maybeSingle();
+      .maybeSingle() as { data: StatusResult, error: any };
     
     if (error) {
       throw error;
