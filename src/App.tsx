@@ -19,13 +19,10 @@ import ScanManager from './pages/ScanManager';
 import OutreachManager from './pages/OutreachManager';
 
 function App() {
-  console.log('[APP] App component rendered');
-  
   return (
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Remove console.log statements from JSX */}
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route 

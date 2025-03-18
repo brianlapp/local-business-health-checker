@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
@@ -13,54 +13,25 @@ type AuthContextType = {
   signUp: (email: string, password: string) => Promise<{error: Error | null, user: User | null}>;
 };
 
-// Create a default context value
-const defaultContextValue: AuthContextType = {
-  user: null,
-  session: null,
-  isLoading: true,
-  signOut: async () => {},
-  signIn: async () => ({ error: null }),
-  signUp: async () => ({ error: null, user: null }),
-};
-
-const AuthContext = createContext<AuthContextType>(defaultContextValue);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  console.log('[AUTH] AuthProvider mounted');
-  
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    console.log('[AUTH] AuthProvider useEffect running');
-    
     // Get session on mount
     const getSession = async () => {
-      console.log('[AUTH] Starting getSession');
       setIsLoading(true);
-      try {
-        console.log('[AUTH] Getting session from Supabase');
-        const { data, error } = await supabase.auth.getSession();
-        
-        console.log('[AUTH] Session response:', data);
-        if (error) {
-          console.error('[AUTH] Error getting session:', error);
-        }
-        
-        if (data && data.session) {
-          console.log('[AUTH] Session exists:', data.session.user.id);
-          setSession(data.session);
-          setUser(data.session.user);
-        } else {
-          console.log('[AUTH] No active session found');
-        }
-      } catch (error) {
-        console.error('[AUTH] Exception getting session:', error);
-      } finally {
-        console.log('[AUTH] Setting isLoading to false after session check');
-        setIsLoading(false);
+      const { data, error } = await supabase.auth.getSession();
+      
+      if (data && data.session) {
+        setSession(data.session);
+        setUser(data.session.user);
       }
+      
+      setIsLoading(false);
     };
 
     getSession();
@@ -68,13 +39,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
-        console.log('[AUTH] Auth state changed:', event);
+        console.log('Auth state changed:', event);
         if (currentSession) {
-          console.log('[AUTH] New session detected:', currentSession.user.id);
           setSession(currentSession);
           setUser(currentSession.user);
         } else {
-          console.log('[AUTH] Session cleared');
           setSession(null);
           setUser(null);
         }
@@ -83,7 +52,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     return () => {
-      console.log('[AUTH] Cleaning up auth subscription');
       subscription.unsubscribe();
     };
   }, []);
@@ -149,24 +117,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signUp,
   };
 
-  console.log('[AUTH] AuthProvider rendering with values:', { 
-    userExists: !!user, 
-    sessionExists: !!session, 
-    isLoading 
-  });
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('[AUTH] useAuth must be used within an AuthProvider');
+    throw new Error('useAuth must be used within an AuthProvider');
   }
-  console.log('[AUTH] useAuth called, isLoading:', context.isLoading);
   return context;
 };
