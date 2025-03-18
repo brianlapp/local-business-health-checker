@@ -10,6 +10,7 @@ export interface ProposalTemplate {
   id: string;
   name: string;
   content: string;
+  is_default?: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -123,27 +124,49 @@ Best regards,
       `;
     }
     
-    // Save the proposal in the database if user is authenticated
+    // Try to save the proposal in the database if user is authenticated
     const { data: { user } } = await supabase.auth.getUser();
     
     if (user) {
-      const { error } = await supabase
-        .from('proposals')
-        .insert({
-          id: uuidv4(),
-          user_id: user.id,
-          target_type: isBusiness ? 'business' : 'opportunity',
-          target_id: target.id,
-          content: proposalContent,
-          status: 'draft',
-          created_at: new Date().toISOString(),
-        });
+      try {
+        const { error } = await supabase
+          .from('proposals')
+          .insert({
+            id: uuidv4(),
+            user_id: user.id,
+            target_type: isBusiness ? 'business' : 'opportunity',
+            target_id: target.id,
+            content: proposalContent,
+            status: 'draft',
+            created_at: new Date().toISOString(),
+          });
+          
+        if (error) {
+          console.error('Error saving proposal:', error);
+          toast.error('Proposal generated but could not be saved');
+        } else {
+          toast.success('Proposal generated and saved');
+        }
+      } catch (insertError) {
+        // Fall back to outreach_messages if proposals table doesn't exist yet
+        console.warn('Falling back to outreach_messages table:', insertError);
+        const { error: fallbackError } = await supabase
+          .from('outreach_messages')
+          .insert({
+            id: uuidv4(),
+            user_id: user.id,
+            message_type: 'proposal',
+            content: proposalContent,
+            status: 'draft',
+            business_id: isBusiness ? target.id : null,
+            opportunity_id: isOpportunity ? target.id : null,
+          });
         
-      if (error) {
-        console.error('Error saving proposal:', error);
-        toast.error('Proposal generated but could not be saved');
-      } else {
-        toast.success('Proposal generated and saved');
+        if (fallbackError) {
+          console.error('Error with fallback save:', fallbackError);
+        } else {
+          toast.success('Proposal generated and saved');
+        }
       }
     }
     

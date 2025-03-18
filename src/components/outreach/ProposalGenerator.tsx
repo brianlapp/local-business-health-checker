@@ -1,64 +1,97 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger 
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { toast } from 'sonner';
-import { Copy, Download, Save, FileText, CheckIcon } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, FileText, Edit, Save, Plus, Trash2 } from 'lucide-react';
 import { Business } from '@/types/business';
 import { Opportunity } from '@/types/opportunity';
-import { 
-  generateProposal, 
-  saveProposalTemplate, 
-  getProposalTemplates, 
-  ProposalTemplate 
-} from '@/services/outreach/proposalService';
+import { generateProposal, getProposalTemplates, saveProposalTemplate, deleteProposalTemplate, ProposalTemplate } from '@/services/outreach/proposalService';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Markdown } from '@/components/ui/markdown';
+import { toast } from 'sonner';
 
 interface ProposalGeneratorProps {
-  target: Business | Opportunity;
+  businesses: Business[];
+  opportunities: Opportunity[];
+  selectedTarget: Business | Opportunity | null;
+  onSelectTarget: (target: Business | Opportunity) => void;
+  loading: boolean;
 }
 
-const ProposalGenerator: React.FC<ProposalGeneratorProps> = ({ target }) => {
-  const [proposalContent, setProposalContent] = useState<string>('');
+const ProposalGenerator: React.FC<ProposalGeneratorProps> = ({
+  businesses,
+  opportunities,
+  selectedTarget,
+  onSelectTarget,
+  loading
+}) => {
   const [templates, setTemplates] = useState<ProposalTemplate[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
-  const [newTemplateName, setNewTemplateName] = useState<string>('');
-  const [isDefault, setIsDefault] = useState<boolean>(false);
-  const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  const [isSaving, setIsSaving] = useState<boolean>(false);
-  const [isCopied, setIsCopied] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<string>('editor');
-
-  // Determine if we're dealing with a business or opportunity
-  const isBusiness = 'name' in target && !('title' in target);
-  const targetName = isBusiness ? (target as Business).name : (target as Opportunity).title;
-
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [generatedProposal, setGeneratedProposal] = useState<string>('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  
+  // Template form state
+  const [templateName, setTemplateName] = useState('');
+  const [templateContent, setTemplateContent] = useState('');
+  const [isDefault, setIsDefault] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
+  // Fetch templates on component mount
   useEffect(() => {
-    loadTemplates();
-    handleGenerateProposal();
-  }, [target]);
-
-  const loadTemplates = async () => {
-    const loadedTemplates = await getProposalTemplates();
-    setTemplates(loadedTemplates);
+    const fetchTemplates = async () => {
+      setLoadingTemplates(true);
+      try {
+        const fetchedTemplates = await getProposalTemplates();
+        setTemplates(fetchedTemplates);
+        
+        // Set default template if available
+        const defaultTemplate = fetchedTemplates.find(t => t.is_default);
+        if (defaultTemplate) {
+          setSelectedTemplateId(defaultTemplate.id);
+        }
+      } catch (error) {
+        console.error('Error fetching templates:', error);
+      } finally {
+        setLoadingTemplates(false);
+      }
+    };
     
-    // If there's a default template, select it
-    const defaultTemplate = loadedTemplates.find(t => t.is_default);
-    if (defaultTemplate) {
-      setSelectedTemplate(defaultTemplate.id);
-    }
-  };
-
+    fetchTemplates();
+  }, []);
+  
   const handleGenerateProposal = async () => {
+    if (!selectedTarget) {
+      toast.error('Please select a target business or opportunity first');
+      return;
+    }
+    
     setIsGenerating(true);
     try {
-      const content = await generateProposal(target, selectedTemplate || undefined);
-      setProposalContent(content);
+      const proposal = await generateProposal(selectedTarget, selectedTemplateId || undefined);
+      setGeneratedProposal(proposal);
     } catch (error) {
       console.error('Error generating proposal:', error);
       toast.error('Failed to generate proposal');
@@ -66,228 +99,315 @@ const ProposalGenerator: React.FC<ProposalGeneratorProps> = ({ target }) => {
       setIsGenerating(false);
     }
   };
-
+  
   const handleSaveTemplate = async () => {
-    if (!newTemplateName.trim()) {
-      toast.error('Please enter a template name');
+    if (!templateName || !templateContent) {
+      toast.error('Template name and content are required');
       return;
     }
     
-    setIsSaving(true);
     try {
-      await saveProposalTemplate(newTemplateName, proposalContent, isDefault);
-      setNewTemplateName('');
-      await loadTemplates();
-      setActiveTab('templates');
+      await saveProposalTemplate(templateName, templateContent, isDefault);
+      
+      // Reset form and refresh templates
+      setTemplateName('');
+      setTemplateContent('');
+      setIsDefault(false);
+      setIsDialogOpen(false);
+      
+      // Refresh templates list
+      const freshTemplates = await getProposalTemplates();
+      setTemplates(freshTemplates);
+      
+      toast.success('Template saved successfully');
     } catch (error) {
       console.error('Error saving template:', error);
-    } finally {
-      setIsSaving(false);
+      toast.error('Failed to save template');
     }
   };
-
-  const handleCopyToClipboard = () => {
-    navigator.clipboard.writeText(proposalContent)
-      .then(() => {
-        setIsCopied(true);
-        toast.success('Proposal copied to clipboard');
-        setTimeout(() => setIsCopied(false), 2000);
-      })
-      .catch(() => {
-        toast.error('Failed to copy proposal');
-      });
-  };
-
-  const handleDownload = () => {
-    const blob = new Blob([proposalContent], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Proposal_for_${targetName.replace(/\s+/g, '_')}.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success('Proposal downloaded');
-  };
-
-  const handleTemplateSelect = (templateId: string) => {
-    setSelectedTemplate(templateId);
-    if (templateId) {
-      handleGenerateProposal();
-    }
-  };
-
-  return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <FileText className="mr-2 h-5 w-5" />
-          Proposal Generator
-        </CardTitle>
-        <CardDescription>
-          Generate and customize proposals for {targetName}
-        </CardDescription>
-      </CardHeader>
-      
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-2 mx-6">
-          <TabsTrigger value="editor">Editor</TabsTrigger>
-          <TabsTrigger value="templates">Templates</TabsTrigger>
-        </TabsList>
+  
+  const handleDeleteTemplate = async (templateId: string) => {
+    if (window.confirm('Are you sure you want to delete this template?')) {
+      try {
+        await deleteProposalTemplate(templateId);
         
-        <TabsContent value="editor" className="p-0">
-          <CardContent className="pt-6 space-y-4">
-            <div className="flex items-center space-x-4">
-              <div className="flex-1">
-                <Label htmlFor="template-select">Template</Label>
-                <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
+        // Remove from state and clear selection if it was selected
+        setTemplates(prev => prev.filter(t => t.id !== templateId));
+        if (selectedTemplateId === templateId) {
+          setSelectedTemplateId('');
+        }
+        
+        toast.success('Template deleted successfully');
+      } catch (error) {
+        console.error('Error deleting template:', error);
+        toast.error('Failed to delete template');
+      }
+    }
+  };
+  
+  const handleEditTemplate = (template: ProposalTemplate) => {
+    setTemplateName(template.name);
+    setTemplateContent(template.content);
+    setIsDefault(template.is_default || false);
+    setIsDialogOpen(true);
+  };
+  
+  return (
+    <div className="space-y-6">
+      {/* Target Selection Section */}
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="target-type">Target Type</Label>
+            <Tabs defaultValue="business" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="business">Business</TabsTrigger>
+                <TabsTrigger value="opportunity">Opportunity</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="business" className="space-y-4">
+                <Select 
+                  disabled={loading || businesses.length === 0}
+                  onValueChange={(value) => {
+                    const selected = businesses.find(b => b.id === value);
+                    if (selected) onSelectTarget(selected);
+                  }}
+                  value={selectedTarget && 'name' in selectedTarget ? selectedTarget.id : ''}
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a template" />
+                    <SelectValue placeholder="Select a business" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No Template (Generate Default)</SelectItem>
-                    {templates.map(template => (
-                      <SelectItem key={template.id} value={template.id}>
-                        {template.name} {template.is_default ? '(Default)' : ''}
+                    {businesses.map(business => (
+                      <SelectItem key={business.id} value={business.id}>
+                        {business.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
+              </TabsContent>
               
-              <Button 
-                variant="outline" 
-                onClick={handleGenerateProposal}
-                disabled={isGenerating}
-              >
-                {isGenerating ? 'Generating...' : 'Regenerate'}
-              </Button>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="proposal-content">Proposal Content</Label>
-              <Textarea 
-                id="proposal-content"
-                value={proposalContent}
-                onChange={(e) => setProposalContent(e.target.value)}
-                className="h-[400px] font-mono text-sm"
-              />
-            </div>
-          </CardContent>
-          
-          <CardFooter className="flex flex-col space-y-4">
-            <div className="w-full flex flex-row gap-4">
-              <Button 
-                className="flex-1" 
-                variant="outline" 
-                onClick={handleCopyToClipboard}
-              >
-                {isCopied ? (
-                  <>
-                    <CheckIcon className="mr-2 h-4 w-4" />
-                    Copied
-                  </>
-                ) : (
-                  <>
-                    <Copy className="mr-2 h-4 w-4" />
-                    Copy
-                  </>
-                )}
-              </Button>
-              
-              <Button 
-                className="flex-1" 
-                variant="outline"
-                onClick={handleDownload}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Download
-              </Button>
-            </div>
-            
-            <div className="w-full border-t pt-4">
-              <div className="flex items-end gap-4">
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor="template-name">Save as Template</Label>
-                  <Input
-                    id="template-name"
-                    placeholder="Template Name"
-                    value={newTemplateName}
-                    onChange={(e) => setNewTemplateName(e.target.value)}
-                  />
-                </div>
-                
-                <div className="flex items-center space-x-2 mb-2">
-                  <Switch 
-                    id="set-default"
-                    checked={isDefault}
-                    onCheckedChange={setIsDefault}
-                  />
-                  <Label htmlFor="set-default">Set as Default</Label>
-                </div>
-                
-                <Button 
-                  onClick={handleSaveTemplate}
-                  disabled={isSaving || !newTemplateName.trim()}
+              <TabsContent value="opportunity" className="space-y-4">
+                <Select 
+                  disabled={loading || opportunities.length === 0}
+                  onValueChange={(value) => {
+                    const selected = opportunities.find(o => o.id === value);
+                    if (selected) onSelectTarget(selected);
+                  }}
+                  value={selectedTarget && 'title' in selectedTarget ? selectedTarget.id : ''}
                 >
-                  {isSaving ? 'Saving...' : 'Save Template'}
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select an opportunity" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {opportunities.map(opportunity => (
+                      <SelectItem key={opportunity.id} value={opportunity.id}>
+                        {opportunity.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </TabsContent>
+            </Tabs>
+          </div>
+          
+          <div>
+            <Label htmlFor="template">Proposal Template</Label>
+            <div className="flex items-center gap-2">
+              <Select 
+                disabled={loadingTemplates}
+                onValueChange={setSelectedTemplateId}
+                value={selectedTemplateId}
+              >
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Select a template or use default" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Default Template</SelectItem>
+                  {templates.map(template => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.name} {template.is_default && '(Default)'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create Proposal Template</DialogTitle>
+                    <DialogDescription>
+                      Create a reusable template for your proposals. Use {'{targetName}'}, {'{targetWebsite}'}, 
+                      {'{targetIndustry}'} and {'{date}'} as placeholders.
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="template-name">Template Name</Label>
+                      <Input
+                        id="template-name"
+                        value={templateName}
+                        onChange={(e) => setTemplateName(e.target.value)}
+                        placeholder="E.g., Standard Web Development Proposal"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="template-content">Template Content</Label>
+                      <Textarea
+                        id="template-content"
+                        value={templateContent}
+                        onChange={(e) => setTemplateContent(e.target.value)}
+                        placeholder="# Proposal for {targetName}..."
+                        className="min-h-[300px] font-mono"
+                      />
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="is-default"
+                        checked={isDefault}
+                        onCheckedChange={setIsDefault}
+                      />
+                      <Label htmlFor="is-default">Set as default template</Label>
+                    </div>
+                  </div>
+                  
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleSaveTemplate}>
+                      Save Template
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+        </div>
+        
+        <Button 
+          disabled={!selectedTarget || isGenerating} 
+          onClick={handleGenerateProposal}
+          className="w-full"
+        >
+          {isGenerating ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <FileText className="mr-2 h-4 w-4" />
+              Generate Proposal
+            </>
+          )}
+        </Button>
+      </div>
+      
+      {/* Generated Proposal Section */}
+      {generatedProposal && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex justify-between mb-4">
+              <h3 className="text-lg font-medium">Generated Proposal</h3>
+              <div className="space-x-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(generatedProposal);
+                    toast.success('Proposal copied to clipboard');
+                  }}
+                >
+                  Copy
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    const blob = new Blob([generatedProposal], { type: 'text/markdown' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `proposal-${new Date().toISOString().split('T')[0]}.md`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    toast.success('Proposal downloaded');
+                  }}
+                >
+                  Download
                 </Button>
               </div>
             </div>
-          </CardFooter>
-        </TabsContent>
-        
-        <TabsContent value="templates">
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              {templates.length > 0 ? (
-                templates.map(template => (
-                  <div 
-                    key={template.id} 
-                    className="p-4 border rounded-md hover:bg-muted/50 cursor-pointer"
-                    onClick={() => {
-                      setSelectedTemplate(template.id);
-                      setActiveTab('editor');
-                      handleGenerateProposal();
-                    }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="font-medium">{template.name}</div>
-                      {template.is_default && (
-                        <div className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
-                          Default
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-sm text-muted-foreground mt-1">
-                      Created: {new Date(template.created_at || '').toLocaleDateString()}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-2 line-clamp-2">
-                      {template.content.substring(0, 150)}...
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  No templates found. Create one by saving a proposal.
-                </div>
-              )}
+            
+            <div className="border rounded-md p-4 bg-background mb-4">
+              <ScrollArea className="h-[500px]">
+                <Markdown>{generatedProposal}</Markdown>
+              </ScrollArea>
             </div>
           </CardContent>
-          
-          <CardFooter>
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => setActiveTab('editor')}
-            >
-              + Create New Template
-            </Button>
-          </CardFooter>
-        </TabsContent>
-      </Tabs>
-    </Card>
+        </Card>
+      )}
+      
+      {/* Templates Management Section */}
+      {templates.length > 0 && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Your Templates</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {templates.map(template => (
+              <Card key={template.id} className="flex flex-col">
+                <CardContent className="pt-6 flex-1 flex flex-col">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium">{template.name}</h4>
+                      {template.is_default && (
+                        <Badge variant="secondary">Default</Badge>
+                      )}
+                    </div>
+                    <div className="space-x-1">
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleEditTemplate(template)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleDeleteTemplate(template.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="text-muted-foreground text-sm mb-2">
+                    {template.created_at && (
+                      <span>Created: {new Date(template.created_at).toLocaleDateString()}</span>
+                    )}
+                  </div>
+                  <div className="border rounded-md p-2 bg-muted/50 overflow-hidden whitespace-nowrap overflow-ellipsis flex-1">
+                    <code className="text-xs text-muted-foreground">
+                      {template.content.substring(0, 100)}...
+                    </code>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
