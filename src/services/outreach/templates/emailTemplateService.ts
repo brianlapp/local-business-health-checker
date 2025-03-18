@@ -73,7 +73,7 @@ export async function getEmailTemplates(): Promise<EmailTemplate[]> {
       throw new Error(`Failed to fetch templates: ${error.message}`);
     }
     
-    return data || [];
+    return data as EmailTemplate[] || [];
   } catch (error) {
     console.error('Error fetching email templates:', error);
     toast.error('Failed to fetch email templates');
@@ -119,7 +119,7 @@ export async function getEmailTemplateById(id: string): Promise<EmailTemplate | 
       throw new Error(`Failed to fetch template: ${error.message}`);
     }
     
-    return data;
+    return data as EmailTemplate;
   } catch (error) {
     console.error('Error fetching email template:', error);
     return null;
@@ -148,7 +148,7 @@ export async function getDefaultEmailTemplate(): Promise<EmailTemplate | null> {
       throw new Error(`Failed to fetch default template: ${error.message}`);
     }
     
-    return data;
+    return data as EmailTemplate;
   } catch (error) {
     console.error('Error fetching default email template:', error);
     return null;

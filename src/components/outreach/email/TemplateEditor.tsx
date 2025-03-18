@@ -139,7 +139,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
                     />
                   </FormControl>
                   <FormDescription>
-                    Use {{business_name}}, {{website_url}}, and {{score}} as placeholders that will be replaced with actual values
+                    Use {"{{business_name}}"}, {"{{website_url}}"}, and {"{{score}}"} as placeholders that will be replaced with actual values
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

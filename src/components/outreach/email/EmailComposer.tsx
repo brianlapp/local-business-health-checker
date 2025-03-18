@@ -1,64 +1,48 @@
 
 import React, { useState, useEffect } from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Mail, Copy, Send } from 'lucide-react';
+import { Loader2, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { Business } from '@/types/business';
 import { Opportunity } from '@/types/opportunity';
 import { EmailTemplate } from '@/types/emailTemplate';
 import { getEmailTemplates, getDefaultEmailTemplate } from '@/services/outreach/templates/emailTemplateService';
 
-const formSchema = z.object({
-  to: z.string().email('Please enter a valid email address'),
-  subject: z.string().min(1, 'Subject is required'),
-  content: z.string().min(1, 'Email content is required'),
-  templateId: z.string().optional(),
-});
-
-type EmailFormValues = z.infer<typeof formSchema>;
-
 interface EmailComposerProps {
   target: Business | Opportunity | null;
 }
 
 const EmailComposer: React.FC<EmailComposerProps> = ({ target }) => {
+  const [subject, setSubject] = useState('');
+  const [content, setContent] = useState('');
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSending, setIsSending] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isCopied, setIsCopied] = useState(false);
   
-  const form = useForm<EmailFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      to: '',
-      subject: '',
-      content: '',
-      templateId: '',
-    },
-  });
+  // Get target name and email for display
+  const targetName = getTargetName(target);
+  const targetEmail = getTargetEmail(target);
+  const targetWebsite = getTargetWebsite(target);
+  const targetScore = getTargetScore(target);
 
   useEffect(() => {
     loadTemplates();
   }, []);
 
   useEffect(() => {
-    // Set recipient email if target has one
-    if (target) {
-      if ('contact_info' in target && target.contact_info?.email) {
-        form.setValue('to', target.contact_info.email);
-      } else if ('email' in target && target.email) {
-        form.setValue('to', target.email);
+    if (selectedTemplateId && templates.length > 0) {
+      const template = templates.find(t => t.id === selectedTemplateId);
+      if (template) {
+        setSubject(applyPlaceholders(template.subject));
+        setContent(applyPlaceholders(template.content));
       }
     }
-  }, [target, form]);
+  }, [selectedTemplateId, target, templates]);
 
   const loadTemplates = async () => {
     setIsLoading(true);
@@ -66,10 +50,12 @@ const EmailComposer: React.FC<EmailComposerProps> = ({ target }) => {
       const templates = await getEmailTemplates();
       setTemplates(templates);
       
-      // If we have templates, check for a default
-      if (templates.length > 0) {
-        const defaultTemplate = templates.find(t => t.is_default) || templates[0];
-        await handleTemplateSelect(defaultTemplate.id);
+      // Try to get default template
+      const defaultTemplate = await getDefaultEmailTemplate();
+      if (defaultTemplate) {
+        setSelectedTemplateId(defaultTemplate.id);
+      } else if (templates.length > 0) {
+        setSelectedTemplateId(templates[0].id);
       }
     } catch (error) {
       console.error('Error loading templates:', error);
@@ -78,63 +64,23 @@ const EmailComposer: React.FC<EmailComposerProps> = ({ target }) => {
     }
   };
 
-  const handleTemplateSelect = async (templateId: string) => {
-    const template = templates.find(t => t.id === templateId);
-    if (template) {
-      setSelectedTemplate(template);
-      
-      let subject = template.subject;
-      let content = template.content;
-      
-      // Replace placeholders with target data
-      if (target) {
-        const targetName = 'name' in target ? target.name : (target.title || 'Client');
-        const targetWebsite = 'website' in target ? target.website : '';
-        const targetScore = 'score' in target ? target.score?.toString() : '';
-        
-        subject = subject.replace(/{{business_name}}/g, targetName)
-                         .replace(/{{website_url}}/g, targetWebsite)
-                         .replace(/{{score}}/g, targetScore);
-                         
-        content = content.replace(/{{business_name}}/g, targetName)
-                         .replace(/{{website_url}}/g, targetWebsite)
-                         .replace(/{{score}}/g, targetScore);
-      }
-      
-      form.setValue('subject', subject);
-      form.setValue('content', content);
-      form.setValue('templateId', templateId);
-    }
-  };
-
-  const handleCopyToClipboard = () => {
-    const values = form.getValues();
-    const emailText = `To: ${values.to}\nSubject: ${values.subject}\n\n${values.content}`;
+  const applyPlaceholders = (text: string) => {
+    if (!text) return '';
     
-    navigator.clipboard.writeText(emailText).then(() => {
-      toast.success('Email copied to clipboard');
-    }).catch((err) => {
-      console.error('Could not copy text: ', err);
-      toast.error('Failed to copy to clipboard');
-    });
+    return text
+      .replace(/{{business_name}}/g, targetName || 'Your Business')
+      .replace(/{{website_url}}/g, targetWebsite || 'your website')
+      .replace(/{{score}}/g, targetScore !== undefined ? String(targetScore) : 'N/A');
   };
 
-  const onSubmit = async (values: EmailFormValues) => {
-    setIsSending(true);
+  const copyToClipboard = async () => {
     try {
-      // In a real application, we would send the email through an API
-      console.log('Sending email:', values);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      toast.success(`Email sent to ${values.to}`);
-      // Optionally reset form or redirect
-    } catch (error) {
-      console.error('Error sending email:', error);
-      toast.error('Failed to send email');
-    } finally {
-      setIsSending(false);
+      await navigator.clipboard.writeText(content);
+      setIsCopied(true);
+      toast.success('Email content copied to clipboard');
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      toast.error('Failed to copy to clipboard');
     }
   };
 
@@ -143,122 +89,143 @@ const EmailComposer: React.FC<EmailComposerProps> = ({ target }) => {
       <CardHeader>
         <CardTitle>Compose Email</CardTitle>
       </CardHeader>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <CardContent className="space-y-4">
-            <FormField
-              control={form.control}
-              name="templateId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email Template</FormLabel>
-                  <Select
-                    disabled={isLoading || templates.length === 0}
-                    value={field.value}
-                    onValueChange={(value) => handleTemplateSelect(value)}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a template" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {templates.map((template) => (
+      <CardContent className="space-y-4">
+        {isLoading ? (
+          <div className="flex items-center justify-center p-4">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <p className="text-sm font-medium">To:</p>
+                <span className="text-sm">
+                  {targetEmail || 'No email available'}
+                  {targetName && ` (${targetName})`}
+                </span>
+              </div>
+              
+              <div className="space-y-1">
+                <label htmlFor="template" className="text-sm font-medium">
+                  Template
+                </label>
+                <Select
+                  value={selectedTemplateId}
+                  onValueChange={setSelectedTemplateId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a template" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {templates.length === 0 ? (
+                      <SelectItem value="none" disabled>
+                        No templates available
+                      </SelectItem>
+                    ) : (
+                      templates.map((template) => (
                         <SelectItem key={template.id} value={template.id}>
                           {template.name}
+                          {template.is_default && " (Default)"}
                         </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    Choose an email template or create a new one in the templates section
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="to"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Recipient</FormLabel>
-                  <FormControl>
-                    <Input placeholder="client@example.com" {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    Email address of the recipient
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="subject"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Subject</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="Subject of your email" 
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="content"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email Content</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Write your email content here..."
-                      rows={12}
-                      className="font-mono text-sm"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleCopyToClipboard}
-            >
-              <Copy className="mr-2 h-4 w-4" />
-              Copy to Clipboard
-            </Button>
-            
-            <Button type="submit" disabled={isSending}>
-              {isSending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Send className="mr-2 h-4 w-4" />
-                  Send Email
-                </>
-              )}
-            </Button>
-          </CardFooter>
-        </form>
-      </Form>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-1">
+                <label htmlFor="subject" className="text-sm font-medium">
+                  Subject
+                </label>
+                <Input
+                  id="subject"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  placeholder="Email subject"
+                />
+              </div>
+              
+              <div className="space-y-1">
+                <label htmlFor="content" className="text-sm font-medium">
+                  Content
+                </label>
+                <Textarea
+                  id="content"
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Write your email content here..."
+                  rows={10}
+                />
+              </div>
+              
+              <div className="flex justify-end pt-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={copyToClipboard}
+                  className="flex items-center gap-1"
+                >
+                  {isCopied ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      Copied
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4" />
+                      Copy to Clipboard
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+      </CardContent>
     </Card>
   );
 };
+
+// Helper functions to extract target information
+function getTargetName(target: Business | Opportunity | null): string {
+  if (!target) return '';
+  return 'client_name' in target ? target.client_name || '' : target.name;
+}
+
+function getTargetEmail(target: Business | Opportunity | null): string {
+  if (!target) return '';
+  
+  if ('contact_info' in target && target.contact_info) {
+    return typeof target.contact_info === 'object' && 'email' in target.contact_info 
+      ? String(target.contact_info.email || '') 
+      : '';
+  }
+  
+  return '';
+}
+
+function getTargetWebsite(target: Business | Opportunity | null): string {
+  if (!target) return '';
+  
+  if ('website' in target) {
+    return target.website || '';
+  } else if ('client_website' in target) {
+    return target.client_website || '';
+  }
+  
+  return '';
+}
+
+function getTargetScore(target: Business | Opportunity | null): number | undefined {
+  if (!target) return undefined;
+  
+  if ('opportunity_score' in target) {
+    return target.opportunity_score || undefined;
+  } else if ('score' in target) {
+    return target.score || undefined;
+  }
+  
+  return undefined;
+}
 
 export default EmailComposer;

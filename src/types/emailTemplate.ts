@@ -16,3 +16,8 @@ export interface EmailTemplateFormData {
   content: string;
   is_default?: boolean;
 }
+
+export interface TemplateVariable {
+  name: string;
+  value: string;
+}
