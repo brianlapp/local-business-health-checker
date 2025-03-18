@@ -1,152 +1,116 @@
 
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
-import { useAuth } from '@/contexts/AuthContext';
-import Header from '@/components/Header';
-import MobileNavigation from '@/components/MobileNavigation';
-import ProtectedRoute from '@/components/ProtectedRoute';
-import Index from '@/pages/Index';
-import Auth from '@/pages/Auth';
-import Dashboard from '@/pages/Dashboard';
-import AddBusiness from '@/pages/AddBusiness';
-import MapScanner from '@/pages/MapScanner';
-import JobBoard from '@/pages/JobBoard';
-import Opportunities from '@/pages/Opportunities';
-import Profile from '@/pages/Profile';
-import NotFound from '@/pages/NotFound';
-import AgencyAnalysis from '@/pages/AgencyAnalysis';
-import ScanManager from '@/pages/ScanManager';
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 
-const App = () => {
-  const { user, isLoading } = useAuth();
-  const [loading, setLoading] = useState(true);
+import Index from './pages/Index';
+import Auth from './pages/Auth';
+import NotFound from './pages/NotFound';
+import Dashboard from './pages/Dashboard';
+import Profile from './pages/Profile';
+import AddBusiness from './pages/AddBusiness';
+import Opportunities from './pages/Opportunities';
+import JobBoard from './pages/JobBoard';
+import MapScanner from './pages/MapScanner';
+import AgencyAnalysis from './pages/AgencyAnalysis';
+import AgencyRelationships from './pages/AgencyRelationships';
+import ScanManager from './pages/ScanManager';
+import OutreachManager from './pages/OutreachManager';
 
-  useEffect(() => {
-    const authenticate = async () => {
-      console.log('App: Starting authentication check');
-      try {
-        // No need to check auth here as the useAuth hook handles it
-        console.log('App: Auth check completed, user:', user ? 'authenticated' : 'not authenticated');
-      } catch (error) {
-        console.error('App: Auth check error:', error);
-      } finally {
-        setLoading(false);
-        console.log('App: Loading state set to false');
-      }
-    };
-
-    authenticate();
-  }, [user]);
-  
-  console.log('App: Rendering with loading states:', { appLoading: loading, authLoading: isLoading });
-  
-  // Add an early return with loading indicator to prevent white screen
-  if (loading || isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-  
+function App() {
   return (
-    <div className="min-h-screen bg-background">
+    <AuthProvider>
       <Router>
-        <Toaster />
-        <Header />
-
-        <div className="pt-16 min-h-screen">
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Auth />} />
-            <Route path="/auth" element={<Auth />} />
-            
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            
-            <Route
-              path="/add-business"
-              element={
-                <ProtectedRoute>
-                  <AddBusiness />
-                </ProtectedRoute>
-              }
-            />
-            
-            <Route
-              path="/map-scanner"
-              element={
-                <ProtectedRoute>
-                  <MapScanner />
-                </ProtectedRoute>
-              }
-            />
-            
-            <Route
-              path="/job-board"
-              element={
-                <ProtectedRoute>
-                  <JobBoard />
-                </ProtectedRoute>
-              }
-            />
-            
-            <Route
-              path="/jobs"
-              element={
-                <ProtectedRoute>
-                  <JobBoard />
-                </ProtectedRoute>
-              }
-            />
-            
-            <Route
-              path="/opportunities"
-              element={
-                <ProtectedRoute>
-                  <Opportunities />
-                </ProtectedRoute>
-              }
-            />
-            
-            <Route
-              path="/agency-analysis"
-              element={
-                <ProtectedRoute>
-                  <AgencyAnalysis />
-                </ProtectedRoute>
-              }
-            />
-            
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-            
-            <Route path="/scan-manager" element={
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route 
+            path="/dashboard" 
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/add-business" 
+            element={
+              <ProtectedRoute>
+                <AddBusiness />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/opportunities" 
+            element={
+              <ProtectedRoute>
+                <Opportunities />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/job-board" 
+            element={
+              <ProtectedRoute>
+                <JobBoard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/map-scanner" 
+            element={
+              <ProtectedRoute>
+                <MapScanner />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/agency-analysis" 
+            element={
+              <ProtectedRoute>
+                <AgencyAnalysis />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/agency-relationships" 
+            element={
+              <ProtectedRoute>
+                <AgencyRelationships />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/scan-manager" 
+            element={
               <ProtectedRoute>
                 <ScanManager />
               </ProtectedRoute>
-            } />
-            
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </div>
-        {user && <MobileNavigation />}
+            } 
+          />
+          <Route 
+            path="/outreach-manager" 
+            element={
+              <ProtectedRoute>
+                <OutreachManager />
+              </ProtectedRoute>
+            } 
+          />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </Router>
-    </div>
+      <Toaster position="top-right" />
+    </AuthProvider>
   );
-};
+}
 
 export default App;
