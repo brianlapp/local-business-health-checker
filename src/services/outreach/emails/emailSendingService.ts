@@ -129,12 +129,13 @@ export async function checkEmailStatus(trackingId: string): Promise<string> {
   try {
     console.log('Checking email status for tracking ID:', trackingId);
     
-    // Avoid complex generic type parameters that cause TypeScript errors
+    // Use a raw query approach to avoid TypeScript inference issues
     const { data, error } = await supabase
       .from('outreach_messages')
       .select('status')
       .eq('tracking_id', trackingId)
-      .limit(1);
+      .limit(1)
+      .single();
     
     console.log('Email status query result:', { data, error });
     
@@ -144,7 +145,7 @@ export async function checkEmailStatus(trackingId: string): Promise<string> {
     }
     
     // Return the status if found, otherwise 'unknown'
-    return data && data.length > 0 ? data[0].status : 'unknown';
+    return data?.status || 'unknown';
   } catch (error) {
     console.error('Error checking email status:', error);
     return 'unknown';
