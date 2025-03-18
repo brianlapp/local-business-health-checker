@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { OutreachMessage } from '@/types/outreach';
 
 interface SendEmailParams {
   to: string;
@@ -128,12 +129,15 @@ export async function checkEmailStatus(trackingId: string): Promise<string> {
   try {
     console.log('Checking email status for tracking ID:', trackingId);
     
-    // Use explicit typing for the query result to avoid excessive type inference
+    // Define a simple, explicit type to avoid deep type inference issues
+    type StatusResult = { status: string };
+    
+    // Simplify the query and use a more direct approach with explicit typing
     const { data, error } = await supabase
       .from('outreach_messages')
-      .select('status')
+      .select<string, StatusResult>('status')
       .eq('tracking_id', trackingId)
-      .single();
+      .limit(1);
     
     console.log('Email status query result:', { data, error });
     
@@ -142,7 +146,8 @@ export async function checkEmailStatus(trackingId: string): Promise<string> {
       return 'unknown';
     }
     
-    return data?.status || 'unknown';
+    // Return the status if found, otherwise 'unknown'
+    return data && data.length > 0 ? data[0].status : 'unknown';
   } catch (error) {
     console.error('Error checking email status:', error);
     return 'unknown';
