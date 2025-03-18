@@ -16,9 +16,9 @@ const Index = () => {
 
   // Show a loading state while authentication is being checked
   if (isLoading) {
+    console.log('Index: Showing loading state');
     return (
       <div className="min-h-screen flex flex-col">
-        <Header />
         <div className="flex-1 flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
         </div>
@@ -28,10 +28,12 @@ const Index = () => {
 
   // If user is authenticated, redirect to dashboard
   if (user) {
+    console.log('Index: User is authenticated, redirecting to dashboard');
     return <Navigate to="/dashboard" replace />;
   }
 
   // If not authenticated and not loading, show a welcome screen with link to auth
+  console.log('Index: Showing welcome screen for non-authenticated user');
   return (
     <div className="min-h-screen flex flex-col">
       <Header />

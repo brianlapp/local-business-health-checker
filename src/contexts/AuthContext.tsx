@@ -13,7 +13,17 @@ type AuthContextType = {
   signUp: (email: string, password: string) => Promise<{error: Error | null, user: User | null}>;
 };
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Create a default context value
+const defaultContextValue: AuthContextType = {
+  user: null,
+  session: null,
+  isLoading: true,
+  signOut: async () => {},
+  signIn: async () => ({ error: null }),
+  signUp: async () => ({ error: null, user: null }),
+};
+
+const AuthContext = createContext<AuthContextType>(defaultContextValue);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -27,6 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const getSession = async () => {
       setIsLoading(true);
       try {
+        console.log('Getting session from Supabase');
         const { data, error } = await supabase.auth.getSession();
         
         console.log('Session data:', data);
@@ -41,6 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (error) {
         console.error('Exception getting session:', error);
       } finally {
+        console.log('Setting isLoading to false after session check');
         setIsLoading(false);
       }
     };
@@ -127,6 +139,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signIn,
     signUp,
   };
+
+  console.log('AuthProvider rendering with values:', { 
+    userExists: !!user, 
+    sessionExists: !!session, 
+    isLoading 
+  });
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
