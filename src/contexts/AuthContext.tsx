@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase'; // Updated import path
+import { supabase } from '@/lib/supabase';
 import { Session, User } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
@@ -21,17 +21,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    console.log('AuthProvider mounted');
+    
     // Get session on mount
     const getSession = async () => {
       setIsLoading(true);
-      const { data, error } = await supabase.auth.getSession();
-      
-      if (data && data.session) {
-        setSession(data.session);
-        setUser(data.session.user);
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        
+        console.log('Session data:', data);
+        if (error) {
+          console.error('Error getting session:', error);
+        }
+        
+        if (data && data.session) {
+          setSession(data.session);
+          setUser(data.session.user);
+        }
+      } catch (error) {
+        console.error('Exception getting session:', error);
+      } finally {
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
     };
 
     getSession();

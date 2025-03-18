@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { AuthProvider } from './contexts/AuthContext';
@@ -7,7 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Index from './pages/Index';
 import Auth from './pages/Auth';
 import NotFound from './pages/NotFound';
-import Dashboard from './pages/Dashboard'; // Make sure this is the correct path
+import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import AddBusiness from './pages/AddBusiness';
 import Opportunities from './pages/Opportunities';
@@ -19,6 +18,8 @@ import ScanManager from './pages/ScanManager';
 import OutreachManager from './pages/OutreachManager';
 
 function App() {
+  console.log('App component rendered');
+  
   return (
     <AuthProvider>
       <Router>
