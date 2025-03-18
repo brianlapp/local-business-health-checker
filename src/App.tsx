@@ -23,11 +23,9 @@ function App() {
   
   return (
     <AuthProvider>
-      {console.log('[APP] AuthProvider rendered')}
       <Router>
-        {console.log('[APP] Router rendered')}
         <Routes>
-          {console.log('[APP] Routes rendered')}
+          {/* Remove console.log statements from JSX */}
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route 
