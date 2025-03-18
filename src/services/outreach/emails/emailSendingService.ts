@@ -63,7 +63,7 @@ export async function sendEmail(params: SendEmailParams): Promise<EmailResponse>
       message_id: data.message_id,
       tracking_id: trackingId
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error sending email:', error);
     toast.error('Failed to send email');
     return {
@@ -87,17 +87,17 @@ interface OutreachEmailData {
  */
 async function storeOutreachEmail(data: OutreachEmailData): Promise<boolean> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: userData, error: userError } = await supabase.auth.getUser();
     
-    if (!user) {
-      console.error('User not authenticated');
+    if (userError || !userData.user) {
+      console.error('User not authenticated', userError);
       return false;
     }
     
     const { error } = await supabase
       .from('outreach_messages')
       .insert({
-        user_id: user.id,
+        user_id: userData.user.id,
         recipient_email: data.recipient_email,
         subject: data.subject,
         content: data.content,

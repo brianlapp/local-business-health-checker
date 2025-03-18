@@ -6,6 +6,5 @@ enabled = true
 port = 54321
 schemas = ["public", "storage"]
 
-[[functions]]
-name = "send-email"
+[functions.send-email]
 verify_jwt = true
