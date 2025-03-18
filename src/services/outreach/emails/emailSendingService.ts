@@ -126,16 +126,18 @@ async function storeOutreachEmail(data: OutreachEmailData): Promise<boolean> {
  */
 export async function checkEmailStatus(trackingId: string): Promise<string> {
   try {
-    // Use raw query execution with explicit typing to avoid type recursion issues
-    const { data, error } = await supabase.rpc('get_message_status', { 
-      tracking_id_param: trackingId 
-    }) as { data: string | null; error: any };
+    // Use a direct query approach instead of RPC to avoid type issues
+    const { data, error } = await supabase
+      .from('outreach_messages')
+      .select('status')
+      .eq('tracking_id', trackingId)
+      .maybeSingle();
     
     if (error) {
       throw error;
     }
     
-    return data || 'unknown';
+    return data?.status || 'unknown';
   } catch (error) {
     console.error('Error checking email status:', error);
     return 'unknown';
