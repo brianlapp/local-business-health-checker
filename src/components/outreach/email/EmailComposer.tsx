@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -11,6 +11,7 @@ import { Business } from '@/types/business';
 import { Opportunity } from '@/types/opportunity';
 import { EmailTemplate } from '@/types/emailTemplate';
 import { getEmailTemplates, getDefaultEmailTemplate } from '@/services/outreach/templates/emailTemplateService';
+import EmailSender from './EmailSender';
 
 interface EmailComposerProps {
   target: Business | Opportunity | null;
@@ -23,6 +24,7 @@ const EmailComposer: React.FC<EmailComposerProps> = ({ target }) => {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [isCopied, setIsCopied] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   
   // Get target name and email for display
   const targetName = getTargetName(target);
@@ -81,6 +83,13 @@ const EmailComposer: React.FC<EmailComposerProps> = ({ target }) => {
       setTimeout(() => setIsCopied(false), 2000);
     } catch (err) {
       toast.error('Failed to copy to clipboard');
+    }
+  };
+
+  const handleEmailSent = (success: boolean, trackingId?: string) => {
+    if (success) {
+      setEmailSent(true);
+      console.log('Email sent with tracking ID:', trackingId);
     }
   };
 
@@ -157,31 +166,38 @@ const EmailComposer: React.FC<EmailComposerProps> = ({ target }) => {
                   rows={10}
                 />
               </div>
-              
-              <div className="flex justify-end pt-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={copyToClipboard}
-                  className="flex items-center gap-1"
-                >
-                  {isCopied ? (
-                    <>
-                      <Check className="h-4 w-4" />
-                      Copied
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4" />
-                      Copy to Clipboard
-                    </>
-                  )}
-                </Button>
-              </div>
             </div>
           </>
         )}
       </CardContent>
+      <CardFooter className="flex justify-end gap-2">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={copyToClipboard}
+          className="flex items-center gap-1"
+        >
+          {isCopied ? (
+            <>
+              <Check className="h-4 w-4" />
+              Copied
+            </>
+          ) : (
+            <>
+              <Copy className="h-4 w-4" />
+              Copy to Clipboard
+            </>
+          )}
+        </Button>
+        <EmailSender
+          recipient={targetEmail || ''}
+          subject={subject}
+          content={content}
+          templateId={selectedTemplateId}
+          onSent={handleEmailSent}
+          disabled={!targetEmail || emailSent}
+        />
+      </CardFooter>
     </Card>
   );
 };
