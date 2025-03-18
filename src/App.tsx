@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { AuthProvider } from './contexts/AuthContext';
@@ -18,12 +19,15 @@ import ScanManager from './pages/ScanManager';
 import OutreachManager from './pages/OutreachManager';
 
 function App() {
-  console.log('App component rendered');
+  console.log('[APP] App component rendered');
   
   return (
     <AuthProvider>
+      {console.log('[APP] AuthProvider rendered')}
       <Router>
+        {console.log('[APP] Router rendered')}
         <Routes>
+          {console.log('[APP] Routes rendered')}
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route 

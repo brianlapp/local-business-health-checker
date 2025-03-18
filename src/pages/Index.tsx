@@ -6,21 +6,32 @@ import { Toaster } from 'sonner';
 import Header from '@/components/Header';
 
 const Index = () => {
+  console.log('[INDEX] Index component rendered');
+  
   const { user, isLoading } = useAuth();
 
   useEffect(() => {
-    console.log('Index page mounted');
-    console.log('User state:', user);
-    console.log('Loading state:', isLoading);
+    console.log('[INDEX] Index useEffect - mount');
+    console.log('[INDEX] User state:', user ? 'Logged in' : 'Not logged in');
+    console.log('[INDEX] Loading state:', isLoading);
+    
+    return () => {
+      console.log('[INDEX] Index useEffect - unmount');
+    };
   }, [user, isLoading]);
+
+  console.log('[INDEX] Current render state: ', { isLoading, user: !!user });
 
   // Show a loading state while authentication is being checked
   if (isLoading) {
-    console.log('Index: Showing loading state');
+    console.log('[INDEX] Showing loading state');
     return (
       <div className="min-h-screen flex flex-col">
         <div className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          <div>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
+            <p className="text-center text-muted-foreground">Loading application...</p>
+          </div>
         </div>
       </div>
     );
@@ -28,12 +39,12 @@ const Index = () => {
 
   // If user is authenticated, redirect to dashboard
   if (user) {
-    console.log('Index: User is authenticated, redirecting to dashboard');
+    console.log('[INDEX] User is authenticated, redirecting to dashboard');
     return <Navigate to="/dashboard" replace />;
   }
 
   // If not authenticated and not loading, show a welcome screen with link to auth
-  console.log('Index: Showing welcome screen for non-authenticated user');
+  console.log('[INDEX] Showing welcome screen for non-authenticated user');
   return (
     <div className="min-h-screen flex flex-col">
       <Header />

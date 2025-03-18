@@ -26,33 +26,39 @@ const defaultContextValue: AuthContextType = {
 const AuthContext = createContext<AuthContextType>(defaultContextValue);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  console.log('[AUTH] AuthProvider mounted');
+  
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    console.log('AuthProvider mounted');
+    console.log('[AUTH] AuthProvider useEffect running');
     
     // Get session on mount
     const getSession = async () => {
+      console.log('[AUTH] Starting getSession');
       setIsLoading(true);
       try {
-        console.log('Getting session from Supabase');
+        console.log('[AUTH] Getting session from Supabase');
         const { data, error } = await supabase.auth.getSession();
         
-        console.log('Session data:', data);
+        console.log('[AUTH] Session response:', data);
         if (error) {
-          console.error('Error getting session:', error);
+          console.error('[AUTH] Error getting session:', error);
         }
         
         if (data && data.session) {
+          console.log('[AUTH] Session exists:', data.session.user.id);
           setSession(data.session);
           setUser(data.session.user);
+        } else {
+          console.log('[AUTH] No active session found');
         }
       } catch (error) {
-        console.error('Exception getting session:', error);
+        console.error('[AUTH] Exception getting session:', error);
       } finally {
-        console.log('Setting isLoading to false after session check');
+        console.log('[AUTH] Setting isLoading to false after session check');
         setIsLoading(false);
       }
     };
@@ -62,11 +68,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
-        console.log('Auth state changed:', event);
+        console.log('[AUTH] Auth state changed:', event);
         if (currentSession) {
+          console.log('[AUTH] New session detected:', currentSession.user.id);
           setSession(currentSession);
           setUser(currentSession.user);
         } else {
+          console.log('[AUTH] Session cleared');
           setSession(null);
           setUser(null);
         }
@@ -75,6 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     return () => {
+      console.log('[AUTH] Cleaning up auth subscription');
       subscription.unsubscribe();
     };
   }, []);
@@ -140,19 +149,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signUp,
   };
 
-  console.log('AuthProvider rendering with values:', { 
+  console.log('[AUTH] AuthProvider rendering with values:', { 
     userExists: !!user, 
     sessionExists: !!session, 
     isLoading 
   });
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {console.log('[AUTH] Rendering AuthContext children')}
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error('[AUTH] useAuth must be used within an AuthProvider');
   }
+  console.log('[AUTH] useAuth called, isLoading:', context.isLoading);
   return context;
 };
