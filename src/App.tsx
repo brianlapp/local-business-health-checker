@@ -17,6 +17,7 @@ import Profile from '@/pages/Profile';
 import NotFound from '@/pages/NotFound';
 import AgencyAnalysis from '@/pages/AgencyAnalysis';
 import ScanManager from '@/pages/ScanManager';
+import OutreachManager from '@/pages/OutreachManager';
 
 const App = () => {
   const { user, isLoading } = useAuth();
@@ -24,22 +25,17 @@ const App = () => {
 
   useEffect(() => {
     const authenticate = async () => {
-      console.log('App: Starting authentication check');
       try {
-        // No need to check auth here as the useAuth hook handles it
-        console.log('App: Auth check completed, user:', user ? 'authenticated' : 'not authenticated');
+        // Auth check handled by useAuth hook
       } catch (error) {
         console.error('App: Auth check error:', error);
       } finally {
         setLoading(false);
-        console.log('App: Loading state set to false');
       }
     };
 
     authenticate();
   }, [user]);
-  
-  console.log('App: Rendering with loading states:', { appLoading: loading, authLoading: isLoading });
   
   // Add an early return with loading indicator to prevent white screen
   if (loading || isLoading) {
@@ -134,11 +130,23 @@ const App = () => {
               }
             />
             
-            <Route path="/scan-manager" element={
-              <ProtectedRoute>
-                <ScanManager />
-              </ProtectedRoute>
-            } />
+            <Route 
+              path="/scan-manager" 
+              element={
+                <ProtectedRoute>
+                  <ScanManager />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/outreach" 
+              element={
+                <ProtectedRoute>
+                  <OutreachManager />
+                </ProtectedRoute>
+              } 
+            />
             
             <Route path="*" element={<NotFound />} />
           </Routes>

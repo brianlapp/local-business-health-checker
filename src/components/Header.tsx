@@ -57,6 +57,14 @@ const Header: React.FC = () => {
               >
                 Map Scanner
               </Link>
+              <Link
+                to="/outreach"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  location.pathname === "/outreach" ? "text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                Outreach
+              </Link>
             </nav>
           )}
         </div>
