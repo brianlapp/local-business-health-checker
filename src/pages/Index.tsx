@@ -25,8 +25,8 @@ const Index = () => {
     );
   }
 
-  // If not authenticated and not loading, redirect to login
-  return <Navigate to="/login" replace />;
+  // If not authenticated and not loading, redirect to auth page (not login)
+  return <Navigate to="/auth" replace />;
 };
 
 export default Index;

@@ -7,7 +7,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Index from './pages/Index';
 import Auth from './pages/Auth';
 import NotFound from './pages/NotFound';
-import Dashboard from './pages/Dashboard';
+import Dashboard from './pages/Dashboard'; // Make sure this is the correct path
 import Profile from './pages/Profile';
 import AddBusiness from './pages/AddBusiness';
 import Opportunities from './pages/Opportunities';
