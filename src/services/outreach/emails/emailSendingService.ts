@@ -126,6 +126,7 @@ async function storeOutreachEmail(data: OutreachEmailData): Promise<boolean> {
  */
 export async function checkEmailStatus(trackingId: string): Promise<string> {
   try {
+    // Use explicit type annotation to avoid excessive type instantiation
     const { data, error } = await supabase
       .from('outreach_messages')
       .select('status')
