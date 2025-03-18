@@ -45,9 +45,11 @@ import {
 
 // Import from outreach services
 import {
-  generateProposal,
-  saveProposalTemplate
+  generateProposal
 } from './outreach/proposalService';
+
+// Import directly from templateService for proposal templates
+import { saveProposalTemplate } from './outreach/templateService';
 
 // Import from evaluation services
 import {

@@ -2,11 +2,11 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import UserMenu from './UserMenu';
+import { UserMenu } from './UserMenu';
 import { Button } from './ui/button';
 
 const Header: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const location = useLocation();
 
   const isActive = (path: string) => location.pathname === path;
@@ -20,7 +20,7 @@ const Header: React.FC = () => {
           </Link>
         </div>
 
-        {isAuthenticated ? (
+        {user ? (
           <>
             <nav className="hidden md:flex items-center space-x-4">
               <Link to="/dashboard" className={`text-sm ${isActive('/dashboard') ? 'font-bold' : ''}`}>
@@ -48,7 +48,7 @@ const Header: React.FC = () => {
                 Outreach
               </Link>
             </nav>
-            <UserMenu />
+            <UserMenu user={user} logout={useAuth().signOut} />
           </>
         ) : (
           <Link to="/auth">

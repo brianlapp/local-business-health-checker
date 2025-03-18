@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { UserCircle, LogOut, Settings } from 'lucide-react';
+import { UserCircle, LogOut } from 'lucide-react';
 
 interface UserMenuProps {
   user: User | null;
@@ -47,7 +47,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user, logout }) => {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild onClick={handleLogout}>
+        <DropdownMenuItem onClick={handleLogout}>
           <button className="flex w-full cursor-pointer items-center text-destructive">
             <LogOut className="mr-2 h-4 w-4" />
             <span>Log out</span>

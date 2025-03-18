@@ -36,7 +36,7 @@ export async function createEmailDraft(
       [entityType === 'business' ? 'business_id' : 
        entityType === 'opportunity' ? 'opportunity_id' : 'agency_id']: entityId,
       message_type: 'email',
-      status: 'draft'
+      status: 'draft' as const
     };
     
     const { data, error } = await supabase
@@ -51,8 +51,25 @@ export async function createEmailDraft(
       return null;
     }
     
+    // Transform to expected interface
+    const emailMessage: EmailMessage = {
+      id: data.id,
+      subject: data.subject,
+      content: data.content,
+      business_id: data.business_id,
+      opportunity_id: data.opportunity_id,
+      agency_id: data.agency_id,
+      scheduled_for: data.scheduled_for,
+      status: data.status as 'draft' | 'scheduled' | 'sent' | 'opened' | 'replied' | 'failed',
+      sent_at: data.sent_at,
+      opened_at: data.opened_at,
+      replied_at: data.replied_at,
+      created_at: data.created_at,
+      updated_at: data.updated_at
+    };
+    
     toast.success('Email draft created');
-    return data;
+    return emailMessage;
   } catch (error) {
     console.error('Error in createEmailDraft:', error);
     toast.error('An unexpected error occurred');
@@ -145,7 +162,24 @@ export async function getEmails(
       return [];
     }
     
-    return data || [];
+    // Transform to expected interface
+    const emails: EmailMessage[] = (data || []).map(item => ({
+      id: item.id,
+      subject: item.subject,
+      content: item.content,
+      business_id: item.business_id,
+      opportunity_id: item.opportunity_id,
+      agency_id: item.agency_id,
+      scheduled_for: item.scheduled_for,
+      status: item.status as 'draft' | 'scheduled' | 'sent' | 'opened' | 'replied' | 'failed',
+      sent_at: item.sent_at,
+      opened_at: item.opened_at,
+      replied_at: item.replied_at,
+      created_at: item.created_at,
+      updated_at: item.updated_at
+    }));
+    
+    return emails;
   } catch (error) {
     console.error('Error in getEmails:', error);
     toast.error('An unexpected error occurred');
