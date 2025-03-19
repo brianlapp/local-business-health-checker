@@ -44,8 +44,7 @@ export const useMapInitialization = (
         
         mapboxgl.accessToken = data.token;
         
-        // Ensure coordinates are properly typed as [number, number]
-        const defaultCoordinates: [number, number] = [-79.347, 43.651];
+        const defaultCoordinates = [-79.347, 43.651];
         
         map.current = new mapboxgl.Map({
           container: mapContainerRef.current,

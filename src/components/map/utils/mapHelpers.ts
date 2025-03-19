@@ -49,8 +49,8 @@ export const renderRadiusCircle = (
         'circle-opacity': 0.15,
         'circle-stroke-width': 2,
         'circle-stroke-color': '#3b82f6',
-        'circle-stroke-opacity': 0.5
-        // Removed the unsupported 'circle-radius-units' property
+        'circle-stroke-opacity': 0.5,
+        'circle-radius-units': 'meters'
       }
     });
   }
