@@ -134,13 +134,11 @@ export async function checkEmailStatus(trackingId: string): Promise<string> {
   try {
     console.log('Checking email status for tracking ID:', trackingId);
     
-    // Explicitly limit the selection to just the status column
-    // and use type assertion to avoid deep type instantiation issues
+    // Use a raw query approach to avoid deep type instantiation
     const { data, error } = await supabase
       .from('outreach_messages')
       .select('status')
-      .eq('tracking_id', trackingId)
-      .single();
+      .eq('tracking_id', trackingId);
     
     console.log('Email status query result:', { data, error });
     
@@ -149,8 +147,12 @@ export async function checkEmailStatus(trackingId: string): Promise<string> {
       return 'unknown';
     }
     
-    // Return the status if found, otherwise 'unknown'
-    return data?.status || 'unknown';
+    // Check if data exists and has at least one item
+    if (data && data.length > 0) {
+      return data[0].status || 'unknown';
+    }
+    
+    return 'unknown';
   } catch (error) {
     console.error('Error checking email status:', error);
     return 'unknown';
