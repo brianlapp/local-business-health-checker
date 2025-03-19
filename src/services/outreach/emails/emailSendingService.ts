@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { OutreachMessage } from '@/types/outreach';
@@ -121,6 +122,11 @@ async function storeOutreachEmail(data: OutreachEmailData): Promise<boolean> {
   }
 }
 
+// Define a simple interface for the email status query result
+interface EmailStatusResult {
+  status: string | null;
+}
+
 /**
  * Check the delivery status of an email
  */
@@ -128,12 +134,12 @@ export async function checkEmailStatus(trackingId: string): Promise<string> {
   try {
     console.log('Checking email status for tracking ID:', trackingId);
     
-    // Use explicit typing and specific column selection to avoid TypeScript inference issues
+    // Use a simplified query with explicit typing to avoid TypeScript complexity issues
     const { data, error } = await supabase
       .from('outreach_messages')
       .select('status')
       .eq('tracking_id', trackingId)
-      .maybeSingle<{ status: string | null }>();
+      .maybeSingle<EmailStatusResult>();
     
     console.log('Email status query result:', { data, error });
     
